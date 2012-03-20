@@ -1,0 +1,24 @@
+Name:                sea
+Version:             0.1.0.0
+Synopsis:            A CSV parsing and encoding library
+Description:
+  A CSV parsing and encoding library optimized for ease of use and high
+  performance.
+Homepage:            https://github.com/tibbe/sea
+License:             BSD3
+License-file:        LICENSE
+Author:              Johan Tibell
+Maintainer:          johan.tibell@gmail.com
+Category:            Text, Web, CSV
+Build-type:          Simple
+Cabal-version:       >=1.2
+
+
+Library
+  Exposed-modules:     Data.Sea
+  
+  Build-depends:       attoparsec,
+                       base,
+                       vector
+  
+  -- Other-modules:       
