@@ -42,7 +42,7 @@ decode :: FromRecord a => L.ByteString -> Maybe (Vector a)
 decode = decodeWith csv (parse . traverse parseRecord)
 
 -- | Efficiently serialize CVS records as a lazy 'L.ByteString'.
-encode :: Vector Record -> L.ByteString
+encode :: Csv -> L.ByteString
 encode = undefined
 
 -- | A type that can be converted from a single CSV record, with the
