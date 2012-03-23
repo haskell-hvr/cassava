@@ -16,8 +16,7 @@ Cabal-version:       >=1.2
 
 Library
   Exposed-modules:     Data.Ceason
-
-  Other-modules:       Data.Ceason.Types
+                       Data.Ceason.Types
 
   Build-depends:       attoparsec,
                        base,
