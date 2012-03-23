@@ -1,14 +1,29 @@
 {-# LANGUAGE Rank2Types #-}
 
 module Data.Ceason.Types
-    ( Parser
+    (
+    -- * Core CSV types
+      Csv
+    , Record
+    , Field
+    , Parser
     , Result(..)
     , parse
     ) where
 
 import Control.Applicative
 import Control.Monad
+import qualified Data.ByteString as S
 import Data.Monoid
+import Data.Vector (Vector)
+
+type Csv = Vector Record
+
+-- | A record corresponds to a single line in a CSV file.
+type Record = Vector Field
+
+-- | A single field within a record.
+type Field = S.ByteString
 
 -- | The result of running a 'Parser'.
 data Result a = Error String

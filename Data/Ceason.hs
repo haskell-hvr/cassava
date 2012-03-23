@@ -8,6 +8,7 @@ module Data.Ceason
     , encode
 
     -- * Core CSV types
+    , Csv
     , Record
     , Field
 
@@ -20,112 +21,29 @@ module Data.Ceason
     , (.!)
     ) where
 
-import Blaze.ByteString.Builder (fromByteString, toByteString)
-import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
 import Control.Applicative
-import Data.Attoparsec.Char8 hiding (Parser, Result, parse)
-import qualified Data.Attoparsec as A
-import qualified Data.Attoparsec.Lazy as L
-import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Unsafe as S
-import Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import Data.Traversable
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
-import Data.Word
 import Prelude hiding (takeWhile)
 
+import Data.Ceason.Parser.Internal
 import Data.Ceason.Types
 
 -- | Efficiently deserialize CSV records from a lazy
 -- 'L.ByteString'. If this fails due to incomplete or invalid input,
 -- 'Nothing' is returned.
 decode :: FromRecord a => L.ByteString -> Maybe (Vector a)
-decode s =
-    case L.parse csv s of
-        L.Done _ v -> case parse (traverse parseRecord v) of
-            Success a -> Just a
-            _         -> Nothing
-        _          -> Nothing
+decode = decodeWith csv (parse . traverse parseRecord)
 
 -- | Efficiently serialize CVS records as a lazy 'L.ByteString'.
 encode :: Vector Record -> L.ByteString
 encode = undefined
-
-csv :: L.Parser (Vector Record)
-csv = do
-    vals <- record `sepBy` endOfLine
-    _ <- optional endOfLine
-    endOfInput
-    return (V.fromList (filterLastIfEmpty vals))
-  where
-    filterLastIfEmpty [] = []
-    filterLastIfEmpty [v]
-        | V.length v == 1 && (S.null (V.head v)) = []
-    filterLastIfEmpty (v:vs) = v : filterLastIfEmpty vs
-
-record :: L.Parser Record
-record = V.fromList <$> field `sepBy` comma
-
-field :: L.Parser Field
-field = escapedField <|> unescapedField
-
-escapedField :: L.Parser S.ByteString
-escapedField = do
-    _ <- dquote
-    -- The scan state is 'True' if the previous character was a double
-    -- quote.  We need to drop a trailing double quote left by scan.
-    s <- S.init <$> (A.scan False $ \s c -> if c == doubleQuote
-                                            then if s then Just False
-                                                 else Just True
-                                            else Just False)
-    if doubleQuote `S.elem` s
-        then case Z.parse unescape s of
-            Right r  -> return r
-            Left err -> fail err
-        else return s
-
--- TODO: Perhaps allow all possible bytes (except , and ").
-unescapedField :: L.Parser S.ByteString
-unescapedField = A.takeWhile isTextdata
-  where
-    isTextdata :: Word8 -> Bool
-    isTextdata c = c >= 0x20 && c <= 0x21 ||
-                   c >= 0x23 && c <= 0x2b ||
-                   c >= 0x2d && c <= 0x7e
-
-comma, dquote :: L.Parser Char
-comma = char ','
-dquote = char '"'
-
-unescape :: Z.Parser S.ByteString
-unescape = toByteString <$> go mempty where
-  go acc = do
-    h <- Z.takeWhile (/= doubleQuote)
-    let rest = do
-          start <- Z.take 2
-          if (S.unsafeHead start == doubleQuote &&
-              S.unsafeIndex start 1 == doubleQuote)
-              then go (acc `mappend` fromByteString h `mappend` fromChar '"')
-              else fail "invalid CSV escape sequence"
-    done <- Z.atEnd
-    if done
-      then return (acc `mappend` fromByteString h)
-      else rest
-
-doubleQuote :: Word8
-doubleQuote = 34
-
--- | A record corresponds to a single line in a CSV file.
-type Record = Vector Field
-
--- | A single field within a record.
-type Field = S.ByteString
 
 -- | A type that can be converted from a single CSV record, with the
 -- possibility of failure.

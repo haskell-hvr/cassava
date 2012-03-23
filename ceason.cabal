@@ -18,6 +18,8 @@ Library
   Exposed-modules:     Data.Ceason
                        Data.Ceason.Types
 
+  Other-modules:       Data.Ceason.Parser.Internal
+
   Build-depends:       attoparsec,
                        base,
                        blaze-builder,
