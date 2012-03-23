@@ -23,6 +23,7 @@ Library
                        base,
                        blaze-builder,
                        bytestring,
+                       text,
                        vector
 
   ghc-options:         -Wall -O2
