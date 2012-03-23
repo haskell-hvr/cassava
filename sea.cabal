@@ -16,9 +16,13 @@ Cabal-version:       >=1.2
 
 Library
   Exposed-modules:     Data.Sea
-  
+
+  Other-modules:       Data.Sea.Types
+
   Build-depends:       attoparsec,
                        base,
+                       blaze-builder,
+                       bytestring,
                        vector
-  
-  -- Other-modules:       
+
+  ghc-options:         -Wall -O2
