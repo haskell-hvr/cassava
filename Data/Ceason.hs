@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns, Rank2Types #-}
 
 -- | A RFC 4180 compliant CSV parsing and encodig module.
-module Data.Sea
+module Data.Ceason
     (
     -- * Encoding and decoding
       decode
@@ -36,7 +36,7 @@ import qualified Data.Vector as V
 import Data.Word
 import Prelude hiding (takeWhile)
 
-import Data.Sea.Types
+import Data.Ceason.Types
 
 -- | Efficiently deserialize CSV records from a lazy
 -- 'L.ByteString'. If this fails due to incomplete or invalid input,

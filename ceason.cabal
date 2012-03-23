@@ -1,4 +1,4 @@
-Name:                sea
+Name:                ceason
 Version:             0.1.0.0
 Synopsis:            A CSV parsing and encoding library
 Description:
@@ -15,9 +15,9 @@ Cabal-version:       >=1.2
 
 
 Library
-  Exposed-modules:     Data.Sea
+  Exposed-modules:     Data.Ceason
 
-  Other-modules:       Data.Sea.Types
+  Other-modules:       Data.Ceason.Types
 
   Build-depends:       attoparsec,
                        base,
