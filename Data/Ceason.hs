@@ -51,6 +51,23 @@ encode = undefined
 -- When writing an instance, use 'empty', 'mzero', or 'fail' to make a
 -- conversion fail, e.g. if a 'Record' has the wrong number of
 -- columns.
+--
+-- Given this example data:
+--
+-- > John,56
+-- > Jane,55
+--
+-- here's an example type and instance:
+--
+-- @data Person = Person { name :: Text, age :: Int }
+--
+-- instance FromRecord Person where
+--     parseRecord v
+--         | 'V.length' v == 2 = Person '<$>'
+--                           v '.!' 0 '<*>'
+--                           v '.!' 1
+--         | otherwise     = mzero
+-- @
 class FromRecord a where
     parseRecord :: Record -> Parser a
 
@@ -142,11 +159,32 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e, FromF
           where
             n = V.length v
 
+instance FromField a => FromRecord [a] where
+    parseRecord = traverse parseField . V.toList
+
+instance FromField a => FromRecord (V.Vector a) where
+    parseRecord = traverse parseField
+
 -- | A type that can be converted from a single CSV field, with the
 -- possibility of failure.
 --
 -- When writing an instance, use 'empty', 'mzero', or 'fail' to make a
--- conversion fail, e.g. if a 'Field' has the wrong type.
+-- conversion fail, e.g. if a 'Field' can't be converted to the given
+-- type.
+--
+-- Example type and instance:
+--
+-- @{-\# LANGUAGE OverloadedStrings \#-}
+--
+-- data Color = Red | Green | Blue
+--
+-- instance FromField Color where
+--     parseField s
+--         | s == \"R\"  = pure Red
+--         | s == \"G\"  = pure Green
+--         | s == \"B\"  = pure Blue
+--         | otherwise = mzero
+-- @
 class FromField a where
     parseField :: Field -> Parser a
 
@@ -162,7 +200,7 @@ instance FromField T.Text where
 instance FromField LT.Text where
     parseField s = pure (LT.fromChunks [T.decodeUtf8 s])
 
--- | Retrieve the /i/th field in the given record.  The result is
+-- | Retrieve the /n/th field in the given record.  The result is
 -- 'empty' if the value cannot be converted to the desired type.
 (.!) :: FromField a => Record -> Int -> Parser a
 v .! idx = parseField (v ! idx)

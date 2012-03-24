@@ -17,6 +17,8 @@ import qualified Data.ByteString as S
 import Data.Monoid
 import Data.Vector (Vector)
 
+-- | CSV data represented as a Haskell vector of vector of
+-- bytestrings.
 type Csv = Vector Record
 
 -- | A record corresponds to a single line in a CSV file.
