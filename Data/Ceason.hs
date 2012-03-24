@@ -22,15 +22,19 @@ module Data.Ceason
     ) where
 
 import Control.Applicative
-import Data.Attoparsec.Char8 (number, parseOnly)
+import Data.Attoparsec.Char8 (double, number, parseOnly)
 import qualified Data.ByteString as S
+import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
+import Data.Int
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import Data.Traversable
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
+import Data.Word
+import GHC.Float (double2Float)
 import Prelude hiding (takeWhile)
 
 import Data.Ceason.Parser.Internal
@@ -189,20 +193,86 @@ instance FromField a => FromRecord (V.Vector a) where
 class FromField a where
     parseField :: Field -> Parser a
 
-instance FromField S.ByteString where
-    parseField = pure
+instance FromField Char where
+    parseField s
+        | T.compareLength t 1 == EQ = pure (T.head t)
+        | otherwise = fail $ "when expecting a Char, encountered \"" ++
+                              B8.unpack s ++ "\" instead"
+      where t = T.decodeUtf8 s
+    {-# INLINE parseField #-}
 
-instance FromField L.ByteString where
-    parseField s = pure (L.fromChunks [s])
+instance FromField Double where
+    parseField = parseDouble
+    {-# INLINE parseField #-}
 
-instance FromField T.Text where
-    parseField = pure . T.decodeUtf8
+instance FromField Float where
+    parseField s = double2Float <$> parseDouble s
+    {-# INLINE parseField #-}
 
-instance FromField LT.Text where
-    parseField s = pure (LT.fromChunks [T.decodeUtf8 s])
+parseDouble :: S.ByteString -> Parser Double
+parseDouble s = case parseOnly double s of
+    Left err -> fail err
+    Right n  -> pure n
+{-# INLINE parseDouble #-}
 
 instance FromField Int where
     parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Integer where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Int8 where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Int16 where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Int32 where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Int64 where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Word where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Word8 where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Word16 where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Word32 where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField Word64 where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+instance FromField S.ByteString where
+    parseField = pure
+    {-# INLINE parseField #-}
+
+instance FromField L.ByteString where
+    parseField s = pure (L.fromChunks [s])
+    {-# INLINE parseField #-}
+
+instance FromField T.Text where
+    parseField = pure . T.decodeUtf8
+    {-# INLINE parseField #-}
+
+instance FromField LT.Text where
+    parseField s = pure (LT.fromChunks [T.decodeUtf8 s])
     {-# INLINE parseField #-}
 
 parseIntegral :: Integral a => S.ByteString -> Parser a
