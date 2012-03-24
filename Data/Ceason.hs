@@ -22,6 +22,7 @@ module Data.Ceason
     ) where
 
 import Control.Applicative
+import Data.Attoparsec.Char8 (number, parseOnly)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
@@ -199,6 +200,16 @@ instance FromField T.Text where
 
 instance FromField LT.Text where
     parseField s = pure (LT.fromChunks [T.decodeUtf8 s])
+
+instance FromField Int where
+    parseField = parseIntegral
+    {-# INLINE parseField #-}
+
+parseIntegral :: Integral a => S.ByteString -> Parser a
+parseIntegral s = case parseOnly number s of
+    Left err -> fail err
+    Right n  -> pure (floor n)
+{-# INLINE parseIntegral #-}
 
 -- | Retrieve the /n/th field in the given record.  The result is
 -- 'empty' if the value cannot be converted to the desired type.
