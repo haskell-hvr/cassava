@@ -9,6 +9,8 @@ module Data.Ceason.Types
     , Parser
     , Result(..)
     , parse
+    , parseEither
+    , parseMaybe
     ) where
 
 import Control.Applicative
@@ -132,3 +134,12 @@ apP d e = do
 parse :: Parser a -> Result a
 parse p = runParser p Error Success
 {-# INLINE parse #-}
+
+-- | Run a 'Parser' with a 'Maybe' result type.
+parseMaybe :: (a -> Parser b) -> a -> Maybe b
+parseMaybe m v = runParser (m v) (const Nothing) Just
+{-# INLINE parseMaybe #-}
+
+-- | Run a 'Parser' with an 'Either' result type.
+parseEither :: (a -> Parser b) -> a -> Either String b
+parseEither m v = runParser (m v) Left Right

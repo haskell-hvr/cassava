@@ -11,7 +11,7 @@ Author:              Johan Tibell
 Maintainer:          johan.tibell@gmail.com
 Category:            Text, Web, CSV
 Build-type:          Simple
-Cabal-version:       >=1.2
+Cabal-version:       >=1.8
 
 
 Library
@@ -28,3 +28,14 @@ Library
                        vector
 
   ghc-options:         -Wall -O2
+
+Test-suite unit-tests
+  Type: exitcode-stdio-1.0
+  Main-is: UnitTests.hs
+  Build-depends:       base,
+                       bytestring,
+                       ceason,
+                       HUnit,
+                       test-framework,
+                       test-framework-hunit
+  hs-source-dirs: tests
