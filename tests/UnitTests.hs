@@ -5,6 +5,7 @@ module Main
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.Char8 as BL8
 import Data.Traversable
 import qualified Data.Vector as V
 import Test.HUnit
@@ -18,19 +19,19 @@ import Data.Ceason.Types
 readTest :: BL.ByteString -> [[B.ByteString]] -> Assertion
 readTest input expected = case decode input of
     Right r  -> r @=? V.fromList (map V.fromList expected)
-    Left err -> assertFailure $ "parse failure: " ++ err
+    Left err -> assertFailure $
+                "      input: " ++ show (BL8.unpack input) ++ "\n" ++
+                "parse error: " ++ err
 
 testReadOddInputs :: Assertion
 testReadOddInputs = do
     readTest "" []
-    readTest "''" [[]]
 
 testReadEol :: Assertion
 testReadEol = do
-    -- readTest "a,b" [["a","b"]]
-    -- readTest "a,b\n" [["a","b"]]
-    -- readTest "a,b\r\n" [["a","b"]]
-    readTest "a,b\r" [["a","b"]]
+    readTest "a,b" [["a","b"]]
+    readTest "a,b\n" [["a","b"]]
+    readTest "a,b\r\n" [["a","b"]]
 
 allTests :: [TF.Test]
 allTests =
