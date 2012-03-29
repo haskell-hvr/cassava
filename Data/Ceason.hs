@@ -168,7 +168,8 @@ instance (ToField a, ToField b, ToField c, ToField d, ToField e) =>
     toRecord (a, b, c, d, e) = V.fromList [
         toField a, toField b, toField c, toField d, toField e]
 
-instance (FromField a, FromField b, FromField c, FromField d, FromField e, FromField f) =>
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f) =>
          FromRecord (a, b, c, d, e, f) where
     parseRecord v
         | n == 6    = (,,,,,) <$> parseField (V.unsafeIndex v 0)
@@ -187,7 +188,8 @@ instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f) =>
     toRecord (a, b, c, d, e, f) = V.fromList [
         toField a, toField b, toField c, toField d, toField e, toField f]
 
-instance (FromField a, FromField b, FromField c, FromField d, FromField e, FromField f, FromField g) =>
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g) =>
          FromRecord (a, b, c, d, e, f, g) where
     parseRecord v
         | n == 7    = (,,,,,,) <$> parseField (V.unsafeIndex v 0)
@@ -202,7 +204,8 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e, FromF
           where
             n = V.length v
 
-instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f, ToField g) =>
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g) =>
          ToRecord (a, b, c, d, e, f, g) where
     toRecord (a, b, c, d, e, f, g) = V.fromList [
         toField a, toField b, toField c, toField d, toField e, toField f,
