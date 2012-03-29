@@ -32,6 +32,7 @@ import Data.Int
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Encoding as LT
 import Data.Traversable
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
@@ -310,17 +311,33 @@ instance FromField S.ByteString where
     parseField = pure
     {-# INLINE parseField #-}
 
+instance ToField S.ByteString where
+    toField = id
+    {-# INLINE toField #-}
+
 instance FromField L.ByteString where
     parseField s = pure (L.fromChunks [s])
     {-# INLINE parseField #-}
+
+instance ToField L.ByteString where
+    toField = S.concat . L.toChunks
+    {-# INLINE toField #-}
 
 instance FromField T.Text where
     parseField = pure . T.decodeUtf8
     {-# INLINE parseField #-}
 
+instance ToField T.Text where
+    toField = T.encodeUtf8
+    {-# INLINE toField #-}
+
 instance FromField LT.Text where
     parseField s = pure (LT.fromChunks [T.decodeUtf8 s])
     {-# INLINE parseField #-}
+
+instance ToField LT.Text where
+    toField = S.concat . L.toChunks . LT.encodeUtf8
+    {-# INLINE toField #-}
 
 parseIntegral :: Integral a => S.ByteString -> Parser a
 parseIntegral s = case parseOnly number s of
