@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns, Rank2Types #-}
 
--- | A RFC 4180 compliant CSV parsing and encodig module.
+-- | RFC 4180 compliant CSV parsing and encodig.
 module Data.Ceason
     (
     -- * Encoding and decoding
