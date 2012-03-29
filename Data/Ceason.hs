@@ -40,6 +40,7 @@ import Data.Word
 import GHC.Float (double2Float)
 import Prelude hiding (takeWhile)
 
+import Data.Ceason.Encode
 import Data.Ceason.Parser.Internal
 import Data.Ceason.Types
 
@@ -267,6 +268,10 @@ instance FromField Int where
     parseField = parseIntegral
     {-# INLINE parseField #-}
 
+instance ToField Int where
+    toField = decimal
+    {-# INLINE toField #-}
+
 instance FromField Integer where
     parseField = parseIntegral
     {-# INLINE parseField #-}
@@ -275,17 +280,33 @@ instance FromField Int8 where
     parseField = parseIntegral
     {-# INLINE parseField #-}
 
+instance ToField Int8 where
+    toField = decimal
+    {-# INLINE toField #-}
+
 instance FromField Int16 where
     parseField = parseIntegral
     {-# INLINE parseField #-}
+
+instance ToField Int16 where
+    toField = decimal
+    {-# INLINE toField #-}
 
 instance FromField Int32 where
     parseField = parseIntegral
     {-# INLINE parseField #-}
 
+instance ToField Int32 where
+    toField = decimal
+    {-# INLINE toField #-}
+
 instance FromField Int64 where
     parseField = parseIntegral
     {-# INLINE parseField #-}
+
+instance ToField Int64 where
+    toField = decimal
+    {-# INLINE toField #-}
 
 instance FromField Word where
     parseField = parseIntegral
