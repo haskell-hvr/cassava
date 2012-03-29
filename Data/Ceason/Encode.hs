@@ -1,4 +1,15 @@
 {-# LANGUAGE MagicHash #-}
+
+-- Module:      Data.Ceason.Encode
+-- Copyright:   (c) 2011 MailRank, Inc.
+--              (c) 2012 Johan Tibell
+-- License:     BSD3
+-- Maintainer:  Johan Tibell <johan.tibell@gmail.com>
+-- Stability:   experimental
+-- Portability: portable
+--
+-- Efficiently convert integers and floating point numbers to byte
+-- strings.
 module Data.Ceason.Encode
     ( decimal
     ) where
