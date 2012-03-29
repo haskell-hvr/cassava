@@ -29,6 +29,7 @@ decimal :: Integral a => a -> B.ByteString
 {-# SPECIALIZE decimal :: Word16 -> B.ByteString #-}
 {-# SPECIALIZE decimal :: Word32 -> B.ByteString #-}
 {-# SPECIALIZE decimal :: Word64 -> B.ByteString #-}
+{-# SPECIALIZE decimal :: Integer -> B.ByteString #-}
 decimal = toByteString . decimal_
 
 decimal_ :: Integral a => a -> Builder
@@ -42,6 +43,7 @@ decimal_ :: Integral a => a -> Builder
 {-# SPECIALIZE decimal_ :: Word16 -> Builder #-}
 {-# SPECIALIZE decimal_ :: Word32 -> Builder #-}
 {-# SPECIALIZE decimal_ :: Word64 -> Builder #-}
+{-# SPECIALIZE decimal_ :: Integer -> Builder #-}
 decimal_ i
     | i < 0     = fromWord8 minus <> go (-i)
     | otherwise = go i
