@@ -1,5 +1,3 @@
-{-# LANGUAGE MagicHash #-}
-
 -- Module:      Data.Ceason.Encode
 -- Copyright:   (c) 2011 MailRank, Inc.
 --              (c) 2012 Johan Tibell
@@ -15,12 +13,10 @@ module Data.Ceason.Encode
     ) where
 
 import Blaze.ByteString.Builder
-import Blaze.ByteString.Builder.Char8
 import qualified Data.ByteString as B
 import Data.Int
 import Data.Monoid
 import Data.Word
-import GHC.Exts
 
 decimal :: Integral a => a -> B.ByteString
 {-# SPECIALIZE decimal :: Int -> B.ByteString #-}
@@ -47,16 +43,21 @@ decimal_ :: Integral a => a -> Builder
 {-# SPECIALIZE decimal_ :: Word32 -> Builder #-}
 {-# SPECIALIZE decimal_ :: Word64 -> Builder #-}
 decimal_ i
-    | i < 0     = fromChar '-' <> go (-i)
+    | i < 0     = fromWord8 minus <> go (-i)
     | otherwise = go i
   where
     go n | n < 10    = digit n
-         | otherwise = go (n `quot` 10) <> digit (n `rem` 10)
+         | otherwise = go q <> digit r
+      where (q, r) = n `quotRem` 10
+
+minus, zero :: Word8
+minus = 45
+zero = 48
 
 digit :: Integral a => a -> Builder
-digit n = fromChar $! i2d (fromIntegral n)
+digit n = fromWord8 $! i2w (fromIntegral n)
 {-# INLINE digit #-}
 
-i2d :: Int -> Char
-i2d (I# i#) = C# (chr# (ord# '0'# +# i#))
-{-# INLINE i2d #-}
+i2w :: Int -> Word8
+i2w i = zero + fromIntegral i
+{-# INLINE i2w #-}
