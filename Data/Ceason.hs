@@ -25,7 +25,7 @@ module Data.Ceason
 
 import Control.Applicative
 import Data.Attoparsec.Char8 (double, number, parseOnly)
-import qualified Data.ByteString as S
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import Data.Int
@@ -257,7 +257,7 @@ instance FromField Float where
     parseField s = double2Float <$> parseDouble s
     {-# INLINE parseField #-}
 
-parseDouble :: S.ByteString -> Parser Double
+parseDouble :: B.ByteString -> Parser Double
 parseDouble s = case parseOnly double s of
     Left err -> fail err
     Right n  -> pure n
@@ -307,11 +307,11 @@ instance FromField Word64 where
     parseField = parseIntegral
     {-# INLINE parseField #-}
 
-instance FromField S.ByteString where
+instance FromField B.ByteString where
     parseField = pure
     {-# INLINE parseField #-}
 
-instance ToField S.ByteString where
+instance ToField B.ByteString where
     toField = id
     {-# INLINE toField #-}
 
@@ -320,7 +320,7 @@ instance FromField L.ByteString where
     {-# INLINE parseField #-}
 
 instance ToField L.ByteString where
-    toField = S.concat . L.toChunks
+    toField = B.concat . L.toChunks
     {-# INLINE toField #-}
 
 instance FromField T.Text where
@@ -336,10 +336,10 @@ instance FromField LT.Text where
     {-# INLINE parseField #-}
 
 instance ToField LT.Text where
-    toField = S.concat . L.toChunks . LT.encodeUtf8
+    toField = B.concat . L.toChunks . LT.encodeUtf8
     {-# INLINE toField #-}
 
-parseIntegral :: Integral a => S.ByteString -> Parser a
+parseIntegral :: Integral a => B.ByteString -> Parser a
 parseIntegral s = case parseOnly number s of
     Left err -> fail err
     Right n  -> pure (floor n)
