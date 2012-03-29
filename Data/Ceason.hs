@@ -16,6 +16,8 @@ module Data.Ceason
     , Only(..)
     , FromRecord(..)
     , FromField(..)
+    , ToRecord(..)
+    , ToField(..)
 
     -- * Accessors
     , (.!)
@@ -50,6 +52,9 @@ decode = decodeWith csv (parse . traverse parseRecord)
 encode :: Csv -> L.ByteString
 encode = undefined
 
+------------------------------------------------------------------------
+-- Type conversion
+
 -- | A type that can be converted from a single CSV record, with the
 -- possibility of failure.
 --
@@ -83,6 +88,12 @@ newtype Only a = Only {
       fromOnly :: a
     } deriving (Eq, Ord, Read, Show)
 
+class ToRecord a where
+    toRecord :: a -> Record
+
+class ToField a where
+    toField :: a -> Field
+
 instance FromField a => FromRecord (Only a) where
     parseRecord v
         | n == 1    = Only <$> parseField (V.unsafeIndex v 0)
@@ -90,6 +101,11 @@ instance FromField a => FromRecord (Only a) where
                         show n ++ " into a 'Only'"
           where
             n = V.length v
+
+-- TODO: Check if we want all toRecord conversions to be stricter.
+
+instance ToField a => ToRecord (Only a) where
+    toRecord = V.singleton . toField . fromOnly
 
 instance (FromField a, FromField b) => FromRecord (a, b) where
     parseRecord v
@@ -100,6 +116,9 @@ instance (FromField a, FromField b) => FromRecord (a, b) where
           where
             n = V.length v
 
+instance (ToField a, ToField b) => ToRecord (a, b) where
+    toRecord (a, b) = V.fromList [toField a, toField b]
+
 instance (FromField a, FromField b, FromField c) => FromRecord (a, b, c) where
     parseRecord v
         | n == 3    = (,,) <$> parseField (V.unsafeIndex v 0)
@@ -109,6 +128,10 @@ instance (FromField a, FromField b, FromField c) => FromRecord (a, b, c) where
                         show n ++ " into a 3-tuple"
           where
             n = V.length v
+
+instance (ToField a, ToField b, ToField c) =>
+         ToRecord (a, b, c) where
+    toRecord (a, b, c) = V.fromList [toField a, toField b, toField c]
 
 instance (FromField a, FromField b, FromField c, FromField d) =>
          FromRecord (a, b, c, d) where
@@ -122,6 +145,11 @@ instance (FromField a, FromField b, FromField c, FromField d) =>
           where
             n = V.length v
 
+instance (ToField a, ToField b, ToField c, ToField d) =>
+         ToRecord (a, b, c, d) where
+    toRecord (a, b, c, d) = V.fromList [
+        toField a, toField b, toField c, toField d]
+
 instance (FromField a, FromField b, FromField c, FromField d, FromField e) =>
          FromRecord (a, b, c, d, e) where
     parseRecord v
@@ -134,6 +162,11 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e) =>
                         show n ++ " into a 5-tuple"
           where
             n = V.length v
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e) =>
+         ToRecord (a, b, c, d, e) where
+    toRecord (a, b, c, d, e) = V.fromList [
+        toField a, toField b, toField c, toField d, toField e]
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e, FromField f) =>
          FromRecord (a, b, c, d, e, f) where
@@ -149,6 +182,11 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e, FromF
           where
             n = V.length v
 
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f) =>
+         ToRecord (a, b, c, d, e, f) where
+    toRecord (a, b, c, d, e, f) = V.fromList [
+        toField a, toField b, toField c, toField d, toField e, toField f]
+
 instance (FromField a, FromField b, FromField c, FromField d, FromField e, FromField f, FromField g) =>
          FromRecord (a, b, c, d, e, f, g) where
     parseRecord v
@@ -163,6 +201,12 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e, FromF
                         show n ++ " into a 7-tuple"
           where
             n = V.length v
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f, ToField g) =>
+         ToRecord (a, b, c, d, e, f, g) where
+    toRecord (a, b, c, d, e, f, g) = V.fromList [
+        toField a, toField b, toField c, toField d, toField e, toField f,
+        toField g]
 
 instance FromField a => FromRecord [a] where
     parseRecord = traverse parseField . V.toList
@@ -280,6 +324,9 @@ parseIntegral s = case parseOnly number s of
     Left err -> fail err
     Right n  -> pure (floor n)
 {-# INLINE parseIntegral #-}
+
+------------------------------------------------------------------------
+-- Constructors and accessors
 
 -- | Retrieve the /n/th field in the given record.  The result is
 -- 'empty' if the value cannot be converted to the desired type.
