@@ -7,6 +7,8 @@ Description:
 Homepage:            https://github.com/tibbe/sea
 License:             BSD3
 License-file:        LICENSE
+Copyright:           (c) 2012 Johan Tibell
+                     (c) 2011 MailRank, Inc.
 Author:              Johan Tibell
 Maintainer:          johan.tibell@gmail.com
 Category:            Text, Web, CSV
@@ -18,7 +20,8 @@ Library
   Exposed-modules:     Data.Ceason
                        Data.Ceason.Types
 
-  Other-modules:       Data.Ceason.Parser.Internal
+  Other-modules:       Data.Ceason.Encode
+                       Data.Ceason.Parser.Internal
 
   Build-depends:       attoparsec,
                        base,
