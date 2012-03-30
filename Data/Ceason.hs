@@ -254,9 +254,17 @@ instance FromField Double where
     parseField = parseDouble
     {-# INLINE parseField #-}
 
+instance ToField Double where
+    toField = realFloat
+    {-# INLINE toField #-}
+
 instance FromField Float where
     parseField s = double2Float <$> parseDouble s
     {-# INLINE parseField #-}
+
+instance ToField Float where
+    toField = realFloat
+    {-# INLINE toField #-}
 
 parseDouble :: B.ByteString -> Parser Double
 parseDouble s = case parseOnly double s of
