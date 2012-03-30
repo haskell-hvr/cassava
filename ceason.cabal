@@ -22,6 +22,7 @@ Library
 
   Other-modules:       Data.Ceason.Encode
                        Data.Ceason.Parser.Internal
+                       Data.Ceason.Types.Internal
 
   Build-depends:       attoparsec,
                        base,
