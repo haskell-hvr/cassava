@@ -216,8 +216,14 @@ instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
 instance FromField a => FromRecord [a] where
     parseRecord = traverse parseField . V.toList
 
+instance ToField a => ToRecord [a] where
+    toRecord = V.fromList . map toField
+
 instance FromField a => FromRecord (V.Vector a) where
     parseRecord = traverse parseField
+
+instance ToField a => ToRecord (Vector a) where
+    toRecord = V.map toField
 
 -- | A type that can be converted from a single CSV field, with the
 -- possibility of failure.
