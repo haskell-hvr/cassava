@@ -233,6 +233,10 @@ instance FromField Char where
       where t = T.decodeUtf8 s
     {-# INLINE parseField #-}
 
+instance ToField Char where
+    toField = T.encodeUtf8 . T.singleton
+    {-# INLINE toField #-}
+
 instance FromField Double where
     parseField = parseDouble
     {-# INLINE parseField #-}
@@ -266,6 +270,10 @@ instance ToField Int where
 instance FromField Integer where
     parseField = parseIntegral
     {-# INLINE parseField #-}
+
+instance ToField Integer where
+    toField = decimal
+    {-# INLINE toField #-}
 
 instance FromField Int8 where
     parseField = parseIntegral
@@ -303,21 +311,43 @@ instance FromField Word where
     parseField = parseIntegral
     {-# INLINE parseField #-}
 
+instance ToField Word where
+    toField = decimal
+    {-# INLINE toField #-}
+
 instance FromField Word8 where
     parseField = parseIntegral
     {-# INLINE parseField #-}
+
+instance ToField Word8 where
+    toField = decimal
+    {-# INLINE toField #-}
 
 instance FromField Word16 where
     parseField = parseIntegral
     {-# INLINE parseField #-}
 
+instance ToField Word16 where
+    toField = decimal
+    {-# INLINE toField #-}
+
 instance FromField Word32 where
     parseField = parseIntegral
     {-# INLINE parseField #-}
 
+instance ToField Word32 where
+    toField = decimal
+    {-# INLINE toField #-}
+
 instance FromField Word64 where
     parseField = parseIntegral
     {-# INLINE parseField #-}
+
+instance ToField Word64 where
+    toField = decimal
+    {-# INLINE toField #-}
+
+-- TODO: Quote strings that contain quotes, commas, or newlines.
 
 instance FromField B.ByteString where
     parseField = pure
