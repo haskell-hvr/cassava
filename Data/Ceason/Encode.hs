@@ -13,9 +13,11 @@ module Data.Ceason.Encode
     ) where
 
 import Blaze.ByteString.Builder
+import Blaze.ByteString.Builder.Char8
 import qualified Data.ByteString.Lazy as L
 import Data.Monoid
 import qualified Data.Vector as V
+import Prelude hiding (unlines)
 
 import Data.Ceason.Types
 
@@ -24,6 +26,19 @@ import Data.Ceason.Types
 -- | Efficiently serialize CVS records as a lazy 'L.ByteString'.
 encode :: ToRecord a => V.Vector a -> L.ByteString
 encode = toLazyByteString
-         . mconcat
-         . map (fromLazyByteString . L.fromChunks . V.toList . toRecord)
+         . unlines
+         . map (mconcat . intersperse (fromChar ',') . map fromByteString
+                . V.toList . toRecord)
          . V.toList
+
+unlines :: [Builder] -> Builder
+unlines [] = mempty
+unlines (b:bs) = b <> fromString "\r\n" <> unlines bs
+
+intersperse :: Builder -> [Builder] -> [Builder]
+intersperse _   []      = []
+intersperse sep (x:xs)  = x : prependToAll sep xs
+
+prependToAll :: Builder -> [Builder] -> [Builder]
+prependToAll _   []     = []
+prependToAll sep (x:xs) = sep <> x : prependToAll sep xs
