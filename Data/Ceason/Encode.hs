@@ -38,21 +38,21 @@ decimal :: Integral a => a -> B.ByteString
 {-# SPECIALIZE decimal :: Word32 -> B.ByteString #-}
 {-# SPECIALIZE decimal :: Word64 -> B.ByteString #-}
 {-# SPECIALIZE decimal :: Integer -> B.ByteString #-}
-decimal = toByteString . decimal_
+decimal = toByteString . formatDecimal
 
-decimal_ :: Integral a => a -> Builder
-{-# SPECIALIZE decimal_ :: Int -> Builder #-}
-{-# SPECIALIZE decimal_ :: Int8 -> Builder #-}
-{-# SPECIALIZE decimal_ :: Int16 -> Builder #-}
-{-# SPECIALIZE decimal_ :: Int32 -> Builder #-}
-{-# SPECIALIZE decimal_ :: Int64 -> Builder #-}
-{-# SPECIALIZE decimal_ :: Word -> Builder #-}
-{-# SPECIALIZE decimal_ :: Word8 -> Builder #-}
-{-# SPECIALIZE decimal_ :: Word16 -> Builder #-}
-{-# SPECIALIZE decimal_ :: Word32 -> Builder #-}
-{-# SPECIALIZE decimal_ :: Word64 -> Builder #-}
-{-# SPECIALIZE decimal_ :: Integer -> Builder #-}
-decimal_ i
+formatDecimal :: Integral a => a -> Builder
+{-# SPECIALIZE formatDecimal :: Int -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Int8 -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Int16 -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Int32 -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Int64 -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Word -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Word8 -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Word16 -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Word32 -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Word64 -> Builder #-}
+{-# SPECIALIZE formatDecimal :: Integer -> Builder #-}
+formatDecimal i
     | i < 0     = minus <> go (-i)
     | otherwise = go i
   where
@@ -110,7 +110,7 @@ formatRealFloat fmt x
       doFmt (if e < 0 || e > 7 then Exponent else Fixed)
             (is,e)
      Exponent ->
-        let show_e' = decimal_ (e-1) in
+        let show_e' = formatDecimal (e-1) in
         case ds of
           [48]    -> fromString "0.0e0"
           [d]     -> fromWord8 d <> fromString ".0e" <> show_e'
