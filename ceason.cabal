@@ -24,7 +24,8 @@ Library
                        Data.Ceason.Parser.Internal
                        Data.Ceason.Types.Internal
 
-  Build-depends:       attoparsec,
+  Build-depends:       array,
+                       attoparsec,
                        base,
                        blaze-builder,
                        bytestring,
