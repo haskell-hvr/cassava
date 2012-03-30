@@ -18,10 +18,23 @@ import Data.Ceason.Types
 
 readTest :: BL.ByteString -> [[B.ByteString]] -> Assertion
 readTest input expected = case decode input of
-    Right r  -> r @=? V.fromList (map V.fromList expected)
+    Right r  -> V.fromList (map V.fromList expected) @=? r
     Left err -> assertFailure $
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
                 "parse error: " ++ err
+
+testRfc4180 :: Assertion
+testRfc4180 = readTest
+              (BL8.pack $
+               "#field1,field2,field3\n" ++
+               "\"aaa\",\"bb\n" ++  -- XXX: Fails on embedded newline
+               "b\",\"ccc\"\n" ++
+               "\"a,a\",\"b\"\"bb\",\"ccc\"\n" ++
+               "zzz,yyy,xxx\n")
+              [["#field1", "field2", "field3"],
+               ["aaa", "bb\nb", "ccc"],
+               ["a,a", "b\"bb", "ccc"],
+               ["zzz", "yyy", "xxx"]]
 
 testReadOddInputs :: Assertion
 testReadOddInputs = do
@@ -37,6 +50,7 @@ allTests :: [TF.Test]
 allTests =
   [ TF.testCase "readOddInputs" testReadOddInputs
   , TF.testCase "readEol" testReadEol
+  , TF.testCase "rfc4180" testRfc4180
   ]
 
 main :: IO ()
