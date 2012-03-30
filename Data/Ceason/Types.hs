@@ -9,6 +9,17 @@ module Data.Ceason.Types
     , parse
     , parseEither
     , parseMaybe
+
+    -- * Type conversion
+    , Only(..)
+    , FromRecord(..)
+    , FromField(..)
+    , ToRecord(..)
+    , ToField(..)
+
+    -- * Accessors
+    , (.!)
     ) where
 
+import Data.Ceason.Types.Class
 import Data.Ceason.Types.Internal
