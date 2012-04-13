@@ -24,11 +24,17 @@ readTest input expected = case decode input of
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
                 "parse error: " ++ err
 
+testSimple :: Assertion
+testSimple = readTest "a,b,c\n" [["a", "b", "c"]]
+
+testCrlf :: Assertion
+testCrlf = readTest "a,b\r\nc,d\r\n" [["a", "b"], ["c", "d"]]
+
 testRfc4180 :: Assertion
 testRfc4180 = readTest
               (BL8.pack $
                "#field1,field2,field3\n" ++
-               "\"aaa\",\"bb\n" ++  -- XXX: Fails on embedded newline
+               "\"aaa\",\"bb\n" ++
                "b\",\"ccc\"\n" ++
                "\"a,a\",\"b\"\"bb\",\"ccc\"\n" ++
                "zzz,yyy,xxx\n")
@@ -37,16 +43,23 @@ testRfc4180 = readTest
                ["a,a", "b\"bb", "ccc"],
                ["zzz", "yyy", "xxx"]]
 
-testReadEol :: Assertion
-testReadEol = do
-    readTest "a,b" [["a","b"]]
-    readTest "a,b\n" [["a","b"]]
-    readTest "a,b\r\n" [["a","b"]]
+testNoEol :: Assertion
+testNoEol = readTest "a,b,c" [["a", "b", "c"]]
+
+testBlankLine :: Assertion
+testBlankLine = readTest "a,b,c\n\nd,e,f\n\n" [["a", "b", "c"], ["d", "e", "f"]]
+
+testLeadingSpace :: Assertion
+testLeadingSpace = readTest " a,  b,   c\n" [[" a", "  b", "   c"]]
 
 allTests :: [TF.Test]
 allTests =
-    [ TF.testCase "readEol" testReadEol
+    [ TF.testCase "simple" testSimple
+    , TF.testCase "crlf" testCrlf
     , TF.testCase "rfc4180" testRfc4180
+    , TF.testCase "noEol" testNoEol
+    , TF.testCase "blankLine" testBlankLine
+    , TF.testCase "leadingSpace" testLeadingSpace
     ]
 
 main :: IO ()

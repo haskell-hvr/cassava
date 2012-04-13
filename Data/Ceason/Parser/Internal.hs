@@ -26,12 +26,8 @@ csv = do
     vals <- record `sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
-    return (V.fromList (filterLastIfEmpty vals))
-  where
-    filterLastIfEmpty [] = []
-    filterLastIfEmpty [v]
-        | V.length v == 1 && (S.null (V.head v)) = []
-    filterLastIfEmpty (v:vs) = v : filterLastIfEmpty vs
+    return (V.fromList (filter (not . blankLine) vals))
+  where blankLine v = V.length v == 1 && (S.null (V.head v))
 
 record :: AL.Parser Record
 record = V.fromList <$> field `sepBy1` comma
