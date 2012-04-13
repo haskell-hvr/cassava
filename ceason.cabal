@@ -18,14 +18,17 @@ Cabal-version:       >=1.8
 
 Library
   Exposed-modules:     Data.Ceason
+                       Data.Ceason.Encode
+                       Data.Ceason.Parser
                        Data.Ceason.Types
 
-  Other-modules:       Data.Ceason.Encode
+  Other-modules:       Data.Ceason.Encode.Internal
                        Data.Ceason.Parser.Internal
+                       Data.Ceason.Types.Class
                        Data.Ceason.Types.Internal
 
   Build-depends:       array,
-                       attoparsec,
+                       attoparsec >= 0.10.2,
                        base,
                        blaze-builder,
                        bytestring,
@@ -37,10 +40,13 @@ Library
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Main-is: UnitTests.hs
-  Build-depends:       base,
+  Build-depends:       attoparsec,
+                       base,
                        bytestring,
                        ceason,
                        HUnit,
                        test-framework,
-                       test-framework-hunit
+                       test-framework-hunit,
+                       vector
+
   hs-source-dirs: tests

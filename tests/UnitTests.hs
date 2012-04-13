@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main
     ( main
     ) where
@@ -36,10 +37,6 @@ testRfc4180 = readTest
                ["a,a", "b\"bb", "ccc"],
                ["zzz", "yyy", "xxx"]]
 
-testReadOddInputs :: Assertion
-testReadOddInputs = do
-    readTest "" []
-
 testReadEol :: Assertion
 testReadEol = do
     readTest "a,b" [["a","b"]]
@@ -48,10 +45,9 @@ testReadEol = do
 
 allTests :: [TF.Test]
 allTests =
-  [ TF.testCase "readOddInputs" testReadOddInputs
-  , TF.testCase "readEol" testReadEol
-  , TF.testCase "rfc4180" testRfc4180
-  ]
+    [ TF.testCase "readEol" testReadEol
+    , TF.testCase "rfc4180" testRfc4180
+    ]
 
 main :: IO ()
 main = defaultMain allTests
@@ -61,4 +57,4 @@ decode :: FromRecord a => BL.ByteString -> Either String (V.Vector a)
 decode s =
     case AL.parse csv s of
         AL.Done _ v     -> parseEither (traverse parseRecord) v
-        AL.Fail _ _ err -> Left err
+        AL.Fail left _ err -> Left $ err ++ ", got " ++ show (BL8.unpack left)

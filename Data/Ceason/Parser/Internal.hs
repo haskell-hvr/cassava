@@ -23,7 +23,7 @@ import Data.Ceason.Types
 
 csv :: AL.Parser Csv
 csv = do
-    vals <- record `sepBy` endOfLine  -- XXX: Eats one newline too many because record accepts empty input
+    vals <- record `sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
     return (V.fromList (filterLastIfEmpty vals))
@@ -34,10 +34,16 @@ csv = do
     filterLastIfEmpty (v:vs) = v : filterLastIfEmpty vs
 
 record :: AL.Parser Record
-record = V.fromList <$> field `sepBy` comma
+record = V.fromList <$> field `sepBy1` comma
 
 field :: AL.Parser Field
-field = escapedField <|> unescapedField
+field = do
+    mb <- A.peek
+    -- We purposely don't use <|> as we want to commit to the first
+    -- choice if we see a double quote.
+    case mb of
+        Just b | b == doubleQuote -> escapedField
+        _                         -> unescapedField
 
 escapedField :: AL.Parser S.ByteString
 escapedField = do
@@ -47,7 +53,8 @@ escapedField = do
     s <- S.init <$> (A.scan False $ \s c -> if c == doubleQuote
                                             then if s then Just False
                                                  else Just True
-                                            else Just False)
+                                            else if s then Nothing
+                                                 else Just False)
     if doubleQuote `S.elem` s
         then case Z.parse unescape s of
             Right r  -> return r
