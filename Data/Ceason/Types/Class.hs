@@ -347,14 +347,26 @@ instance ToField Word64 where
     toField = decimal
     {-# INLINE toField #-}
 
--- TODO: Quote strings that contain quotes, commas, or newlines.
+-- TODO: Optimize
+escape :: B.ByteString -> B.ByteString
+escape s
+    | B.find (\ b -> b == dquote || b == comma || b == nl) s == Nothing = s
+    | otherwise =
+        B.concat ["\"",
+                  B.concatMap
+                  (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
+                  "\""]
+  where
+    dquote = 34
+    comma  = 44
+    nl     = 10
 
 instance FromField B.ByteString where
     parseField = pure
     {-# INLINE parseField #-}
 
 instance ToField B.ByteString where
-    toField = id
+    toField = escape
     {-# INLINE toField #-}
 
 instance FromField L.ByteString where
@@ -362,7 +374,7 @@ instance FromField L.ByteString where
     {-# INLINE parseField #-}
 
 instance ToField L.ByteString where
-    toField = B.concat . L.toChunks
+    toField = toField . B.concat . L.toChunks
     {-# INLINE toField #-}
 
 instance FromField T.Text where
@@ -370,7 +382,7 @@ instance FromField T.Text where
     {-# INLINE parseField #-}
 
 instance ToField T.Text where
-    toField = T.encodeUtf8
+    toField = toField . T.encodeUtf8
     {-# INLINE toField #-}
 
 instance FromField LT.Text where
@@ -378,7 +390,7 @@ instance FromField LT.Text where
     {-# INLINE parseField #-}
 
 instance ToField LT.Text where
-    toField = B.concat . L.toChunks . LT.encodeUtf8
+    toField = toField . B.concat . L.toChunks . LT.encodeUtf8
     {-# INLINE toField #-}
 
 parseIntegral :: Integral a => B.ByteString -> Parser a
