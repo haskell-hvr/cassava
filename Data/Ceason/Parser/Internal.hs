@@ -19,7 +19,7 @@ import Data.Monoid
 import qualified Data.Vector as V
 import Data.Word
 
-import Data.Ceason.Types
+import Data.Ceason.Types hiding (record)
 
 csv :: AL.Parser Csv
 csv = do
@@ -34,7 +34,7 @@ record = V.fromList <$> field `sepBy1` comma
 
 field :: AL.Parser Field
 field = do
-    mb <- A.peek
+    mb <- A.peekWord8
     -- We purposely don't use <|> as we want to commit to the first
     -- choice if we see a double quote.
     case mb of

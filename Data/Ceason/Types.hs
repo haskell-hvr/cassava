@@ -3,6 +3,7 @@ module Data.Ceason.Types
     -- * Core CSV types
       Csv
     , Record
+    , NamedRecord
     , Field
     , Parser
     , Result(..)
@@ -13,12 +14,20 @@ module Data.Ceason.Types
     -- * Type conversion
     , Only(..)
     , FromRecord(..)
+    , BSMap(..)
+    , BSHashMap(..)
+    , FromNamedRecord(..)
+    , ToNamedRecord(..)
     , FromField(..)
     , ToRecord(..)
     , ToField(..)
 
     -- * Accessors
     , (.!)
+    , (.:)
+    , (.=)
+    , record
+    , namedRecord
     ) where
 
 import Data.Ceason.Types.Class

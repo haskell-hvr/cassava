@@ -5,6 +5,7 @@ module Data.Ceason.Types.Internal
     -- * Core CSV types
       Csv
     , Record
+    , NamedRecord
     , Field
     , Parser
     , Result(..)
@@ -16,6 +17,7 @@ module Data.Ceason.Types.Internal
 import Control.Applicative
 import Control.Monad
 import qualified Data.ByteString as S
+import qualified Data.HashMap.Strict as HM
 import Data.Monoid
 import Data.Vector (Vector)
 
@@ -25,6 +27,10 @@ type Csv = Vector Record
 
 -- | A record corresponds to a single line in a CSV file.
 type Record = Vector Field
+
+-- | A record corresponds to a single line in a CSV file, indexed by
+-- the column name rather than the column index.
+type NamedRecord = HM.HashMap S.ByteString S.ByteString
 
 -- | A single field within a record.
 type Field = S.ByteString

@@ -1,14 +1,23 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Data.Ceason.Types.Class
-    ( 
+    (
     -- * Type conversion
       Only(..)
     , FromRecord(..)
+    , BSMap(..)
+    , BSHashMap(..)
+    , FromNamedRecord(..)
+    , ToNamedRecord(..)
     , FromField(..)
     , ToRecord(..)
     , ToField(..)
 
     -- * Accessors
     , (.!)
+    , (.:)
+    , (.=)
+    , record
+    , namedRecord
     ) where
 
 import Control.Applicative
@@ -16,7 +25,9 @@ import Data.Attoparsec.Char8 (double, number, parseOnly)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
+import qualified Data.HashMap.Lazy as HM
 import Data.Int
+import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
@@ -33,6 +44,9 @@ import Data.Ceason.Types.Internal
 
 ------------------------------------------------------------------------
 -- Type conversion
+
+------------------------------------------------------------------------
+-- Index-based conversion
 
 -- | A type that can be converted from a single CSV record, with the
 -- possibility of failure.
@@ -67,11 +81,23 @@ newtype Only a = Only {
       fromOnly :: a
     } deriving (Eq, Ord, Read, Show)
 
+-- | A type that can be converted to a single CSV record.
+--
+-- An example type and instance:
+--
+-- @data Person = Person { name :: Text, age :: Int }
+--
+-- instance ToRecord Person where
+--     toRecord (Person name age) = record [
+--        toField name, toField age]
+-- @
+--
+-- Outputs data on this form:
+--
+-- > John,56
+-- > Jane,55
 class ToRecord a where
     toRecord :: a -> Record
-
-class ToField a where
-    toField :: a -> Field
 
 instance FromField a => FromRecord (Only a) where
     parseRecord v
@@ -199,8 +225,84 @@ instance ToField a => ToRecord [a] where
 instance FromField a => FromRecord (V.Vector a) where
     parseRecord = traverse parseField
 
+-- TODO: Check if this can give rise to overlapping instances.
 instance ToField a => ToRecord (Vector a) where
     toRecord = V.map toField
+
+------------------------------------------------------------------------
+-- Name-based conversion
+
+-- | A 'M.Map' keyed by 'B.ByteString' keys.
+--
+-- The primary use case of 'BSMap' is to decode a CSV file into a
+-- @'BSMap' 'B.ByteString' 'B.ByteString'@, which lets you process the
+-- CSV data without converting it to a more specific type.
+newtype BSMap a = BSMap {
+      fromBSMap :: M.Map B.ByteString a
+    }
+
+-- | A 'HM.HashMap' keyed by 'B.ByteString' keys.
+--
+-- The primary use case of 'BSHashMap' is to decode a CSV file into a
+-- @'BSHashMap' 'B.ByteString' 'B.ByteString'@, which lets you process
+-- the CSV data without converting it to a more specific type.
+newtype BSHashMap a = BSHashMap {
+      fromBSHashMap :: HM.HashMap B.ByteString a
+    }
+
+-- | A type that can be converted from a single CSV record, with the
+-- possibility of failure.
+--
+-- When writing an instance, use 'empty', 'mzero', or 'fail' to make a
+-- conversion fail, e.g. if a 'Record' has the wrong number of
+-- columns.
+--
+-- Given this example data:
+--
+-- > name,age
+-- > John,56
+-- > Jane,55
+--
+-- here's an example type and instance:
+--
+-- @{-\# LANGUAGE OverloadedStrings \#-}
+--
+-- data Person = Person { name :: Text, age :: Int }
+--
+-- instance FromRecord Person where
+--     parseNamedRecord m = Person '<$>'
+--                          m '.:' \"name\" '<*>'
+--                          m '.:' \"age\"
+-- @
+--
+-- Note the use of the @OverloadedStrings@ language extension which
+-- enables 'B8.ByteString' values to be written as string literals.
+class FromNamedRecord a where
+    parseNamedRecord :: NamedRecord -> Parser a
+
+-- | A type that can be converted to a single CSV record.
+--
+-- An example type and instance:
+--
+-- @data Person = Person { name :: Text, age :: Int }
+--
+-- instance ToRecord Person where
+--     toNamedRecord (Person name age) = 'namedRecord' [
+--        \"name\" '.=' name, \"age\" '.=' age]
+-- @
+class ToNamedRecord a where
+    toNamedRecord :: a -> NamedRecord
+
+instance FromField a => FromNamedRecord (BSMap a) where
+    parseNamedRecord m = BSMap . M.fromList <$>
+                         (traverse parseSnd $ HM.toList m)
+      where parseSnd (name, s) = (,) <$> pure name <*> parseField s
+
+instance FromField a => FromNamedRecord (BSHashMap a) where
+    parseNamedRecord m = BSHashMap <$> traverse (\ s -> parseField s) m
+
+------------------------------------------------------------------------
+-- Individual field conversion
 
 -- | A type that can be converted from a single CSV field, with the
 -- possibility of failure.
@@ -224,6 +326,9 @@ instance ToField a => ToRecord (Vector a) where
 -- @
 class FromField a where
     parseField :: Field -> Parser a
+
+class ToField a where
+    toField :: a -> Field
 
 instance FromField Char where
     parseField s
@@ -407,3 +512,27 @@ parseIntegral s = case parseOnly number s of
 (.!) :: FromField a => Record -> Int -> Parser a
 v .! idx = parseField (v ! idx)
 {-# INLINE (.!) #-}
+
+-- | Retrieve a field in the given record by name.  The result is
+-- 'empty' if the field is missing or if the value cannot be converted
+-- to the desired type.
+(.:) :: FromField a => NamedRecord -> B.ByteString -> Parser a
+m .: name = maybe (fail err) parseField $ HM.lookup name m
+  where err = "No field named " ++ B8.unpack name
+{-# INLINE (.:) #-}
+
+-- | Construct a pair from a name and a value.  For use with
+-- 'namedRecord'.
+(.=) :: ToField a => B.ByteString -> a -> (B.ByteString, B.ByteString)
+name .= val = (name, toField val)
+{-# INLINE (.=) #-}
+
+-- | Construct a record from a list of 'B.ByteString's.  Use 'toField'
+-- to convert values to 'B.ByteString's for use with 'record'.
+record :: [B.ByteString] -> Record
+record = V.fromList
+
+-- | Construct a named record from a list of name-value 'B.ByteString'
+-- pairs.  Use '.=' to construct such a pair from a name and a value.
+namedRecord :: [(B.ByteString, B.ByteString)] -> NamedRecord
+namedRecord = HM.fromList
