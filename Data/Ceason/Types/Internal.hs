@@ -5,8 +5,10 @@ module Data.Ceason.Types.Internal
     -- * Core CSV types
       Csv
     , Record
-    , NamedRecord
     , Field
+    , Header
+    , Name
+    , NamedRecord
     , Parser
     , Result(..)
     , parse
@@ -27,6 +29,10 @@ type Csv = Vector Record
 
 -- | A record corresponds to a single line in a CSV file.
 type Record = Vector Field
+
+type Header = Vector Name
+
+type Name = S.ByteString
 
 -- | A record corresponds to a single line in a CSV file, indexed by
 -- the column name rather than the column index.

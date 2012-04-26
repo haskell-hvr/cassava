@@ -5,31 +5,34 @@ module Data.Ceason
     (
     -- * Encoding and decoding
       decode
+    , decodeWithHeader
     , encode
 
     -- * Core CSV types
     , Csv
     , Record
-    , NamedRecord
     , Field
+    , Header
+    , Name
+    , NamedRecord
 
     -- * Type conversion
     -- $typeconversion
 
-    -- ** Index-based conversion
+    -- ** Index-based record conversion
     -- $indexbased
     , Only(..)
     , FromRecord(..)
     , ToRecord(..)
 
-    -- ** Name-based conversion
+    -- ** Name-based record conversion
     -- $namebased
     , BSMap(..)
     , BSHashMap(..)
     , FromNamedRecord(..)
     , ToNamedRecord(..)
 
-    -- ** Individual field conversion
+    -- ** Field conversion
     , FromField(..)
     , ToField(..)
 
@@ -41,6 +44,7 @@ module Data.Ceason
     , namedRecord
     ) where
 
+import Control.Applicative
 import qualified Data.ByteString.Lazy as L
 import Data.Traversable
 import Data.Vector (Vector)
@@ -75,3 +79,9 @@ import Data.Ceason.Types
 -- 'Nothing' is returned.
 decode :: FromRecord a => L.ByteString -> Maybe (Vector a)
 decode = decodeWith csv (parse . traverse parseRecord)
+
+decodeWithHeader :: FromNamedRecord a => L.ByteString
+                 -> Either String (Header, Vector a)
+decodeWithHeader =
+    decodeWithEither csvWithHeader
+    (\ (hdr, vs) -> (,) <$> pure hdr <*> (parse $ traverse parseNamedRecord vs))

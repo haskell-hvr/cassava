@@ -239,7 +239,7 @@ instance ToField a => ToRecord (Vector a) where
 -- CSV data without converting it to a more specific type.
 newtype BSMap a = BSMap {
       fromBSMap :: M.Map B.ByteString a
-    }
+    } deriving (Eq, Ord, Read, Show)
 
 -- | A 'HM.HashMap' keyed by 'B.ByteString' keys.
 --
@@ -248,7 +248,7 @@ newtype BSMap a = BSMap {
 -- the CSV data without converting it to a more specific type.
 newtype BSHashMap a = BSHashMap {
       fromBSHashMap :: HM.HashMap B.ByteString a
-    }
+    } deriving (Eq, Show)
 
 -- | A type that can be converted from a single CSV record, with the
 -- possibility of failure.

@@ -1,8 +1,11 @@
 module Data.Ceason.Parser.Internal
     ( csv
+    , csvWithHeader
+    , header
     , record
     , field
     , decodeWith
+    , decodeWithEither
     ) where
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
@@ -14,19 +17,45 @@ import qualified Data.Attoparsec.Lazy as AL
 import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.ByteString.Unsafe as S
+import qualified Data.HashMap.Strict as HM
 import Data.Monoid
 import qualified Data.Vector as V
 import Data.Word
 
-import Data.Ceason.Types hiding (record)
+import Data.Ceason.Types hiding (record, toNamedRecord)
 
 csv :: AL.Parser Csv
 csv = do
     vals <- record `sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
-    return (V.fromList (filter (not . blankLine) vals))
+    return (V.fromList (removeBlankLines vals))
+
+-- TODO: Rename headers to header everywhere.
+csvWithHeader :: AL.Parser (Header, V.Vector NamedRecord)
+csvWithHeader = do
+    hdr <- header
+    vals <- map (toNamedRecord hdr) . removeBlankLines <$>
+            record `sepBy1` endOfLine
+    _ <- optional endOfLine
+    endOfInput
+    return (hdr, V.fromList vals)
+
+toNamedRecord :: V.Vector S.ByteString -> Record -> NamedRecord
+toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
+
+-- | Parse a CSV header line, including the terminating line
+-- separator.
+header :: AL.Parser Header
+header = V.fromList <$> name `sepBy1` comma <* endOfLine
+
+name :: AL.Parser Field  -- TODO: Create Name type alias
+name = field
+
+removeBlankLines :: [Record] -> [Record]
+removeBlankLines = filter (not . blankLine)
   where blankLine v = V.length v == 1 && (S.null (V.head v))
 
 record :: AL.Parser Record
@@ -88,7 +117,7 @@ unescape = toByteString <$> go mempty where
 doubleQuote :: Word8
 doubleQuote = 34
 
-decodeWith :: AL.Parser Csv -> (Csv -> Result a) -> L.ByteString -> Maybe a
+decodeWith :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Maybe b
 decodeWith p to s =
     case AL.parse p s of
       AL.Done _ v -> case to v of
@@ -96,3 +125,12 @@ decodeWith p to s =
           _         -> Nothing
       _           -> Nothing
 {-# INLINE decodeWith #-}
+
+decodeWithEither :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Either String b
+decodeWithEither p to s =
+    case AL.parse p s of
+      AL.Done _ v -> case to v of
+          Success a -> Right a
+          Error msg -> Left msg
+      AL.Fail s _ msg  -> Left $ msg ++ " at: " ++ BL8.unpack s
+{-# INLINE decodeWithEither #-}
