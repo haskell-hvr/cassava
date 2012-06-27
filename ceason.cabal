@@ -47,8 +47,11 @@ Test-suite unit-tests
                        bytestring,
                        ceason,
                        HUnit,
+                       QuickCheck >= 2.0,
                        test-framework,
                        test-framework-hunit,
+                       test-framework-quickcheck2,
+                       text,
                        vector
 
   hs-source-dirs: tests
