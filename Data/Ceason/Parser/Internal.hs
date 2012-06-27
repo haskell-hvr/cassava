@@ -5,7 +5,6 @@ module Data.Ceason.Parser.Internal
     , record
     , field
     , decodeWith
-    , decodeWithEither
     ) where
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
@@ -33,7 +32,6 @@ csv = do
     endOfInput
     return (V.fromList (removeBlankLines vals))
 
--- TODO: Rename headers to header everywhere.
 csvWithHeader :: AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader = do
     hdr <- header
@@ -117,20 +115,12 @@ unescape = toByteString <$> go mempty where
 doubleQuote :: Word8
 doubleQuote = 34
 
-decodeWith :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Maybe b
+decodeWith :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Either String b
 decodeWith p to s =
     case AL.parse p s of
-      AL.Done _ v -> case to v of
-          Success a -> Just a
-          _         -> Nothing
-      _           -> Nothing
-{-# INLINE decodeWith #-}
-
-decodeWithEither :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Either String b
-decodeWithEither p to s =
-    case AL.parse p s of
-      AL.Done _ v -> case to v of
+      AL.Done _ v     -> case to v of
           Success a -> Right a
-          Error msg -> Left msg
-      AL.Fail s _ msg  -> Left $ msg ++ " at: " ++ BL8.unpack s
-{-# INLINE decodeWithEither #-}
+          Error msg -> Left $ "conversion error: " ++ msg
+      AL.Fail s _ msg -> Left $ "parse error (" ++ msg ++ ") at \"" ++
+                         show (BL8.unpack s) ++ "\""
+{-# INLINE decodeWith #-}

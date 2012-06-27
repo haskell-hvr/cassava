@@ -31,6 +31,10 @@ encode = toLazyByteString
                 . V.toList . toRecord)
          . V.toList
 
+-- TODO: Implement
+encodeWithHeader :: ToNamedRecord a => V.Vector a -> L.ByteString
+encodeWithHeader = undefined
+
 unlines :: [Builder] -> Builder
 unlines [] = mempty
 unlines (b:bs) = b <> fromString "\r\n" <> unlines bs
