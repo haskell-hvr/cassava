@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 module Main
     ( main
     ) where
@@ -87,11 +87,17 @@ instance Arbitrary T.Text where
 instance Arbitrary LT.Text where
     arbitrary = LT.fromChunks `fmap` arbitrary
 
+-- A single column with an empty string is indistinguishable from an
+-- empty line (which we will ignore.) We therefore encode at least two
+-- columns.
 roundTrip :: (Eq a, FromField a, ToField a) => a -> Bool
-roundTrip x = case decode (encode (V.singleton (Only x))) of
-    Right v 
-        | V.length v == 1 -> let (Only y) = v ! 0 in x == y
-    _        -> False
+roundTrip x = case decode (encode (V.singleton (x, dummy))) of
+    Right v | V.length v == 1 -> let (y, _ :: Char) = v ! 0 in x == y
+    _  -> False
+  where dummy = 'a'
+
+-- TODO: Right now we only encode ASCII properly. Should we support
+-- UTF-8? Arbitrary byte strings?
 
 conversionTests :: [TF.Test]
 conversionTests =
