@@ -339,7 +339,7 @@ instance FromField Char where
     {-# INLINE parseField #-}
 
 instance ToField Char where
-    toField = T.encodeUtf8 . T.singleton
+    toField = toField . T.encodeUtf8 . T.singleton
     {-# INLINE toField #-}
 
 instance FromField Double where
@@ -455,7 +455,8 @@ instance ToField Word64 where
 -- TODO: Optimize
 escape :: B.ByteString -> B.ByteString
 escape s
-    | B.find (\ b -> b == dquote || b == comma || b == nl) s == Nothing = s
+    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr) s ==
+      Nothing = s
     | otherwise =
         B.concat ["\"",
                   B.concatMap
@@ -465,6 +466,7 @@ escape s
     dquote = 34
     comma  = 44
     nl     = 10
+    cr     = 13
 
 instance FromField B.ByteString where
     parseField = pure

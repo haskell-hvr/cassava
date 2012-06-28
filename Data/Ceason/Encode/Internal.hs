@@ -30,6 +30,8 @@ decimal :: Integral a => a -> B.ByteString
 {-# SPECIALIZE decimal :: Integer -> B.ByteString #-}
 decimal = toByteString . formatDecimal
 
+-- FIXME: This in incorrect on minBound for signed values.
+
 formatDecimal :: Integral a => a -> Builder
 {-# SPECIALIZE formatDecimal :: Int -> Builder #-}
 {-# SPECIALIZE formatDecimal :: Int8 -> Builder #-}

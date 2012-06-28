@@ -74,8 +74,7 @@ escapedField = do
     -- The scan state is 'True' if the previous character was a double
     -- quote.  We need to drop a trailing double quote left by scan.
     s <- S.init <$> (A.scan False $ \s c -> if c == doubleQuote
-                                            then if s then Just False
-                                                 else Just True
+                                            then Just (not s)
                                             else if s then Nothing
                                                  else Just False)
     if doubleQuote `S.elem` s
@@ -86,12 +85,10 @@ escapedField = do
 
 -- TODO: Perhaps allow all possible bytes (except , and ").
 unescapedField :: AL.Parser S.ByteString
-unescapedField = A.takeWhile isTextdata
-  where
-    isTextdata :: Word8 -> Bool
-    isTextdata c = c >= 0x20 && c <= 0x21 ||
-                   c >= 0x23 && c <= 0x2b ||
-                   c >= 0x2d && c <= 0x7e
+unescapedField = A.takeWhile (\ c -> c /= doubleQuote &&
+                                     c /= newline &&
+                                     c /= commaB &&
+                                     c /= cr)
 
 comma, dquote :: AL.Parser Char
 comma = char ','
@@ -112,8 +109,11 @@ unescape = toByteString <$> go mempty where
       then return (acc `mappend` fromByteString h)
       else rest
 
-doubleQuote :: Word8
+doubleQuote, newline, commaB, cr :: Word8
 doubleQuote = 34
+newline = 10
+commaB = 44
+cr = 13
 
 decodeWith :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Either String b
 decodeWith p to s =
@@ -121,6 +121,6 @@ decodeWith p to s =
       AL.Done _ v     -> case to v of
           Success a -> Right a
           Error msg -> Left $ "conversion error: " ++ msg
-      AL.Fail s _ msg -> Left $ "parse error (" ++ msg ++ ") at \"" ++
-                         show (BL8.unpack s) ++ "\""
+      AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at \"" ++
+                            show (BL8.unpack left) ++ "\""
 {-# INLINE decodeWith #-}
