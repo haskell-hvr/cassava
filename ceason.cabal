@@ -8,6 +8,7 @@ Homepage:            https://github.com/tibbe/sea
 License:             BSD3
 License-file:        LICENSE
 Copyright:           (c) 2012 Johan Tibell
+                     (c) 2012 Bryan O'Sullivan
                      (c) 2011 MailRank, Inc.
 Author:              Johan Tibell
 Maintainer:          johan.tibell@gmail.com

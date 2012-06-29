@@ -17,40 +17,65 @@ import Data.Word
 -- Integers
 
 decimal :: Integral a => a -> B.ByteString
-{-# SPECIALIZE decimal :: Int -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Int8 -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Int16 -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Int32 -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Int64 -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Word -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Word8 -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Word16 -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Word32 -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Word64 -> B.ByteString #-}
-{-# SPECIALIZE decimal :: Integer -> B.ByteString #-}
 decimal = toByteString . formatDecimal
+{-# INLINE decimal #-}
 
--- FIXME: This in incorrect on minBound for signed values.
+-- TODO: Add an optimized version for Integer.
 
 formatDecimal :: Integral a => a -> Builder
-{-# SPECIALIZE formatDecimal :: Int -> Builder #-}
 {-# SPECIALIZE formatDecimal :: Int8 -> Builder #-}
-{-# SPECIALIZE formatDecimal :: Int16 -> Builder #-}
-{-# SPECIALIZE formatDecimal :: Int32 -> Builder #-}
-{-# SPECIALIZE formatDecimal :: Int64 -> Builder #-}
-{-# SPECIALIZE formatDecimal :: Word -> Builder #-}
-{-# SPECIALIZE formatDecimal :: Word8 -> Builder #-}
-{-# SPECIALIZE formatDecimal :: Word16 -> Builder #-}
-{-# SPECIALIZE formatDecimal :: Word32 -> Builder #-}
-{-# SPECIALIZE formatDecimal :: Word64 -> Builder #-}
-{-# SPECIALIZE formatDecimal :: Integer -> Builder #-}
+{-# RULES "formatDecimal/Int" formatDecimal = formatBoundedSigned
+    :: Int -> Builder #-}
+{-# RULES "formatDecimal/Int16" formatDecimal = formatBoundedSigned
+    :: Int16 -> Builder #-}
+{-# RULES "formatDecimal/Int32" formatDecimal = formatBoundedSigned
+    :: Int32 -> Builder #-}
+{-# RULES "formatDecimal/Int64" formatDecimal = formatBoundedSigned
+    :: Int64 -> Builder #-}
+{-# RULES "formatDecimal/Word" formatDecimal = formatPositive
+    :: Word -> Builder #-}
+{-# RULES "formatDecimal/Word8" formatDecimal = formatPositive
+    :: Word8 -> Builder #-}
+{-# RULES "formatDecimal/Word16" formatDecimal = formatPositive
+    :: Word16 -> Builder #-}
+{-# RULES "formatDecimal/Word32" formatDecimal = formatPositive
+    :: Word32 -> Builder #-}
+{-# RULES "formatDecimal/Word64" formatDecimal = formatPositive
+    :: Word64 -> Builder #-}
 formatDecimal i
-    | i < 0     = minus <> go (-i)
-    | otherwise = go i
-  where
-    go n | n < 10    = digit n
-         | otherwise = go q <> digit r
-      where (q, r) = n `quotRem` 10
+    | i < 0     = minus <>
+                  if i <= -128
+                  then formatPositive (-(i `quot` 10)) <> digit (-(i `rem` 10))
+                  else formatPositive (-i)
+    | otherwise = formatPositive i
+
+formatBoundedSigned :: (Integral a, Bounded a) => a -> Builder
+{-# SPECIALIZE formatBoundedSigned :: Int -> Builder #-}
+{-# SPECIALIZE formatBoundedSigned :: Int8 -> Builder #-}
+{-# SPECIALIZE formatBoundedSigned :: Int16 -> Builder #-}
+{-# SPECIALIZE formatBoundedSigned :: Int32 -> Builder #-}
+{-# SPECIALIZE formatBoundedSigned :: Int64 -> Builder #-}
+formatBoundedSigned i
+    | i < 0     = minus <>
+                  if i == minBound
+                  then formatPositive (-(i `quot` 10)) <> digit (-(i `rem` 10))
+                  else formatPositive (-i)
+    | otherwise = formatPositive i
+
+formatPositive :: Integral a => a -> Builder
+{-# SPECIALIZE formatPositive :: Int -> Builder #-}
+{-# SPECIALIZE formatPositive :: Int8 -> Builder #-}
+{-# SPECIALIZE formatPositive :: Int16 -> Builder #-}
+{-# SPECIALIZE formatPositive :: Int32 -> Builder #-}
+{-# SPECIALIZE formatPositive :: Int64 -> Builder #-}
+{-# SPECIALIZE formatPositive :: Word -> Builder #-}
+{-# SPECIALIZE formatPositive :: Word8 -> Builder #-}
+{-# SPECIALIZE formatPositive :: Word16 -> Builder #-}
+{-# SPECIALIZE formatPositive :: Word32 -> Builder #-}
+{-# SPECIALIZE formatPositive :: Word64 -> Builder #-}
+formatPositive = go
+  where go n | n < 10    = digit n
+             | otherwise = go (n `quot` 10) <> digit (n `rem` 10)
 
 minus :: Builder
 minus = fromWord8 45
