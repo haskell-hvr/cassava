@@ -96,6 +96,9 @@ roundTrip x = case decode (encode (V.singleton (x, dummy))) of
     _  -> False
   where dummy = 'a'
 
+boundary :: forall a. (Bounded a, Eq a, FromField a, ToField a) => a -> Bool
+boundary _dummy = roundTrip (minBound :: a) && roundTrip (maxBound :: a)
+
 -- TODO: Right now we only encode ASCII properly. Should we support
 -- UTF-8? Arbitrary byte strings?
 
@@ -118,6 +121,16 @@ conversionTests =
       (roundTrip :: BL.ByteString -> Bool)
     , TF.testProperty "roundTrip/Text" (roundTrip :: T.Text -> Bool)
     , TF.testProperty "roundTrip/lazy Text" (roundTrip :: LT.Text -> Bool)
+    , TF.testProperty "boundary/Int" (boundary (undefined :: Int))
+    , TF.testProperty "boundary/Int8" (boundary (undefined :: Int8))
+    , TF.testProperty "boundary/Int16" (boundary (undefined :: Int16))
+    , TF.testProperty "boundary/Int32" (boundary (undefined :: Int32))
+    , TF.testProperty "boundary/Int64" (boundary (undefined :: Int64))
+    , TF.testProperty "boundary/Word" (boundary (undefined :: Word))
+    , TF.testProperty "boundary/Word8" (boundary (undefined :: Word8))
+    , TF.testProperty "boundary/Word16" (boundary (undefined :: Word16))
+    , TF.testProperty "boundary/Word32" (boundary (undefined :: Word32))
+    , TF.testProperty "boundary/Word64" (boundary (undefined :: Word64))
     ]
 
 ------------------------------------------------------------------------
