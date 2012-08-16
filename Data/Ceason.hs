@@ -45,10 +45,8 @@ module Data.Ceason
     ) where
 
 import Control.Applicative
-import qualified Data.Attoparsec.Lazy as AL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as BL8
 import Data.Traversable
 import Data.Vector (Vector)
 
@@ -91,10 +89,7 @@ decode = decodeWith csv (parse . traverse parseRecord)
 -- | Same as 'decode', but more efficient as no type conversion is
 -- performed.
 idDecode :: L.ByteString -> Either String (Vector (Vector B.ByteString))
-idDecode s = case AL.parse csv s of
-      AL.Done _ v     -> Right v
-      AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at \"" ++
-                            show (BL8.unpack left) ++ "\""
+idDecode = decodeWith csv pure
 
 decodeWithHeader :: FromNamedRecord a => L.ByteString
                  -> Either String (Header, Vector a)
