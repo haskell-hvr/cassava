@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module Main ( main ) where
 
 import Criterion.Main
@@ -13,7 +14,7 @@ type President = (Int, Text, ByteString, ByteString, ByteString, Text, Text)
 
 main :: IO ()
 main = do
-    csvData <- (BL.fromChunks . \ x -> [x]) `fmap` B.readFile "benchmarks/presidents.csv"
+    !csvData <- (BL.fromChunks . \ x -> [x]) `fmap` B.readFile "benchmarks/presidents.csv"
     defaultMain [
           bench "presidents" $ whnf decodePresidents csvData
         ]
