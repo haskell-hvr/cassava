@@ -16,8 +16,12 @@ main :: IO ()
 main = do
     !csvData <- (BL.fromChunks . \ x -> [x]) `fmap` B.readFile "benchmarks/presidents.csv"
     defaultMain [
-          bench "presidents" $ whnf decodePresidents csvData
+          bench "presidents/without conversion" $ whnf idDecode csvData
+        , bench "presidents/with conversion" $ whnf decodePresidents csvData
         ]
   where
     decodePresidents :: BL.ByteString -> Either String (Vector President)
     decodePresidents = decode
+
+    idDecode ::BL.ByteString -> Either String (Vector (Vector B.ByteString))
+    idDecode = decode
