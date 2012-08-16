@@ -47,10 +47,10 @@ main = do
     decodePresidents = decode
 
     decodePresidentsN :: BL.ByteString -> Either String (Header, Vector President)
-    decodePresidentsN = decodeWithHeader
+    decodePresidentsN = decodeByHeader
 
     idDecode :: BL.ByteString -> Either String (Vector (Vector B.ByteString))
     idDecode = decode
 
     idDecodeN :: BL.ByteString -> Either String (Header, Vector (BSHashMap B.ByteString))
-    idDecodeN = decodeWithHeader
+    idDecodeN = decodeByHeader

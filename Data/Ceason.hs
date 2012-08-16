@@ -5,7 +5,7 @@ module Data.Ceason
     (
     -- * Encoding and decoding
       decode
-    , decodeWithHeader
+    , decodeByHeader
     , encode
 
     -- ** Encoding and decoding options
@@ -13,7 +13,7 @@ module Data.Ceason
     , DecodeOptions(..)
     , defaultDecodeOptions
     , decodeWith
-    , decodeWithHeaderWith
+    , decodeByHeaderWith
 
     -- * Core CSV types
     , Csv
@@ -84,16 +84,20 @@ import Data.Ceason.Types
 -- be a bit slower.
 
 -- | Efficiently deserialize CSV records from a lazy 'L.ByteString'.
--- If this fails due to incomplete or invalid input, 'Nothing' is
+-- If this fails due to incomplete or invalid input, @'Left' msg@ is
 -- returned. Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a => L.ByteString -> Either String (Vector a)
 decode = decodeWith defaultDecodeOptions
 {-# INLINE decode #-}
 
-decodeWithHeader :: FromNamedRecord a => L.ByteString
+-- | Efficiently deserialize CSV records from a lazy 'L.ByteString'.
+-- If this fails due to incomplete or invalid input, @'Left' msg@ is
+-- returned. Equivalent to @'decodeByHeaderWith'
+-- 'defaultDecodeOptions'@.
+decodeByHeader :: FromNamedRecord a => L.ByteString
                  -> Either String (Header, Vector a)
-decodeWithHeader = decodeWithHeaderWith defaultDecodeOptions
-{-# INLINE decodeWithHeader #-}
+decodeByHeader = decodeByHeaderWith defaultDecodeOptions
+{-# INLINE decodeByHeader #-}
 
 ------------------------------------------------------------------------
 -- ** Encoding and decoding options
@@ -128,10 +132,10 @@ idDecodeWith :: DecodeOptions -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
 idDecodeWith !opts = decodeWithP (csv opts) pure
 
--- | Like 'decodeWithHeader', but lets you customize how the CSV data
--- is parsed.
-decodeWithHeaderWith :: FromNamedRecord a => DecodeOptions -> L.ByteString
+-- | Like 'decodeByHeader', but lets you customize how the CSV data is
+-- parsed.
+decodeByHeaderWith :: FromNamedRecord a => DecodeOptions -> L.ByteString
                      -> Either String (Header, Vector a)
-decodeWithHeaderWith !opts =
+decodeByHeaderWith !opts =
     decodeWithP (csvWithHeader opts)
     (\ (hdr, vs) -> (,) <$> pure hdr <*> (parse $ traverse parseNamedRecord vs))
