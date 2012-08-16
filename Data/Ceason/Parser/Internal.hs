@@ -1,10 +1,13 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Data.Ceason.Parser.Internal
-    ( csv
+    ( DecodeOptions(..)
+    , csv
     , csvWithHeader
     , header
     , record
     , field
-    , decodeWith
+    , decodeWithP
     ) where
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
@@ -25,18 +28,26 @@ import Data.Word
 
 import Data.Ceason.Types hiding (record, toNamedRecord)
 
-csv :: AL.Parser Csv
-csv = do
-    vals <- record `sepBy1` endOfLine
+-- | Options that controls how CSV data is decoded.
+data DecodeOptions = DecodeOptions
+    { -- | Field delimiter.
+      delimiter  :: {-# UNPACK #-} !Word8
+    }
+
+csv :: DecodeOptions -> AL.Parser Csv
+csv !opts = do
+    vals <- record (delimiter opts) `sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
-    return (V.fromList (removeBlankLines vals))
+    let nonEmpty = removeBlankLines vals
+    return (V.fromList nonEmpty)
+{-# INLINE csv #-}
 
-csvWithHeader :: AL.Parser (Header, V.Vector NamedRecord)
-csvWithHeader = do
-    hdr <- header
+csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
+csvWithHeader !opts = do
+    hdr <- header (delimiter opts)
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
-            record `sepBy1` endOfLine
+            (record (delimiter opts)) `sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
     return (hdr, V.fromList vals)
@@ -46,8 +57,8 @@ toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 
 -- | Parse a CSV header line, including the terminating line
 -- separator.
-header :: AL.Parser Header
-header = V.fromList <$> name `sepBy1` comma <* endOfLine
+header :: Word8 -> AL.Parser Header
+header delim = V.fromList <$> name `sepBy1` (A.word8 delim) <* endOfLine
 
 name :: AL.Parser Field  -- TODO: Create Name type alias
 name = field
@@ -56,8 +67,9 @@ removeBlankLines :: [Record] -> [Record]
 removeBlankLines = filter (not . blankLine)
   where blankLine v = V.length v == 1 && (S.null (V.head v))
 
-record :: AL.Parser Record
-record = V.fromList <$> field `sepBy1` comma
+record :: Word8 -> AL.Parser Record
+record !delim = V.fromList <$> field `sepBy1` (A.word8 delim)
+{-# INLINE record #-}
 
 field :: AL.Parser Field
 field = do
@@ -90,8 +102,7 @@ unescapedField = A.takeWhile (\ c -> c /= doubleQuote &&
                                      c /= commaB &&
                                      c /= cr)
 
-comma, dquote :: AL.Parser Char
-comma = char ','
+dquote :: AL.Parser Char
 dquote = char '"'
 
 unescape :: Z.Parser S.ByteString
@@ -115,12 +126,12 @@ newline = 10
 commaB = 44
 cr = 13
 
-decodeWith :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Either String b
-decodeWith p to s =
+decodeWithP :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Either String b
+decodeWithP p to s =
     case AL.parse p s of
       AL.Done _ v     -> case to v of
           Success a -> Right a
           Error msg -> Left $ "conversion error: " ++ msg
       AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at \"" ++
                             show (BL8.unpack left) ++ "\""
-{-# INLINE decodeWith #-}
+{-# INLINE decodeWithP #-}

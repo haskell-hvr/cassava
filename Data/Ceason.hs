@@ -8,6 +8,13 @@ module Data.Ceason
     , decodeWithHeader
     , encode
 
+    -- ** Encoding and decoding options
+    -- $options
+    , DecodeOptions(..)
+    , defaultDecodeOptions
+    , decodeWith
+    , decodeWithHeaderWith
+
     -- * Core CSV types
     , Csv
     , Record
@@ -76,23 +83,55 @@ import Data.Ceason.Types
 -- the file structure e.g. to reording or addition of columns, but can
 -- be a bit slower.
 
--- | Efficiently deserialize CSV records from a lazy
--- 'L.ByteString'. If this fails due to incomplete or invalid input,
--- 'Nothing' is returned.
+-- | Efficiently deserialize CSV records from a lazy 'L.ByteString'.
+-- If this fails due to incomplete or invalid input, 'Nothing' is
+-- returned. Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a => L.ByteString -> Either String (Vector a)
-decode = decodeWith csv (parse . traverse parseRecord)
-
-{-# RULES
-    "idDecode" decode = idDecode
- #-}
-
--- | Same as 'decode', but more efficient as no type conversion is
--- performed.
-idDecode :: L.ByteString -> Either String (Vector (Vector B.ByteString))
-idDecode = decodeWith csv pure
+decode = decodeWith defaultDecodeOptions
+{-# INLINE decode #-}
 
 decodeWithHeader :: FromNamedRecord a => L.ByteString
                  -> Either String (Header, Vector a)
-decodeWithHeader =
-    decodeWith csvWithHeader
+decodeWithHeader = decodeWithHeaderWith defaultDecodeOptions
+{-# INLINE decodeWithHeader #-}
+
+------------------------------------------------------------------------
+-- ** Encoding and decoding options
+
+-- $options
+--
+-- The 'decodeWith' and 'decodeByHeaderWith' functions lets you
+-- customize how the CSV data is parsed. These can be used to e.g.
+-- parse tab-separated data.
+
+-- | Default decoding options:
+--
+--  * 'delimiter': comma
+defaultDecodeOptions :: DecodeOptions
+defaultDecodeOptions = DecodeOptions
+    { delimiter  = 44  -- comma
+    }
+
+-- | Like 'decode', but lets you customize how the CSV data is parsed.
+decodeWith :: FromRecord a => DecodeOptions -> L.ByteString
+           -> Either String (Vector a)
+decodeWith !opts = decodeWithP (csv opts) (parse . traverse parseRecord)
+{-# INLINE [1] decodeWith #-}
+
+{-# RULES
+    "idDecodeWith" decodeWith = idDecodeWith
+ #-}
+
+-- | Same as 'decodeWith', but more efficient as no type
+-- conversion is performed.
+idDecodeWith :: DecodeOptions -> L.ByteString
+             -> Either String (Vector (Vector B.ByteString))
+idDecodeWith !opts = decodeWithP (csv opts) pure
+
+-- | Like 'decodeWithHeader', but lets you customize how the CSV data
+-- is parsed.
+decodeWithHeaderWith :: FromNamedRecord a => DecodeOptions -> L.ByteString
+                     -> Either String (Header, Vector a)
+decodeWithHeaderWith !opts =
+    decodeWithP (csvWithHeader opts)
     (\ (hdr, vs) -> (,) <$> pure hdr <*> (parse $ traverse parseNamedRecord vs))
