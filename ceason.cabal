@@ -56,3 +56,14 @@ Test-suite unit-tests
                        vector
 
   hs-source-dirs: tests
+
+Benchmark benchmarks
+  Type: exitcode-stdio-1.0
+  Main-is: Benchmarks.hs
+  Build-depends:       base,
+                       bytestring,
+                       ceason,
+                       criterion,
+                       text,
+                       vector
+  hs-source-dirs: benchmarks
