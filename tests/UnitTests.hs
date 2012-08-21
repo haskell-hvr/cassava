@@ -69,7 +69,7 @@ testLeadingSpace = " a,  b,   c\n" `decodesAs` [[" a", "  b", "   c"]]
 
 parseTests :: [TF.Test]
 parseTests =
-    [ testGroup "decode" $ map encodeTest
+    [ testGroup "encode" $ map encodeTest
       [ ("simple",       [["abc"]],          "abc\r\n")
       , ("quoted",       [["\"abc\""]],      "\"\"\"abc\"\"\"\r\n")
       , ("quote",        [["a\"b"]],         "\"a\"\"b\"\r\n")
