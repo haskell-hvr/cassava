@@ -69,17 +69,16 @@ testLeadingSpace = " a,  b,   c\n" `decodesAs` [[" a", "  b", "   c"]]
 
 parseTests :: [TF.Test]
 parseTests =
-    [ testGroup "decode"
-      [ testCase "simple" $ [["abc"]] `encodesAs` "abc\r\n"
-      , testCase "quoted" $ [["\"abc\""]] `encodesAs` "\"\"\"abc\"\"\"\r\n"
-      , testCase "quote" $ [["a\"b"]] `encodesAs` "\"a\"\"b\"\r\n"
-      , testCase "quotedQuote" $
-        [["\"a\"b\""]] `encodesAs` "\"\"\"a\"\"b\"\"\"\r\n"
-      , testCase "leadingSpace" $ [[" abc"]] `encodesAs` "\" abc\"\r\n"
-      , testCase "comma" $ [["abc,def"]] `encodesAs` "\"abc,def\"\r\n"
-      , testCase "twoFields" $ [["abc","def"]] `encodesAs` "abc,def\r\n"
-      , testCase "twoRecords" $ [["abc"], ["def"]] `encodesAs` "abc\r\ndef\r\n"
-      , testCase "newline" $ [["abc\ndef"]] `encodesAs` "\"abc\ndef\"\r\n"
+    [ testGroup "decode" $ map encodeTest
+      [ ("simple",       [["abc"]],          "abc\r\n")
+      , ("quoted",       [["\"abc\""]],      "\"\"\"abc\"\"\"\r\n")
+      , ("quote",        [["a\"b"]],         "\"a\"\"b\"\r\n")
+      , ("quotedQuote",  [["\"a\"b\""]],     "\"\"\"a\"\"b\"\"\"\r\n")
+      , ("leadingSpace", [[" abc"]],         "\" abc\"\r\n")
+      , ("comma",        [["abc,def"]],      "\"abc,def\"\r\n")
+      , ("twoFields",    [["abc","def"]],    "abc,def\r\n")
+      , ("twoRecords",   [["abc"], ["def"]], "abc\r\ndef\r\n")
+      , ("newline",      [["abc\ndef"]],     "\"abc\ndef\"\r\n")
       ]
     , testGroup "decode"
       [ testCase "simple" testSimple
@@ -90,6 +89,12 @@ parseTests =
       , testCase "leadingSpace" testLeadingSpace
       ]
     ]
+  where
+    encodeTest (name, input, expected) =
+        testCase name $ input `encodesAs` expected
+
+nameBasedTests :: [TF.Test]
+nameBasedTests = []
 
 ------------------------------------------------------------------------
 -- Conversion tests
@@ -156,7 +161,7 @@ conversionTests =
 -- Test harness
 
 allTests :: [TF.Test]
-allTests = parseTests ++ conversionTests
+allTests = parseTests ++ nameBasedTests ++ conversionTests
 
 main :: IO ()
 main = defaultMain allTests
