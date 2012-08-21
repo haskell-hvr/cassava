@@ -45,12 +45,6 @@ namedEncodesAs hdr input expected =
     encodeByHeader (V.fromList hdr)
     (V.fromList $ map (BSHashMap . HM.fromList) input) @?= expected
 
-testSimple :: Assertion
-testSimple = "a,b,c\n" `decodesAs` [["a", "b", "c"]]
-
-testCrlf :: Assertion
-testCrlf = "a,b\r\nc,d\r\n" `decodesAs` [["a", "b"], ["c", "d"]]
-
 testRfc4180 :: Assertion
 testRfc4180 = (BL8.pack $
                "#field1,field2,field3\n" ++
@@ -64,18 +58,8 @@ testRfc4180 = (BL8.pack $
                ["a,a", "b\"bb", "ccc"],
                ["zzz", "yyy", "xxx"]]
 
-testNoEol :: Assertion
-testNoEol = "a,b,c" `decodesAs` [["a", "b", "c"]]
-
-testBlankLine :: Assertion
-testBlankLine =
-    "a,b,c\n\nd,e,f\n\n" `decodesAs` [["a", "b", "c"], ["d", "e", "f"]]
-
-testLeadingSpace :: Assertion
-testLeadingSpace = " a,  b,   c\n" `decodesAs` [[" a", "  b", "   c"]]
-
-parseTests :: [TF.Test]
-parseTests =
+positionalTests :: [TF.Test]
+positionalTests =
     [ testGroup "encode" $ map encodeTest
       [ ("simple",       [["abc"]],          "abc\r\n")
       , ("quoted",       [["\"abc\""]],      "\"\"\"abc\"\"\"\r\n")
@@ -87,18 +71,20 @@ parseTests =
       , ("twoRecords",   [["abc"], ["def"]], "abc\r\ndef\r\n")
       , ("newline",      [["abc\ndef"]],     "\"abc\ndef\"\r\n")
       ]
-    , testGroup "decode"
-      [ testCase "simple" testSimple
-      , testCase "crlf" testCrlf
-      , testCase "rfc4180" testRfc4180
-      , testCase "noEol" testNoEol
-      , testCase "blankLine" testBlankLine
-      , testCase "leadingSpace" testLeadingSpace
-      ]
+    , testGroup "decode" $ map decodeTest
+      [ ("simple",       "a,b,c\n",        [["a", "b", "c"]])
+      , ("crlf",         "a,b\r\nc,d\r\n", [["a", "b"], ["c", "d"]])
+      , ("noEol",        "a,b,c",          [["a", "b", "c"]])
+      , ("blankLine",    "a,b,c\n\nd,e,f\n\n",
+         [["a", "b", "c"], ["d", "e", "f"]])
+      , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
+      ] ++ [testCase "rfc4180" testRfc4180]
     ]
   where
     encodeTest (name, input, expected) =
         testCase name $ input `encodesAs` expected
+    decodeTest (name, input, expected) =
+        testCase name $ input `decodesAs` expected
 
 nameBasedTests :: [TF.Test]
 nameBasedTests = map encodeTest
@@ -144,40 +130,47 @@ boundary _dummy = roundTrip (minBound :: a) && roundTrip (maxBound :: a)
 
 conversionTests :: [TF.Test]
 conversionTests =
-    [ testProperty "roundTrip/Char" (roundTrip :: Char -> Bool)
-    , testProperty "roundTrip/ByteString" (roundTrip :: B.ByteString -> Bool)
-    , testProperty "roundTrip/Int" (roundTrip :: Int -> Bool)
-    , testProperty "roundTrip/Integer" (roundTrip :: Integer -> Bool)
-    , testProperty "roundTrip/Int8" (roundTrip :: Int8 -> Bool)
-    , testProperty "roundTrip/Int16" (roundTrip :: Int16 -> Bool)
-    , testProperty "roundTrip/Int32" (roundTrip :: Int32 -> Bool)
-    , testProperty "roundTrip/Int64" (roundTrip :: Int64 -> Bool)
-    , testProperty "roundTrip/Word" (roundTrip :: Word -> Bool)
-    , testProperty "roundTrip/Word8" (roundTrip :: Word8 -> Bool)
-    , testProperty "roundTrip/Word16" (roundTrip :: Word16 -> Bool)
-    , testProperty "roundTrip/Word32" (roundTrip :: Word32 -> Bool)
-    , testProperty "roundTrip/Word64" (roundTrip :: Word64 -> Bool)
-    , testProperty "roundTrip/lazy ByteString"
-      (roundTrip :: BL.ByteString -> Bool)
-    , testProperty "roundTrip/Text" (roundTrip :: T.Text -> Bool)
-    , testProperty "roundTrip/lazy Text" (roundTrip :: LT.Text -> Bool)
-    , testProperty "boundary/Int" (boundary (undefined :: Int))
-    , testProperty "boundary/Int8" (boundary (undefined :: Int8))
-    , testProperty "boundary/Int16" (boundary (undefined :: Int16))
-    , testProperty "boundary/Int32" (boundary (undefined :: Int32))
-    , testProperty "boundary/Int64" (boundary (undefined :: Int64))
-    , testProperty "boundary/Word" (boundary (undefined :: Word))
-    , testProperty "boundary/Word8" (boundary (undefined :: Word8))
-    , testProperty "boundary/Word16" (boundary (undefined :: Word16))
-    , testProperty "boundary/Word32" (boundary (undefined :: Word32))
-    , testProperty "boundary/Word64" (boundary (undefined :: Word64))
+    [ testGroup "roundTrip"
+      [ testProperty "Char" (roundTrip :: Char -> Bool)
+      , testProperty "ByteString" (roundTrip :: B.ByteString -> Bool)
+      , testProperty "Int" (roundTrip :: Int -> Bool)
+      , testProperty "Integer" (roundTrip :: Integer -> Bool)
+      , testProperty "Int8" (roundTrip :: Int8 -> Bool)
+      , testProperty "Int16" (roundTrip :: Int16 -> Bool)
+      , testProperty "Int32" (roundTrip :: Int32 -> Bool)
+      , testProperty "Int64" (roundTrip :: Int64 -> Bool)
+      , testProperty "Word" (roundTrip :: Word -> Bool)
+      , testProperty "Word8" (roundTrip :: Word8 -> Bool)
+      , testProperty "Word16" (roundTrip :: Word16 -> Bool)
+      , testProperty "Word32" (roundTrip :: Word32 -> Bool)
+      , testProperty "Word64" (roundTrip :: Word64 -> Bool)
+      , testProperty "lazy ByteString"
+        (roundTrip :: BL.ByteString -> Bool)
+      , testProperty "Text" (roundTrip :: T.Text -> Bool)
+      , testProperty "lazy Text" (roundTrip :: LT.Text -> Bool)
+      ]
+    , testGroup "boundary"
+      [ testProperty "Int" (boundary (undefined :: Int))
+      , testProperty "Int8" (boundary (undefined :: Int8))
+      , testProperty "Int16" (boundary (undefined :: Int16))
+      , testProperty "Int32" (boundary (undefined :: Int32))
+      , testProperty "Int64" (boundary (undefined :: Int64))
+      , testProperty "Word" (boundary (undefined :: Word))
+      , testProperty "Word8" (boundary (undefined :: Word8))
+      , testProperty "Word16" (boundary (undefined :: Word16))
+      , testProperty "Word32" (boundary (undefined :: Word32))
+      , testProperty "Word64" (boundary (undefined :: Word64))
+      ]
     ]
 
 ------------------------------------------------------------------------
 -- Test harness
 
 allTests :: [TF.Test]
-allTests = parseTests ++ nameBasedTests ++ conversionTests
+allTests = [ testGroup "positional" positionalTests
+           , testGroup "named" nameBasedTests
+           , testGroup "conversion" conversionTests
+           ]
 
 main :: IO ()
 main = defaultMain allTests
