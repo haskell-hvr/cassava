@@ -1,9 +1,10 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Main
     ( main
     ) where
 
-import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
@@ -11,7 +12,6 @@ import qualified Data.HashMap.Strict as HM
 import Data.Int
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
-import Data.Traversable
 import Data.Vector ((!))
 import qualified Data.Vector as V
 import Data.Word
@@ -22,8 +22,6 @@ import Test.QuickCheck
 import Test.Framework.Providers.QuickCheck2 as TF
 
 import Data.Ceason
-import Data.Ceason.Parser
-import Data.Ceason.Types
 
 ------------------------------------------------------------------------
 -- Parse tests
@@ -44,6 +42,16 @@ namedEncodesAs :: [B.ByteString] -> [[(B.ByteString, B.ByteString)]]
 namedEncodesAs hdr input expected =
     encodeByHeader (V.fromList hdr)
     (V.fromList $ map (BSHashMap . HM.fromList) input) @?= expected
+
+namedDecodesAs :: BL.ByteString -> [B.ByteString]
+               -> [[(B.ByteString, B.ByteString)]] -> Assertion
+namedDecodesAs input ehdr expected = case decodeByHeader input of
+    Right r  -> (V.fromList ehdr, expected') @=? r
+    Left err -> assertFailure $
+                "      input: " ++ show (BL8.unpack input) ++ "\n" ++
+                "parse error: " ++ err
+  where
+    expected' = V.fromList $ map (BSHashMap . HM.fromList) expected
 
 testRfc4180 :: Assertion
 testRfc4180 = (BL8.pack $
@@ -87,16 +95,28 @@ positionalTests =
         testCase name $ input `decodesAs` expected
 
 nameBasedTests :: [TF.Test]
-nameBasedTests = map encodeTest
-    [ ("simple", ["field"], [[("field", "abc")]], "field\r\nabc\r\n")
-    , ("twoFields", ["field1", "field2"],
-       [[("field1", "abc"), ("field2", "def")]], "field1,field2\r\nabc,def\r\n")
-    , ("twoRecords", ["field"], [[("field", "abc")], [("field", "def")]],
-       "field\r\nabc\r\ndef\r\n")
+nameBasedTests =
+    [ testGroup "encode" $ map encodeTest
+      [ ("simple", ["field"], [[("field", "abc")]], "field\r\nabc\r\n")
+      , ("twoFields", ["field1", "field2"],
+         [[("field1", "abc"), ("field2", "def")]],
+         "field1,field2\r\nabc,def\r\n")
+      , ("twoRecords", ["field"], [[("field", "abc")], [("field", "def")]],
+         "field\r\nabc\r\ndef\r\n")
+      ]
+    , testGroup "decode" $ map decodeTest
+      [("simple", "field\r\nabc\r\n", ["field"], [[("field", "abc")]])
+      , ("twoFields", "field1,field2\r\nabc,def\r\n", ["field1", "field2"],
+         [[("field1", "abc"), ("field2", "def")]])
+      , ("twoRecords", "field\r\nabc\r\ndef\r\n", ["field"],
+         [[("field", "abc")], [("field", "def")]])
+      ]
     ]
   where
     encodeTest (name, hdr, input, expected) =
         testCase name $ namedEncodesAs hdr input expected
+    decodeTest (name, input, hdr, expected) =
+        testCase name $ namedDecodesAs input hdr expected
 
 ------------------------------------------------------------------------
 -- Conversion tests

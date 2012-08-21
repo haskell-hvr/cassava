@@ -57,6 +57,7 @@ Test-suite unit-tests
                        vector
 
   hs-source-dirs: tests
+  ghc-options:         -Wall
 
 Benchmark benchmarks
   Type: exitcode-stdio-1.0
