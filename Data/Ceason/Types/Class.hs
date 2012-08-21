@@ -298,8 +298,15 @@ instance FromField a => FromNamedRecord (BSMap a) where
                          (traverse parseSnd $ HM.toList m)
       where parseSnd (name, s) = (,) <$> pure name <*> parseField s
 
+instance ToField a => ToNamedRecord (BSMap a) where
+    toNamedRecord = HM.fromList . map (\ (k, v) -> (k, toField v)) . M.toList .
+                    fromBSMap
+
 instance FromField a => FromNamedRecord (BSHashMap a) where
     parseNamedRecord m = BSHashMap <$> traverse (\ s -> parseField s) m
+
+instance ToField a => ToNamedRecord (BSHashMap a) where
+    toNamedRecord = HM.map toField . fromBSHashMap
 
 ------------------------------------------------------------------------
 -- Individual field conversion

@@ -7,6 +7,7 @@ import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
+import qualified Data.HashMap.Strict as HM
 import Data.Int
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
@@ -37,6 +38,12 @@ decodesAs input expected = case decode input of
 encodesAs :: [[B.ByteString]] -> BL.ByteString -> Assertion
 encodesAs input expected =
     encode (V.fromList (map V.fromList input)) @?= expected
+
+namedEncodesAs :: [B.ByteString] -> [[(B.ByteString, B.ByteString)]]
+               -> BL.ByteString -> Assertion
+namedEncodesAs hdr input expected =
+    encodeByHeader (V.fromList hdr)
+    (V.fromList $ map (BSHashMap . HM.fromList) input) @?= expected
 
 testSimple :: Assertion
 testSimple = "a,b,c\n" `decodesAs` [["a", "b", "c"]]
@@ -94,7 +101,16 @@ parseTests =
         testCase name $ input `encodesAs` expected
 
 nameBasedTests :: [TF.Test]
-nameBasedTests = []
+nameBasedTests = map encodeTest
+    [ ("simple", ["field"], [[("field", "abc")]], "field\r\nabc\r\n")
+    , ("twoFields", ["field1", "field2"],
+       [[("field1", "abc"), ("field2", "def")]], "field1,field2\r\nabc,def\r\n")
+    , ("twoRecords", ["field"], [[("field", "abc")], [("field", "def")]],
+       "field\r\nabc\r\ndef\r\n")
+    ]
+  where
+    encodeTest (name, hdr, input, expected) =
+        testCase name $ namedEncodesAs hdr input expected
 
 ------------------------------------------------------------------------
 -- Conversion tests

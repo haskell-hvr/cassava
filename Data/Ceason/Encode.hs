@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- Module:      Data.Ceason.Encode
 -- Copyright:   (c) 2011 MailRank, Inc.
 --              (c) 2012 Johan Tibell
@@ -35,21 +37,29 @@ encode = toLazyByteString
          . V.toList
 
 encodeByHeader :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
-encodeByHeader hdr =
-    toLazyByteString
-    . unlines
-    . map (mconcat . intersperse (fromChar ',') . map fromByteString
-           . V.toList . namedRecordToRecord hdr . toNamedRecord)
-    . V.toList
+encodeByHeader hdr v =
+    toLazyByteString ((mconcat . intersperse (fromChar ',') $
+                       map fromByteString $ V.toList hdr) <>
+                      fromByteString "\r\n" <> records)
+  where
+    records = unlines
+              . map (mconcat . intersperse (fromChar ',') . map fromByteString
+                     . V.toList . namedRecordToRecord hdr . toNamedRecord)
+              . V.toList $ v
+
 
 namedRecordToRecord :: Header -> NamedRecord -> Record
 namedRecordToRecord hdr nr = V.map find hdr
   where
     find n = case HM.lookup n nr of
-        Nothing -> error $ "Data.Ceason.Encode.namedRecordToRecord: " ++
-                   "named record contains name '" ++ B8.unpack n ++
-                   "' which is not present in the provided header"
+        Nothing -> moduleError "namedRecordToRecord" $
+                   "header contains name '" ++ B8.unpack n ++
+                   "' which is not present in the named record"
         Just v  -> v
+
+moduleError :: String -> String -> a
+moduleError func msg = error $ "Data.Ceason.Encode." ++ func ++ ": " ++ msg
+{-# NOINLINE moduleError #-}
 
 unlines :: [Builder] -> Builder
 unlines [] = mempty

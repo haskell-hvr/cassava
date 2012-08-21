@@ -53,6 +53,7 @@ Test-suite unit-tests
                        test-framework-hunit,
                        test-framework-quickcheck2,
                        text,
+                       unordered-containers,
                        vector
 
   hs-source-dirs: tests
