@@ -27,67 +27,67 @@ import Data.Ceason.Types
 ------------------------------------------------------------------------
 -- Parse tests
 
-readTest :: BL.ByteString -> [[B.ByteString]] -> Assertion
-readTest input expected = case decode input of
+decodesAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
+decodesAs input expected = case decode input of
     Right r  -> V.fromList (map V.fromList expected) @=? r
     Left err -> assertFailure $
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
                 "parse error: " ++ err
 
-writeTest :: [[B.ByteString]] -> BL.ByteString -> Assertion
-writeTest input expected =
+encodesAs :: [[B.ByteString]] -> BL.ByteString -> Assertion
+encodesAs input expected =
     encode (V.fromList (map V.fromList input)) @?= expected
 
 testSimple :: Assertion
-testSimple = readTest "a,b,c\n" [["a", "b", "c"]]
+testSimple = "a,b,c\n" `decodesAs` [["a", "b", "c"]]
 
 testCrlf :: Assertion
-testCrlf = readTest "a,b\r\nc,d\r\n" [["a", "b"], ["c", "d"]]
+testCrlf = "a,b\r\nc,d\r\n" `decodesAs` [["a", "b"], ["c", "d"]]
 
 testRfc4180 :: Assertion
-testRfc4180 = readTest
-              (BL8.pack $
+testRfc4180 = (BL8.pack $
                "#field1,field2,field3\n" ++
                "\"aaa\",\"bb\n" ++
                "b\",\"ccc\"\n" ++
                "\"a,a\",\"b\"\"bb\",\"ccc\"\n" ++
                "zzz,yyy,xxx\n")
+              `decodesAs`
               [["#field1", "field2", "field3"],
                ["aaa", "bb\nb", "ccc"],
                ["a,a", "b\"bb", "ccc"],
                ["zzz", "yyy", "xxx"]]
 
 testNoEol :: Assertion
-testNoEol = readTest "a,b,c" [["a", "b", "c"]]
+testNoEol = "a,b,c" `decodesAs` [["a", "b", "c"]]
 
 testBlankLine :: Assertion
-testBlankLine = readTest "a,b,c\n\nd,e,f\n\n" [["a", "b", "c"], ["d", "e", "f"]]
+testBlankLine =
+    "a,b,c\n\nd,e,f\n\n" `decodesAs` [["a", "b", "c"], ["d", "e", "f"]]
 
 testLeadingSpace :: Assertion
-testLeadingSpace = readTest " a,  b,   c\n" [[" a", "  b", "   c"]]
+testLeadingSpace = " a,  b,   c\n" `decodesAs` [[" a", "  b", "   c"]]
 
 parseTests :: [TF.Test]
 parseTests =
-    [ TF.testGroup "decode"
-      [ TF.testCase "simple" (writeTest [["abc"]] "abc\r\n")
-      , TF.testCase "quoted" (writeTest [["\"abc\""]] "\"\"\"abc\"\"\"\r\n")
-      , TF.testCase "interspersedQuote"
-        (writeTest [["a\"b"]] "\"a\"\"b\"\r\n")
-      , TF.testCase "quotedQuote"
-        (writeTest [["\"a\"b\""]] "\"\"\"a\"\"b\"\"\"\r\n")
-      , TF.testCase "leadingSpace" (writeTest [[" abc"]] "\" abc\"\r\n")
-      , TF.testCase "comma" (writeTest [["abc,def"]] "\"abc,def\"\r\n")
-      , TF.testCase "twoFields" (writeTest [["abc","def"]] "abc,def\r\n")
-      , TF.testCase "twoRecords" (writeTest [["abc"], ["def"]] "abc\r\ndef\r\n")
-      , TF.testCase "newline" (writeTest [["abc\ndef"]] "\"abc\ndef\"\r\n")
+    [ testGroup "decode"
+      [ testCase "simple" $ [["abc"]] `encodesAs` "abc\r\n"
+      , testCase "quoted" $ [["\"abc\""]] `encodesAs` "\"\"\"abc\"\"\"\r\n"
+      , testCase "quote" $ [["a\"b"]] `encodesAs` "\"a\"\"b\"\r\n"
+      , testCase "quotedQuote" $
+        [["\"a\"b\""]] `encodesAs` "\"\"\"a\"\"b\"\"\"\r\n"
+      , testCase "leadingSpace" $ [[" abc"]] `encodesAs` "\" abc\"\r\n"
+      , testCase "comma" $ [["abc,def"]] `encodesAs` "\"abc,def\"\r\n"
+      , testCase "twoFields" $ [["abc","def"]] `encodesAs` "abc,def\r\n"
+      , testCase "twoRecords" $ [["abc"], ["def"]] `encodesAs` "abc\r\ndef\r\n"
+      , testCase "newline" $ [["abc\ndef"]] `encodesAs` "\"abc\ndef\"\r\n"
       ]
-    , TF.testGroup "decode"
-      [ TF.testCase "simple" testSimple
-      , TF.testCase "crlf" testCrlf
-      , TF.testCase "rfc4180" testRfc4180
-      , TF.testCase "noEol" testNoEol
-      , TF.testCase "blankLine" testBlankLine
-      , TF.testCase "leadingSpace" testLeadingSpace
+    , testGroup "decode"
+      [ testCase "simple" testSimple
+      , testCase "crlf" testCrlf
+      , testCase "rfc4180" testRfc4180
+      , testCase "noEol" testNoEol
+      , testCase "blankLine" testBlankLine
+      , testCase "leadingSpace" testLeadingSpace
       ]
     ]
 
@@ -123,33 +123,33 @@ boundary _dummy = roundTrip (minBound :: a) && roundTrip (maxBound :: a)
 
 conversionTests :: [TF.Test]
 conversionTests =
-    [ TF.testProperty "roundTrip/Char" (roundTrip :: Char -> Bool)
-    , TF.testProperty "roundTrip/ByteString" (roundTrip :: B.ByteString -> Bool)
-    , TF.testProperty "roundTrip/Int" (roundTrip :: Int -> Bool)
-    , TF.testProperty "roundTrip/Integer" (roundTrip :: Integer -> Bool)
-    , TF.testProperty "roundTrip/Int8" (roundTrip :: Int8 -> Bool)
-    , TF.testProperty "roundTrip/Int16" (roundTrip :: Int16 -> Bool)
-    , TF.testProperty "roundTrip/Int32" (roundTrip :: Int32 -> Bool)
-    , TF.testProperty "roundTrip/Int64" (roundTrip :: Int64 -> Bool)
-    , TF.testProperty "roundTrip/Word" (roundTrip :: Word -> Bool)
-    , TF.testProperty "roundTrip/Word8" (roundTrip :: Word8 -> Bool)
-    , TF.testProperty "roundTrip/Word16" (roundTrip :: Word16 -> Bool)
-    , TF.testProperty "roundTrip/Word32" (roundTrip :: Word32 -> Bool)
-    , TF.testProperty "roundTrip/Word64" (roundTrip :: Word64 -> Bool)
-    , TF.testProperty "roundTrip/lazy ByteString"
+    [ testProperty "roundTrip/Char" (roundTrip :: Char -> Bool)
+    , testProperty "roundTrip/ByteString" (roundTrip :: B.ByteString -> Bool)
+    , testProperty "roundTrip/Int" (roundTrip :: Int -> Bool)
+    , testProperty "roundTrip/Integer" (roundTrip :: Integer -> Bool)
+    , testProperty "roundTrip/Int8" (roundTrip :: Int8 -> Bool)
+    , testProperty "roundTrip/Int16" (roundTrip :: Int16 -> Bool)
+    , testProperty "roundTrip/Int32" (roundTrip :: Int32 -> Bool)
+    , testProperty "roundTrip/Int64" (roundTrip :: Int64 -> Bool)
+    , testProperty "roundTrip/Word" (roundTrip :: Word -> Bool)
+    , testProperty "roundTrip/Word8" (roundTrip :: Word8 -> Bool)
+    , testProperty "roundTrip/Word16" (roundTrip :: Word16 -> Bool)
+    , testProperty "roundTrip/Word32" (roundTrip :: Word32 -> Bool)
+    , testProperty "roundTrip/Word64" (roundTrip :: Word64 -> Bool)
+    , testProperty "roundTrip/lazy ByteString"
       (roundTrip :: BL.ByteString -> Bool)
-    , TF.testProperty "roundTrip/Text" (roundTrip :: T.Text -> Bool)
-    , TF.testProperty "roundTrip/lazy Text" (roundTrip :: LT.Text -> Bool)
-    , TF.testProperty "boundary/Int" (boundary (undefined :: Int))
-    , TF.testProperty "boundary/Int8" (boundary (undefined :: Int8))
-    , TF.testProperty "boundary/Int16" (boundary (undefined :: Int16))
-    , TF.testProperty "boundary/Int32" (boundary (undefined :: Int32))
-    , TF.testProperty "boundary/Int64" (boundary (undefined :: Int64))
-    , TF.testProperty "boundary/Word" (boundary (undefined :: Word))
-    , TF.testProperty "boundary/Word8" (boundary (undefined :: Word8))
-    , TF.testProperty "boundary/Word16" (boundary (undefined :: Word16))
-    , TF.testProperty "boundary/Word32" (boundary (undefined :: Word32))
-    , TF.testProperty "boundary/Word64" (boundary (undefined :: Word64))
+    , testProperty "roundTrip/Text" (roundTrip :: T.Text -> Bool)
+    , testProperty "roundTrip/lazy Text" (roundTrip :: LT.Text -> Bool)
+    , testProperty "boundary/Int" (boundary (undefined :: Int))
+    , testProperty "boundary/Int8" (boundary (undefined :: Int8))
+    , testProperty "boundary/Int16" (boundary (undefined :: Int16))
+    , testProperty "boundary/Int32" (boundary (undefined :: Int32))
+    , testProperty "boundary/Int64" (boundary (undefined :: Int64))
+    , testProperty "boundary/Word" (boundary (undefined :: Word))
+    , testProperty "boundary/Word8" (boundary (undefined :: Word8))
+    , testProperty "boundary/Word16" (boundary (undefined :: Word16))
+    , testProperty "boundary/Word32" (boundary (undefined :: Word32))
+    , testProperty "boundary/Word64" (boundary (undefined :: Word64))
     ]
 
 ------------------------------------------------------------------------
