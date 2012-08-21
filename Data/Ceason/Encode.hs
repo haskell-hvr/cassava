@@ -10,11 +10,14 @@
 -- strings.
 module Data.Ceason.Encode
     ( encode
+    , encodeByHeader
     ) where
 
 import Blaze.ByteString.Builder
 import Blaze.ByteString.Builder.Char8
+import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
+import qualified Data.HashMap.Strict as HM
 import Data.Monoid
 import qualified Data.Vector as V
 import Prelude hiding (unlines)
@@ -31,9 +34,22 @@ encode = toLazyByteString
                 . V.toList . toRecord)
          . V.toList
 
--- TODO: Implement
-encodeWithHeader :: ToNamedRecord a => V.Vector a -> L.ByteString
-encodeWithHeader = undefined
+encodeByHeader :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
+encodeByHeader hdr =
+    toLazyByteString
+    . unlines
+    . map (mconcat . intersperse (fromChar ',') . map fromByteString
+           . V.toList . namedRecordToRecord hdr . toNamedRecord)
+    . V.toList
+
+namedRecordToRecord :: Header -> NamedRecord -> Record
+namedRecordToRecord hdr nr = V.map find hdr
+  where
+    find n = case HM.lookup n nr of
+        Nothing -> error $ "Data.Ceason.Encode.namedRecordToRecord: " ++
+                   "named record contains name '" ++ B8.unpack n ++
+                   "' which is not present in the provided header"
+        Just v  -> v
 
 unlines :: [Builder] -> Builder
 unlines [] = mempty

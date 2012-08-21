@@ -455,8 +455,8 @@ instance ToField Word64 where
 -- TODO: Optimize
 escape :: B.ByteString -> B.ByteString
 escape s
-    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr) s ==
-      Nothing = s
+    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
+                     b == sp) s == Nothing = s
     | otherwise =
         B.concat ["\"",
                   B.concatMap
@@ -467,6 +467,7 @@ escape s
     comma  = 44
     nl     = 10
     cr     = 13
+    sp     = 32
 
 instance FromField B.ByteString where
     parseField = pure

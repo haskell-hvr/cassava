@@ -7,6 +7,7 @@ module Data.Ceason
       decode
     , decodeByHeader
     , encode
+    , encodeByHeader
 
     -- ** Encoding and decoding options
     -- $options

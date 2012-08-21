@@ -34,6 +34,10 @@ readTest input expected = case decode input of
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
                 "parse error: " ++ err
 
+writeTest :: [[B.ByteString]] -> BL.ByteString -> Assertion
+writeTest input expected =
+    encode (V.fromList (map V.fromList input)) @?= expected
+
 testSimple :: Assertion
 testSimple = readTest "a,b,c\n" [["a", "b", "c"]]
 
@@ -64,12 +68,26 @@ testLeadingSpace = readTest " a,  b,   c\n" [[" a", "  b", "   c"]]
 
 parseTests :: [TF.Test]
 parseTests =
-    [ TF.testCase "simple" testSimple
-    , TF.testCase "crlf" testCrlf
-    , TF.testCase "rfc4180" testRfc4180
-    , TF.testCase "noEol" testNoEol
-    , TF.testCase "blankLine" testBlankLine
-    , TF.testCase "leadingSpace" testLeadingSpace
+    [ TF.testGroup "decode"
+      [ TF.testCase "simple" (writeTest [["abc"]] "abc\r\n")
+      , TF.testCase "quoted" (writeTest [["\"abc\""]] "\"\"\"abc\"\"\"\r\n")
+      , TF.testCase "interspersedQuote"
+        (writeTest [["a\"b"]] "\"a\"\"b\"\r\n")
+      , TF.testCase "quotedQuote"
+        (writeTest [["\"a\"b\""]] "\"\"\"a\"\"b\"\"\"\r\n")
+      , TF.testCase "leadingSpace" (writeTest [[" abc"]] "\" abc\"\r\n")
+      , TF.testCase "comma" (writeTest [["abc,def"]] "\"abc,def\"\r\n")
+      , TF.testCase "twoFields" (writeTest [["abc","def"]] "abc,def\r\n")
+      , TF.testCase "twoRecords" (writeTest [["abc"], ["def"]] "abc\r\ndef\r\n")
+      ]
+    , TF.testGroup "decode"
+      [ TF.testCase "simple" testSimple
+      , TF.testCase "crlf" testCrlf
+      , TF.testCase "rfc4180" testRfc4180
+      , TF.testCase "noEol" testNoEol
+      , TF.testCase "blankLine" testBlankLine
+      , TF.testCase "leadingSpace" testLeadingSpace
+      ]
     ]
 
 ------------------------------------------------------------------------
