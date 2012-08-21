@@ -93,8 +93,8 @@ decode = decodeWith defaultDecodeOptions
 
 -- | Efficiently deserialize CSV records from a lazy 'L.ByteString'.
 -- If this fails due to incomplete or invalid input, @'Left' msg@ is
--- returned. Equivalent to @'decodeByNameWith'
--- 'defaultDecodeOptions'@.
+-- returned. The data is assumed to be preceeded by a header.
+-- Equivalent to @'decodeByNameWith' 'defaultDecodeOptions'@.
 decodeByName :: FromNamedRecord a => L.ByteString
                  -> Either String (Header, Vector a)
 decodeByName = decodeByNameWith defaultDecodeOptions

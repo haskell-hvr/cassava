@@ -36,6 +36,8 @@ encode = toLazyByteString
                 . V.toList . toRecord)
          . V.toList
 
+-- | Efficiently serialize CVS records as a lazy 'L.ByteString'. The
+-- header is written before any records and dictates the field order.
 encodeByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
 encodeByName hdr v =
     toLazyByteString ((mconcat . intersperse (fromChar ',') $
