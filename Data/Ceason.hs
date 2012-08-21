@@ -5,16 +5,16 @@ module Data.Ceason
     (
     -- * Encoding and decoding
       decode
-    , decodeByHeader
+    , decodeByName
     , encode
-    , encodeByHeader
+    , encodeByName
 
     -- ** Encoding and decoding options
     -- $options
     , DecodeOptions(..)
     , defaultDecodeOptions
     , decodeWith
-    , decodeByHeaderWith
+    , decodeByNameWith
 
     -- * Core CSV types
     , Csv
@@ -93,19 +93,19 @@ decode = decodeWith defaultDecodeOptions
 
 -- | Efficiently deserialize CSV records from a lazy 'L.ByteString'.
 -- If this fails due to incomplete or invalid input, @'Left' msg@ is
--- returned. Equivalent to @'decodeByHeaderWith'
+-- returned. Equivalent to @'decodeByNameWith'
 -- 'defaultDecodeOptions'@.
-decodeByHeader :: FromNamedRecord a => L.ByteString
+decodeByName :: FromNamedRecord a => L.ByteString
                  -> Either String (Header, Vector a)
-decodeByHeader = decodeByHeaderWith defaultDecodeOptions
-{-# INLINE decodeByHeader #-}
+decodeByName = decodeByNameWith defaultDecodeOptions
+{-# INLINE decodeByName #-}
 
 ------------------------------------------------------------------------
 -- ** Encoding and decoding options
 
 -- $options
 --
--- The 'decodeWith' and 'decodeByHeaderWith' functions lets you
+-- The 'decodeWith' and 'decodeByNameWith' functions lets you
 -- customize how the CSV data is parsed. These can be used to e.g.
 -- parse tab-separated data.
 
@@ -133,10 +133,10 @@ idDecodeWith :: DecodeOptions -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
 idDecodeWith !opts = decodeWithP (csv opts) pure
 
--- | Like 'decodeByHeader', but lets you customize how the CSV data is
+-- | Like 'decodeByName', but lets you customize how the CSV data is
 -- parsed.
-decodeByHeaderWith :: FromNamedRecord a => DecodeOptions -> L.ByteString
+decodeByNameWith :: FromNamedRecord a => DecodeOptions -> L.ByteString
                      -> Either String (Header, Vector a)
-decodeByHeaderWith !opts =
+decodeByNameWith !opts =
     decodeWithP (csvWithHeader opts)
     (\ (hdr, vs) -> (,) <$> pure hdr <*> (parse $ traverse parseNamedRecord vs))

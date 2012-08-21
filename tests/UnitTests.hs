@@ -40,12 +40,12 @@ encodesAs input expected =
 namedEncodesAs :: [B.ByteString] -> [[(B.ByteString, B.ByteString)]]
                -> BL.ByteString -> Assertion
 namedEncodesAs hdr input expected =
-    encodeByHeader (V.fromList hdr)
+    encodeByName (V.fromList hdr)
     (V.fromList $ map (BSHashMap . HM.fromList) input) @?= expected
 
 namedDecodesAs :: BL.ByteString -> [B.ByteString]
                -> [[(B.ByteString, B.ByteString)]] -> Assertion
-namedDecodesAs input ehdr expected = case decodeByHeader input of
+namedDecodesAs input ehdr expected = case decodeByName input of
     Right r  -> (V.fromList ehdr, expected') @=? r
     Left err -> assertFailure $
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++

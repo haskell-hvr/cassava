@@ -12,7 +12,7 @@
 -- strings.
 module Data.Ceason.Encode
     ( encode
-    , encodeByHeader
+    , encodeByName
     ) where
 
 import Blaze.ByteString.Builder
@@ -36,8 +36,8 @@ encode = toLazyByteString
                 . V.toList . toRecord)
          . V.toList
 
-encodeByHeader :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
-encodeByHeader hdr v =
+encodeByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
+encodeByName hdr v =
     toLazyByteString ((mconcat . intersperse (fromChar ',') $
                        map fromByteString $ V.toList hdr) <>
                       fromByteString "\r\n" <> records)
