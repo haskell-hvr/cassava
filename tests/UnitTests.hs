@@ -79,6 +79,7 @@ parseTests =
       , TF.testCase "comma" (writeTest [["abc,def"]] "\"abc,def\"\r\n")
       , TF.testCase "twoFields" (writeTest [["abc","def"]] "abc,def\r\n")
       , TF.testCase "twoRecords" (writeTest [["abc"], ["def"]] "abc\r\ndef\r\n")
+      , TF.testCase "newline" (writeTest [["abc\ndef"]] "\"abc\ndef\"\r\n")
       ]
     , TF.testGroup "decode"
       [ TF.testCase "simple" testSimple
