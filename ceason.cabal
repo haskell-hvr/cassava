@@ -19,11 +19,11 @@ Cabal-version:       >=1.8
 
 Library
   Exposed-modules:     Data.Ceason
-                       Data.Ceason.Encode
                        Data.Ceason.Parser
                        Data.Ceason.Types
 
-  Other-modules:       Data.Ceason.Encode.Internal
+  Other-modules:       Data.Ceason.Encoding
+                       Data.Ceason.Encode.Internal
                        Data.Ceason.Parser.Internal
                        Data.Ceason.Types.Class
                        Data.Ceason.Types.Internal
