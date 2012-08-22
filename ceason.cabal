@@ -22,10 +22,10 @@ Library
                        Data.Ceason.Parser
                        Data.Ceason.Types
 
-  Other-modules:       Data.Ceason.Encoding
+  Other-modules:       Data.Ceason.Conversion
+                       Data.Ceason.Encoding
                        Data.Ceason.Encode.Internal
                        Data.Ceason.Parser.Internal
-                       Data.Ceason.Types.Class
                        Data.Ceason.Types.Internal
 
   Build-depends:       array,

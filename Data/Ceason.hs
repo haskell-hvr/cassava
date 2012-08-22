@@ -54,9 +54,9 @@ module Data.Ceason
     , namedRecord
     ) where
 
+import Data.Ceason.Conversion
 import Data.Ceason.Encoding
 import Data.Ceason.Types
-import Data.Ceason.Types.Class
 
 -- $typeconversion
 --

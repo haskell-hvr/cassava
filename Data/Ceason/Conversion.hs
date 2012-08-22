@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, Rank2Types #-}
-module Data.Ceason.Types.Class
+module Data.Ceason.Conversion
     (
     -- * Type conversion
       Only(..)
