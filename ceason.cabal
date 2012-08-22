@@ -26,7 +26,6 @@ Library
                        Data.Ceason.Encoding
                        Data.Ceason.Encode.Internal
                        Data.Ceason.Parser.Internal
-                       Data.Ceason.Types.Internal
 
   Build-depends:       array,
                        attoparsec >= 0.10.2,
