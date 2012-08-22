@@ -25,7 +25,6 @@ Library
   Other-modules:       Data.Ceason.Conversion
                        Data.Ceason.Encoding
                        Data.Ceason.Encode.Internal
-                       Data.Ceason.Parser.Internal
 
   Build-depends:       array,
                        attoparsec >= 0.10.2,
