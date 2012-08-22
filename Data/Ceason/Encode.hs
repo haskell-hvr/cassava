@@ -13,6 +13,10 @@
 module Data.Ceason.Encode
     ( encode
     , encodeByName
+    , EncodeOptions(..)
+    , defaultEncodeOptions
+    , encodeWith
+    , encodeByNameWith
     ) where
 
 import Blaze.ByteString.Builder
@@ -22,31 +26,60 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as HM
 import Data.Monoid
 import qualified Data.Vector as V
+import Data.Word (Word8)
 import Prelude hiding (unlines)
 
 import Data.Ceason.Types
 
 -- TODO: 'encode' isn't as efficient as it could be.
 
+-- | Options that controls how CSV data is encoded.
+data EncodeOptions = EncodeOptions
+    { -- | Field delimiter.
+      encDelimiter  :: {-# UNPACK #-} !Word8
+    }
+
+-- | Default encoding options:
+--
+--  * 'encDelimiter': comma
+defaultEncodeOptions :: EncodeOptions
+defaultEncodeOptions = EncodeOptions
+    { encDelimiter = 44  -- comma
+    }
+
 -- | Efficiently serialize CVS records as a lazy 'L.ByteString'.
 encode :: ToRecord a => V.Vector a -> L.ByteString
-encode = toLazyByteString
-         . unlines
-         . map (mconcat . intersperse (fromChar ',') . map fromByteString
-                . V.toList . toRecord)
-         . V.toList
+encode = encodeWith defaultEncodeOptions
+
+-- | Like 'encode', but lets you customize how the CSV data is
+-- encoded.
+encodeWith :: ToRecord a => EncodeOptions -> V.Vector a -> L.ByteString
+encodeWith opts = toLazyByteString
+                  . unlines
+                  . map (encodeRecord (encDelimiter opts) . toRecord)
+                  . V.toList
+
+encodeRecord :: Word8 -> Record -> Builder
+encodeRecord delim = mconcat . intersperse (fromWord8 delim)
+                     . map fromByteString . V.toList
+{-# INLINE encodeRecord #-}
 
 -- | Efficiently serialize CVS records as a lazy 'L.ByteString'. The
 -- header is written before any records and dictates the field order.
 encodeByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
-encodeByName hdr v =
-    toLazyByteString ((mconcat . intersperse (fromChar ',') $
-                       map fromByteString $ V.toList hdr) <>
+encodeByName = encodeByNameWith defaultEncodeOptions
+
+-- | Like 'encodeByName', but lets you customize how the CSV data is
+-- encoded.
+encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> V.Vector a
+                 -> L.ByteString
+encodeByNameWith opts hdr v =
+    toLazyByteString ((encodeRecord (encDelimiter opts) hdr) <>
                       fromByteString "\r\n" <> records)
   where
     records = unlines
-              . map (mconcat . intersperse (fromChar ',') . map fromByteString
-                     . V.toList . namedRecordToRecord hdr . toNamedRecord)
+              . map (encodeRecord (encDelimiter opts)
+                     . namedRecordToRecord hdr . toNamedRecord)
               . V.toList $ v
 
 

@@ -15,6 +15,10 @@ module Data.Ceason
     , defaultDecodeOptions
     , decodeWith
     , decodeByNameWith
+    , EncodeOptions(..)
+    , defaultEncodeOptions
+    , encodeWith
+    , encodeByNameWith
 
     -- * Core CSV types
     , Csv
@@ -111,10 +115,10 @@ decodeByName = decodeByNameWith defaultDecodeOptions
 
 -- | Default decoding options:
 --
---  * 'delimiter': comma
+--  * 'decDelimiter': comma
 defaultDecodeOptions :: DecodeOptions
 defaultDecodeOptions = DecodeOptions
-    { delimiter  = 44  -- comma
+    { decDelimiter = 44  -- comma
     }
 
 -- | Like 'decode', but lets you customize how the CSV data is parsed.

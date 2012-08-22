@@ -235,8 +235,8 @@ instance ToField a => ToRecord (Vector a) where
 -- | A 'M.Map' keyed by 'B.ByteString' keys.
 --
 -- The primary use case of 'BSMap' is to decode a CSV file into a
--- @'BSMap' 'B.ByteString' 'B.ByteString'@, which lets you process the
--- CSV data without converting it to a more specific type.
+-- @'BSMap' 'B.ByteString'@, which lets you process the CSV data
+-- without converting it to a more specific type.
 newtype BSMap a = BSMap {
       fromBSMap :: M.Map B.ByteString a
     } deriving (Eq, Ord, Read, Show)
@@ -244,8 +244,8 @@ newtype BSMap a = BSMap {
 -- | A 'HM.HashMap' keyed by 'B.ByteString' keys.
 --
 -- The primary use case of 'BSHashMap' is to decode a CSV file into a
--- @'BSHashMap' 'B.ByteString' 'B.ByteString'@, which lets you process
--- the CSV data without converting it to a more specific type.
+-- @'BSHashMap' 'B.ByteString'@, which lets you process the CSV data
+-- without converting it to a more specific type.
 newtype BSHashMap a = BSHashMap {
       fromBSHashMap :: HM.HashMap B.ByteString a
     } deriving (Eq, Show)

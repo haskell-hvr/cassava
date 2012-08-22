@@ -30,13 +30,13 @@ import Data.Ceason.Types hiding (record, toNamedRecord)
 
 -- | Options that controls how CSV data is decoded.
 data DecodeOptions = DecodeOptions
-    { -- | Field delimiter.
-      delimiter  :: {-# UNPACK #-} !Word8
+    { -- | Field decDelimiter.
+      decDelimiter  :: {-# UNPACK #-} !Word8
     }
 
 csv :: DecodeOptions -> AL.Parser Csv
 csv !opts = do
-    vals <- record (delimiter opts) `sepBy1` endOfLine
+    vals <- record (decDelimiter opts) `sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
     let nonEmpty = removeBlankLines vals
@@ -45,9 +45,9 @@ csv !opts = do
 
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader !opts = do
-    hdr <- header (delimiter opts)
+    hdr <- header (decDelimiter opts)
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
-            (record (delimiter opts)) `sepBy1` endOfLine
+            (record (decDelimiter opts)) `sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
     return (hdr, V.fromList vals)
