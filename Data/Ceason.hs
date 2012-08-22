@@ -56,6 +56,7 @@ module Data.Ceason
 
 import Data.Ceason.Encoding
 import Data.Ceason.Types
+import Data.Ceason.Types.Class
 
 -- $typeconversion
 --

@@ -7,7 +7,6 @@ module Data.Ceason.Parser.Internal
     , header
     , record
     , field
-    , decodeWithP
     ) where
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
@@ -18,15 +17,13 @@ import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
 import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
-import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.ByteString.Unsafe as S
 import qualified Data.HashMap.Strict as HM
 import Data.Monoid
 import qualified Data.Vector as V
 import Data.Word
 
-import Data.Ceason.Types hiding (record, toNamedRecord)
+import Data.Ceason.Types
 
 -- | Options that controls how CSV data is decoded.
 data DecodeOptions = DecodeOptions
@@ -125,13 +122,3 @@ doubleQuote = 34
 newline = 10
 commaB = 44
 cr = 13
-
-decodeWithP :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Either String b
-decodeWithP p to s =
-    case AL.parse p s of
-      AL.Done _ v     -> case to v of
-          Success a -> Right a
-          Error msg -> Left $ "conversion error: " ++ msg
-      AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at \"" ++
-                            show (BL8.unpack left) ++ "\""
-{-# INLINE decodeWithP #-}
