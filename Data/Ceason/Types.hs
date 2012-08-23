@@ -20,8 +20,12 @@ type Csv = Vector Record
 -- | A record corresponds to a single line in a CSV file.
 type Record = Vector Field
 
+-- | The header corresponds to the first line a CSV file. Not all CSV
+-- files have a header.
 type Header = Vector Name
 
+-- | A header has one or more names, describing the data in the column
+-- following the name.
 type Name = S.ByteString
 
 -- | A record corresponds to a single line in a CSV file, indexed by

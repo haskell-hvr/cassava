@@ -41,26 +41,24 @@ module Data.Ceason
     -- ** Index-based record conversion
     -- $indexbased
     , FromRecord(..)
+    , (.!)
     , ToRecord(..)
+    , record
     , Only(..)
 
     -- ** Name-based record conversion
     -- $namebased
     , FromNamedRecord(..)
+    , (.:)
     , ToNamedRecord(..)
+    , namedRecord
+    , (.=)
     , BSMap(..)
     , BSHashMap(..)
 
     -- ** Field conversion
     , FromField(..)
     , ToField(..)
-
-    -- * Accessors
-    , (.!)
-    , (.:)
-    , (.=)
-    , record
-    , namedRecord
     ) where
 
 import Data.Ceason.Conversion

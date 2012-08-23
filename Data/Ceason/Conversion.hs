@@ -526,8 +526,9 @@ parseIntegral s = case parseOnly number s of
 ------------------------------------------------------------------------
 -- Constructors and accessors
 
--- | Retrieve the /n/th field in the given record.  The result is
+-- | Retrieve the /n/th field in the given record. The result is
 -- 'empty' if the value cannot be converted to the desired type.
+-- Raises an exception if the index is out of bounds.
 (.!) :: FromField a => Record -> Int -> Parser a
 v .! idx = parseField (v ! idx)
 {-# INLINE (.!) #-}
