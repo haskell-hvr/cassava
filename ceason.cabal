@@ -20,11 +20,11 @@ Cabal-version:       >=1.8
 Library
   Exposed-modules:     Data.Ceason
                        Data.Ceason.Parser
-                       Data.Ceason.Types
 
   Other-modules:       Data.Ceason.Conversion
+                       Data.Ceason.Conversion.Internal
                        Data.Ceason.Encoding
-                       Data.Ceason.Encode.Internal
+                       Data.Ceason.Types
 
   Build-depends:       array,
                        attoparsec >= 0.10.2,

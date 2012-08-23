@@ -1,4 +1,4 @@
-module Data.Ceason.Encode.Internal
+module Data.Ceason.Conversion.Internal
     ( decimal
     , realFloat
     ) where

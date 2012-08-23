@@ -48,7 +48,7 @@ import Data.Word
 import GHC.Float (double2Float)
 import Prelude hiding (takeWhile)
 
-import Data.Ceason.Encode.Internal
+import Data.Ceason.Conversion.Internal
 import Data.Ceason.Types
 
 ------------------------------------------------------------------------
