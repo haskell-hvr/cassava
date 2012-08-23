@@ -5,10 +5,11 @@
 --
 --  * Empty lines are ignored.
 --
---  * Non-escaped fields may contain any characters except:
+--  * Non-escaped fields may contain any characters except
 --    double-quotes, commas, carriage returns, and newlines
 --
---  * Escaped fields may contain any characters except double-quotes.
+--  * Escaped fields may contain any characters (but double-quotes
+--    need to be escaped).
 --
 -- The functions in this module can be used to implement e.g. a
 -- resumable parser that is fed input incrementally.

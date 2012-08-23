@@ -1,13 +1,14 @@
--- | This module implements parsing and encoding of CSV files. The
--- parser defined here is RFC 4180 compliant, with the following
+-- | This module implements encoding and decoding of CSV data. The
+-- implementation is RFC 4180 compliant, with the following
 -- extensions:
 --
 --  * Empty lines are ignored.
 --
---  * Non-escaped fields may contain any characters except:
+--  * Non-escaped fields may contain any characters except
 --    double-quotes, commas, carriage returns, and newlines
 --
---  * Escaped fields may contain any characters except double-quotes.
+--  * Escaped fields may contain any characters (but double-quotes
+--    need to be escaped).
 module Data.Ceason
     (
     -- * Encoding and decoding
