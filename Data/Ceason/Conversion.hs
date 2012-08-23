@@ -543,7 +543,7 @@ parseIntegral typ s = case parseOnly number s of
 
 typeError :: String -> B.ByteString -> Maybe String -> Parser a
 typeError typ s mmsg =
-    fail $ "expected " ++ typ ++ ", got '" ++ B8.unpack s ++ "'" ++ cause
+    fail $ "expected " ++ typ ++ ", got " ++ show (B8.unpack s) ++ cause
   where
     cause = case mmsg of
         Just msg -> " (" ++ msg ++ ")"
@@ -564,7 +564,7 @@ v .! idx = parseField (v ! idx)
 -- to the desired type.
 (.:) :: FromField a => NamedRecord -> B.ByteString -> Parser a
 m .: name = maybe (fail err) parseField $ HM.lookup name m
-  where err = "no field named '" ++ B8.unpack name ++ "'"
+  where err = "no field named " ++ show (B8.unpack name)
 {-# INLINE (.:) #-}
 
 -- | Construct a pair from a name and a value.  For use with
