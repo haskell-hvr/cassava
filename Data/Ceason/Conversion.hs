@@ -97,8 +97,8 @@ newtype Only a = Only {
 -- @data Person = Person { name :: Text, age :: Int }
 --
 -- instance ToRecord Person where
---     toRecord (Person name age) = record [
---        toField name, toField age]
+--     toRecord (Person name age) = 'record' [
+--        'toField' name, 'toField' age]
 -- @
 --
 -- Outputs data on this form:
