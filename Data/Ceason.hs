@@ -1,4 +1,13 @@
--- | RFC 4180 compliant CSV parsing and encodig.
+-- | This module implements parsing and encoding of CSV files. The
+-- parser defined here is RFC 4180 compliant, with the following
+-- extensions:
+--
+--  * Empty lines are ignored.
+--
+--  * Non-escaped fields may contain any characters except:
+--    double-quotes, commas, carriage returns, and newlines
+--
+--  * Escaped fields may contain any characters except double-quotes.
 module Data.Ceason
     (
     -- * Encoding and decoding
@@ -31,16 +40,16 @@ module Data.Ceason
 
     -- ** Index-based record conversion
     -- $indexbased
-    , Only(..)
     , FromRecord(..)
     , ToRecord(..)
+    , Only(..)
 
     -- ** Name-based record conversion
     -- $namebased
-    , BSMap(..)
-    , BSHashMap(..)
     , FromNamedRecord(..)
     , ToNamedRecord(..)
+    , BSMap(..)
+    , BSHashMap(..)
 
     -- ** Field conversion
     , FromField(..)

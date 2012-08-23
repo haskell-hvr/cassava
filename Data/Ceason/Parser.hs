@@ -1,11 +1,25 @@
 {-# LANGUAGE BangPatterns #-}
 
+-- | A CSV parser. The parser defined here is RFC 4180 compliant, with
+-- the following extensions:
+--
+--  * Empty lines are ignored.
+--
+--  * Non-escaped fields may contain any characters except:
+--    double-quotes, commas, carriage returns, and newlines
+--
+--  * Escaped fields may contain any characters except double-quotes.
+--
+-- The functions in this module can be used to implement e.g. a
+-- resumable parser that is fed input incrementally.
 module Data.Ceason.Parser
     ( DecodeOptions(..)
+    , defaultDecodeOptions
     , csv
     , csvWithHeader
     , header
     , record
+    , name
     , field
     ) where
 
@@ -25,12 +39,21 @@ import Data.Word
 
 import Data.Ceason.Types
 
--- | Options that controls how CSV data is decoded.
+-- | Options that controls how data is decoded. These options can be
+-- used to e.g. decode tab-separated data instead of comma-separated
+-- data.
 data DecodeOptions = DecodeOptions
-    { -- | Field decDelimiter.
+    { -- | Field delimiter.
       decDelimiter  :: {-# UNPACK #-} !Word8
     }
 
+-- | Decoding options for parsing CSV files.
+defaultDecodeOptions :: DecodeOptions
+defaultDecodeOptions = DecodeOptions
+    { decDelimiter = 44  -- comma
+    }
+
+-- | Parse a CSV file that does not include a header.
 csv :: DecodeOptions -> AL.Parser Csv
 csv !opts = do
     vals <- record (decDelimiter opts) `sepBy1` endOfLine
@@ -40,6 +63,7 @@ csv !opts = do
     return (V.fromList nonEmpty)
 {-# INLINE csv #-}
 
+-- | Parse a CSV file that includes a header.
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader !opts = do
     hdr <- header (decDelimiter opts)
@@ -52,11 +76,13 @@ csvWithHeader !opts = do
 toNamedRecord :: V.Vector S.ByteString -> Record -> NamedRecord
 toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 
--- | Parse a CSV header line, including the terminating line
--- separator.
-header :: Word8 -> AL.Parser Header
+-- | Parse a header, including the terminating line separator.
+header :: Word8  -- ^ Field delimiter
+       -> AL.Parser Header
 header delim = V.fromList <$> name `sepBy1` (A.word8 delim) <* endOfLine
 
+-- | Parse a header name. Header names have the same format as regular
+-- 'field's.
 name :: AL.Parser Field  -- TODO: Create Name type alias
 name = field
 
@@ -64,10 +90,18 @@ removeBlankLines :: [Record] -> [Record]
 removeBlankLines = filter (not . blankLine)
   where blankLine v = V.length v == 1 && (S.null (V.head v))
 
-record :: Word8 -> AL.Parser Record
+-- | Parse a record, not including the terminating line separator. The
+-- terminating line separate is not included as the last record in a
+-- CSV file is allowed to not have a terminating line separator. You
+-- most likely want to use the 'endOfLine' parser in combination with
+-- this parser.
+record :: Word8  -- ^ Field delimiter
+       -> AL.Parser Record
 record !delim = V.fromList <$> field `sepBy1` (A.word8 delim)
 {-# INLINE record #-}
 
+-- | Parse a field. The field may be in either the escaped or
+-- non-escaped format. The return value is unescaped.
 field :: AL.Parser Field
 field = do
     mb <- A.peekWord8
@@ -92,7 +126,6 @@ escapedField = do
             Left err -> fail err
         else return s
 
--- TODO: Perhaps allow all possible bytes (except , and ").
 unescapedField :: AL.Parser S.ByteString
 unescapedField = A.takeWhile (\ c -> c /= doubleQuote &&
                                      c /= newline &&
