@@ -16,8 +16,6 @@ module Data.Ceason.Conversion
     , Result(..)
     , Parser
     , parse
-    , parseMaybe
-    , parseEither
 
     -- * Accessors
     , (.!)
@@ -111,8 +109,7 @@ class ToRecord a where
 instance FromField a => FromRecord (Only a) where
     parseRecord v
         | n == 1    = Only <$> parseField (V.unsafeIndex v 0)
-        | otherwise = fail $ "cannot unpack array of length " ++
-                        show n ++ " into a 'Only'"
+        | otherwise = lengthMismatch 1 v
           where
             n = V.length v
 
@@ -125,8 +122,7 @@ instance (FromField a, FromField b) => FromRecord (a, b) where
     parseRecord v
         | n == 2    = (,) <$> parseField (V.unsafeIndex v 0)
                           <*> parseField (V.unsafeIndex v 1)
-        | otherwise = fail $ "cannot unpack array of length " ++
-                        show n ++ " into a pair"
+        | otherwise = lengthMismatch 2 v
           where
             n = V.length v
 
@@ -138,8 +134,7 @@ instance (FromField a, FromField b, FromField c) => FromRecord (a, b, c) where
         | n == 3    = (,,) <$> parseField (V.unsafeIndex v 0)
                            <*> parseField (V.unsafeIndex v 1)
                            <*> parseField (V.unsafeIndex v 2)
-        | otherwise = fail $ "cannot unpack array of length " ++
-                        show n ++ " into a 3-tuple"
+        | otherwise = lengthMismatch 3 v
           where
             n = V.length v
 
@@ -154,8 +149,7 @@ instance (FromField a, FromField b, FromField c, FromField d) =>
                             <*> parseField (V.unsafeIndex v 1)
                             <*> parseField (V.unsafeIndex v 2)
                             <*> parseField (V.unsafeIndex v 3)
-        | otherwise = fail $ "cannot unpack array of length " ++
-                        show n ++ " into a 4-tuple"
+        | otherwise = lengthMismatch 4 v
           where
             n = V.length v
 
@@ -172,8 +166,7 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e) =>
                              <*> parseField (V.unsafeIndex v 2)
                              <*> parseField (V.unsafeIndex v 3)
                              <*> parseField (V.unsafeIndex v 4)
-        | otherwise = fail $ "cannot unpack array of length " ++
-                        show n ++ " into a 5-tuple"
+        | otherwise = lengthMismatch 5 v
           where
             n = V.length v
 
@@ -192,8 +185,7 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
                               <*> parseField (V.unsafeIndex v 3)
                               <*> parseField (V.unsafeIndex v 4)
                               <*> parseField (V.unsafeIndex v 5)
-        | otherwise = fail $ "cannot unpack array of length " ++
-                        show n ++ " into a 6-tuple"
+        | otherwise = lengthMismatch 6 v
           where
             n = V.length v
 
@@ -213,8 +205,7 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
                                <*> parseField (V.unsafeIndex v 4)
                                <*> parseField (V.unsafeIndex v 5)
                                <*> parseField (V.unsafeIndex v 6)
-        | otherwise = fail $ "cannot unpack array of length " ++
-                        show n ++ " into a 7-tuple"
+        | otherwise = lengthMismatch 7 v
           where
             n = V.length v
 
@@ -224,6 +215,17 @@ instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
     toRecord (a, b, c, d, e, f, g) = V.fromList [
         toField a, toField b, toField c, toField d, toField e, toField f,
         toField g]
+
+lengthMismatch :: Int -> Record -> Parser a
+lengthMismatch expected v =
+    fail $ "cannot unpack array of length " ++
+    show n ++ " into a " ++ desired ++ ". Input record: " ++
+    show v
+  where
+    n = V.length v
+    desired | expected == 1 = "Only"
+            | expected == 2 = "pair"
+            | otherwise     = show expected ++ "-tuple"
 
 instance FromField a => FromRecord [a] where
     parseRecord = traverse parseField . V.toList
@@ -362,8 +364,7 @@ class ToField a where
 instance FromField Char where
     parseField s
         | T.compareLength t 1 == EQ = pure (T.head t)
-        | otherwise = fail $ "when expecting a Char, encountered \"" ++
-                              B8.unpack s ++ "\" instead"
+        | otherwise = typeError "Char" s Nothing
       where t = T.decodeUtf8 s
     {-# INLINE parseField #-}
 
@@ -389,12 +390,12 @@ instance ToField Float where
 
 parseDouble :: B.ByteString -> Parser Double
 parseDouble s = case parseOnly double s of
-    Left err -> fail err
+    Left err -> typeError "Double" s (Just err)
     Right n  -> pure n
 {-# INLINE parseDouble #-}
 
 instance FromField Int where
-    parseField = parseIntegral
+    parseField = parseIntegral "Int"
     {-# INLINE parseField #-}
 
 instance ToField Int where
@@ -402,7 +403,7 @@ instance ToField Int where
     {-# INLINE toField #-}
 
 instance FromField Integer where
-    parseField = parseIntegral
+    parseField = parseIntegral "Integer"
     {-# INLINE parseField #-}
 
 instance ToField Integer where
@@ -410,7 +411,7 @@ instance ToField Integer where
     {-# INLINE toField #-}
 
 instance FromField Int8 where
-    parseField = parseIntegral
+    parseField = parseIntegral "Int8"
     {-# INLINE parseField #-}
 
 instance ToField Int8 where
@@ -418,7 +419,7 @@ instance ToField Int8 where
     {-# INLINE toField #-}
 
 instance FromField Int16 where
-    parseField = parseIntegral
+    parseField = parseIntegral "Int16"
     {-# INLINE parseField #-}
 
 instance ToField Int16 where
@@ -426,7 +427,7 @@ instance ToField Int16 where
     {-# INLINE toField #-}
 
 instance FromField Int32 where
-    parseField = parseIntegral
+    parseField = parseIntegral "Int32"
     {-# INLINE parseField #-}
 
 instance ToField Int32 where
@@ -434,7 +435,7 @@ instance ToField Int32 where
     {-# INLINE toField #-}
 
 instance FromField Int64 where
-    parseField = parseIntegral
+    parseField = parseIntegral "Int64"
     {-# INLINE parseField #-}
 
 instance ToField Int64 where
@@ -442,7 +443,7 @@ instance ToField Int64 where
     {-# INLINE toField #-}
 
 instance FromField Word where
-    parseField = parseIntegral
+    parseField = parseIntegral "Word"
     {-# INLINE parseField #-}
 
 instance ToField Word where
@@ -450,7 +451,7 @@ instance ToField Word where
     {-# INLINE toField #-}
 
 instance FromField Word8 where
-    parseField = parseIntegral
+    parseField = parseIntegral "Word8"
     {-# INLINE parseField #-}
 
 instance ToField Word8 where
@@ -458,7 +459,7 @@ instance ToField Word8 where
     {-# INLINE toField #-}
 
 instance FromField Word16 where
-    parseField = parseIntegral
+    parseField = parseIntegral "Word16"
     {-# INLINE parseField #-}
 
 instance ToField Word16 where
@@ -466,7 +467,7 @@ instance ToField Word16 where
     {-# INLINE toField #-}
 
 instance FromField Word32 where
-    parseField = parseIntegral
+    parseField = parseIntegral "Word32"
     {-# INLINE parseField #-}
 
 instance ToField Word32 where
@@ -474,7 +475,7 @@ instance ToField Word32 where
     {-# INLINE toField #-}
 
 instance FromField Word64 where
-    parseField = parseIntegral
+    parseField = parseIntegral "Word64"
     {-# INLINE parseField #-}
 
 instance ToField Word64 where
@@ -534,11 +535,19 @@ instance ToField LT.Text where
     toField = toField . B.concat . L.toChunks . LT.encodeUtf8
     {-# INLINE toField #-}
 
-parseIntegral :: Integral a => B.ByteString -> Parser a
-parseIntegral s = case parseOnly number s of
-    Left err -> fail err
+parseIntegral :: Integral a => String -> B.ByteString -> Parser a
+parseIntegral typ s = case parseOnly number s of
+    Left err -> typeError typ s (Just err)
     Right n  -> pure (floor n)
 {-# INLINE parseIntegral #-}
+
+typeError :: String -> B.ByteString -> Maybe String -> Parser a
+typeError typ s mmsg =
+    fail $ "expected " ++ typ ++ ", got '" ++ B8.unpack s ++ "'" ++ cause
+  where
+    cause = case mmsg of
+        Just msg -> " (" ++ msg ++ ")"
+        Nothing  -> ""
 
 ------------------------------------------------------------------------
 -- Constructors and accessors
@@ -555,7 +564,7 @@ v .! idx = parseField (v ! idx)
 -- to the desired type.
 (.:) :: FromField a => NamedRecord -> B.ByteString -> Parser a
 m .: name = maybe (fail err) parseField $ HM.lookup name m
-  where err = "No field named " ++ B8.unpack name
+  where err = "no field named '" ++ B8.unpack name ++ "'"
 {-# INLINE (.:) #-}
 
 -- | Construct a pair from a name and a value.  For use with
@@ -685,12 +694,3 @@ apP d e = do
 parse :: Parser a -> Result a
 parse p = runParser p Error Success
 {-# INLINE parse #-}
-
--- | Run a 'Parser' with a 'Maybe' result type.
-parseMaybe :: (a -> Parser b) -> a -> Maybe b
-parseMaybe m v = runParser (m v) (const Nothing) Just
-{-# INLINE parseMaybe #-}
-
--- | Run a 'Parser' with an 'Either' result type.
-parseEither :: (a -> Parser b) -> a -> Either String b
-parseEither m v = runParser (m v) Left Right
