@@ -11,7 +11,11 @@
 --    need to be escaped).
 module Data.Ceason
     (
+    -- * Usage example
+    -- $example
+
     -- * Encoding and decoding
+    -- $encoding
       decode
     , decodeByName
     , encode
@@ -42,6 +46,7 @@ module Data.Ceason
     -- ** Index-based record conversion
     -- $indexbased
     , FromRecord(..)
+    , Parser
     , (.!)
     , ToRecord(..)
     , record
@@ -65,6 +70,35 @@ module Data.Ceason
 import Data.Ceason.Conversion
 import Data.Ceason.Encoding
 import Data.Ceason.Types
+
+-- $example
+--
+-- A short encoding usage example:
+--
+-- @ >>> 'encode' $ fromList [(\"John\" :: Text, 27), (\"Jane\", 28)]
+-- Chunk \"John,27\\r\\nJane,28\\r\\n\" Empty
+-- @
+--
+-- Since string literals are overloaded we have to supply a type
+-- signature as the compiler couldn't deduce which string type (i.e.
+-- 'String' or 'Text') we want to use. In most cases type inference
+-- will infer the type from the context and you can omit type
+-- signatures.
+--
+-- A short decoding usage example:
+--
+-- @ >>> 'decode' \"John,27\\r\\nJane,28\\r\\n\" :: Either String (Vector (Text, Int))
+-- Right (fromList [(\"John\",27),(\"Jane\",28)])
+-- @
+
+-- $encoding
+--
+-- Encoding and decoding is a two step process. To encode a value, it
+-- is first converted to a generic representation, using either
+-- 'ToRecord' or 'ToNamedRecord'. The generic representation is then
+-- encoded as CSV data. To decode a value the process is reversed and
+-- either 'FromRecord' or 'FromNamedRecord' is used instead. Both
+-- these steps are combined in the 'encode' and 'decode' functions.
 
 -- $typeconversion
 --

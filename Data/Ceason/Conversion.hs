@@ -343,6 +343,19 @@ instance ToField a => ToNamedRecord (BSHashMap a) where
 class FromField a where
     parseField :: Field -> Parser a
 
+-- | A type that can be converted to a single CSV field.
+--
+-- Example type and instance:
+--
+-- @{-\# LANGUAGE OverloadedStrings \#-}
+--
+-- data Color = Red | Green | Blue
+--
+-- instance ToField Color where
+--     toField Red   = \"R\"
+--     toField Green = \"G\"
+--     toField Blue  = \"B\"
+-- @
 class ToField a where
     toField :: a -> Field
 
@@ -501,18 +514,22 @@ instance ToField L.ByteString where
     toField = toField . B.concat . L.toChunks
     {-# INLINE toField #-}
 
+-- | Assumes UTF-8 encoding.
 instance FromField T.Text where
     parseField = pure . T.decodeUtf8
     {-# INLINE parseField #-}
 
+-- | Uses UTF-8 encoding.
 instance ToField T.Text where
     toField = toField . T.encodeUtf8
     {-# INLINE toField #-}
 
+-- | Assumes UTF-8 encoding.
 instance FromField LT.Text where
     parseField s = pure (LT.fromChunks [T.decodeUtf8 s])
     {-# INLINE parseField #-}
 
+-- | Uses UTF-8 encoding.
 instance ToField LT.Text where
     toField = toField . B.concat . L.toChunks . LT.encodeUtf8
     {-# INLINE toField #-}
@@ -607,7 +624,10 @@ type Failure f r   = String -> f r
 -- | Success continuation.
 type Success a f r = a -> f r
 
--- | A continuation-based parser type.
+-- | Conversion of a field to a value might fail e.g. if the field is
+-- malformed. This possibility is captured by the 'Parser' type, which
+-- lets you compose several field conversions together in such a way
+-- that if any of them fail, the whole record conversion fails.
 newtype Parser a = Parser {
       runParser :: forall f r.
                    Failure f r
