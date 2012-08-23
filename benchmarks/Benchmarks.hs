@@ -24,23 +24,47 @@ instance FromNamedRecord President where
                          m .: "Party" <*>
                          m .: "Home State"
 
+instance ToNamedRecord President where
+    toNamedRecord (presidency, president, wikipediaEntry, tookOffice,
+                   leftOffice, party, homeState) = namedRecord
+        [ "Presidency"      .= presidency
+        , "President"       .= president
+        , "Wikipedia Entry" .= wikipediaEntry
+        , "Took office"     .= tookOffice
+        , "Left office"     .= leftOffice
+        , "Party"           .= party
+        , "Home State"      .= homeState
+        ]
+
 
 fromStrict s = BL.fromChunks [s]
 
 main :: IO ()
 main = do
     !csvData <- fromStrict `fmap` B.readFile "benchmarks/presidents.csv"
-    !csvDataH <- fromStrict `fmap` B.readFile
+    !csvDataN <- fromStrict `fmap` B.readFile
                  "benchmarks/presidents_with_header.csv"
+    let (Right !presidents) = decodePresidents csvData
+        (Right (!hdr, !presidentsN)) = decodePresidentsN csvDataN
     defaultMain [
-          bgroup "indexed" [
-               bench "presidents/without conversion" $ whnf idDecode csvData
-             , bench "presidents/with conversion" $ whnf decodePresidents csvData
-             ]
-        , bgroup "named" [
-               bench "presidents/without conversion" $ whnf idDecodeN csvDataH
-             , bench "presidents/with conversion" $ whnf decodePresidentsN csvDataH
-             ]
+          bgroup "positional"
+          [ bgroup "decode"
+            [ bench "presidents/without conversion" $ whnf idDecode csvData
+            , bench "presidents/with conversion" $ whnf decodePresidents csvData
+            ]
+          , bgroup "encode"
+            [ bench "presidents/with conversion" $ whnf encode presidents
+            ]
+          ]
+        , bgroup "named"
+          [ bgroup "decode"
+            [  bench "presidents/without conversion" $ whnf idDecodeN csvDataN
+            , bench "presidents/with conversion" $ whnf decodePresidentsN csvDataN
+            ]
+          , bgroup "encode"
+            [ bench "presidents/with conversion" $ whnf (encodeByName hdr) presidentsN
+            ]
+          ]
         ]
   where
     decodePresidents :: BL.ByteString -> Either String (Vector President)
