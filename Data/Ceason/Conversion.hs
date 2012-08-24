@@ -234,7 +234,6 @@ instance ToField a => ToRecord [a] where
 instance FromField a => FromRecord (V.Vector a) where
     parseRecord = traverse parseField
 
--- TODO: Check if this can give rise to overlapping instances.
 instance ToField a => ToRecord (Vector a) where
     toRecord = V.map toField
 
