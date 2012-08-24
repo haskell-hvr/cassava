@@ -11,7 +11,7 @@ import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import Data.Vector (Vector)
 
-import Data.Ceason
+import Data.Csv
 
 type President = (Int, Text, ByteString, ByteString, ByteString, Text, Text)
 

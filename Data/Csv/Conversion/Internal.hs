@@ -1,4 +1,4 @@
-module Data.Ceason.Conversion.Internal
+module Data.Csv.Conversion.Internal
     ( decimal
     , realFloat
     ) where

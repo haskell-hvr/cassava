@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns, OverloadedStrings #-}
 
--- Module:      Data.Ceason.Encode
+-- Module:      Data.Csv.Encoding
 -- Copyright:   (c) 2011 MailRank, Inc.
 --              (c) 2012 Johan Tibell
 -- License:     BSD3
@@ -9,7 +9,7 @@
 -- Portability: portable
 --
 -- Encoding and decoding of data types into CSV.
-module Data.Ceason.Encoding
+module Data.Csv.Encoding
     (     
     -- * Encoding and decoding
       decode
@@ -44,9 +44,9 @@ import qualified Data.Vector as V
 import Data.Word (Word8)
 import Prelude hiding (unlines)
 
-import Data.Ceason.Conversion
-import Data.Ceason.Parser
-import Data.Ceason.Types
+import Data.Csv.Conversion
+import Data.Csv.Parser
+import Data.Csv.Types
 
 -- TODO: 'encode' isn't as efficient as it could be.
 
@@ -156,7 +156,7 @@ namedRecordToRecord hdr nr = V.map find hdr
         Just v  -> v
 
 moduleError :: String -> String -> a
-moduleError func msg = error $ "Data.Ceason.Encoding." ++ func ++ ": " ++ msg
+moduleError func msg = error $ "Data.Csv.Encoding." ++ func ++ ": " ++ msg
 {-# NOINLINE moduleError #-}
 
 unlines :: [Builder] -> Builder

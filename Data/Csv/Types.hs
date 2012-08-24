@@ -1,4 +1,4 @@
-module Data.Ceason.Types
+module Data.Csv.Types
     (
     -- * Core CSV types
       Csv

@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, OverloadedStrings, Rank2Types #-}
-module Data.Ceason.Conversion
+module Data.Csv.Conversion
     (
     -- * Type conversion
       Only(..)
@@ -44,8 +44,8 @@ import Data.Word
 import GHC.Float (double2Float)
 import Prelude hiding (takeWhile)
 
-import Data.Ceason.Conversion.Internal
-import Data.Ceason.Types
+import Data.Csv.Conversion.Internal
+import Data.Csv.Types
 
 ------------------------------------------------------------------------
 -- Type conversion

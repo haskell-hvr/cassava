@@ -9,7 +9,7 @@
 --
 --  * Escaped fields may contain any characters (but double-quotes
 --    need to be escaped).
-module Data.Ceason
+module Data.Csv
     (
     -- * Usage example
     -- $example
@@ -65,9 +65,9 @@ module Data.Ceason
     , ToField(..)
     ) where
 
-import Data.Ceason.Conversion
-import Data.Ceason.Encoding
-import Data.Ceason.Types
+import Data.Csv.Conversion
+import Data.Csv.Encoding
+import Data.Csv.Types
 
 -- $example
 --

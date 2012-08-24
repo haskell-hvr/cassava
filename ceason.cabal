@@ -18,13 +18,13 @@ Cabal-version:       >=1.8
 
 
 Library
-  Exposed-modules:     Data.Ceason
-                       Data.Ceason.Parser
+  Exposed-modules:     Data.Csv
+                       Data.Csv.Parser
 
-  Other-modules:       Data.Ceason.Conversion
-                       Data.Ceason.Conversion.Internal
-                       Data.Ceason.Encoding
-                       Data.Ceason.Types
+  Other-modules:       Data.Csv.Conversion
+                       Data.Csv.Conversion.Internal
+                       Data.Csv.Encoding
+                       Data.Csv.Types
 
   Build-depends:       array,
                        attoparsec >= 0.10.2,

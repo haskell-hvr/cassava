@@ -21,7 +21,7 @@ import Test.Framework.Providers.HUnit as TF
 import Test.QuickCheck
 import Test.Framework.Providers.QuickCheck2 as TF
 
-import Data.Ceason
+import Data.Csv
 
 ------------------------------------------------------------------------
 -- Parse tests

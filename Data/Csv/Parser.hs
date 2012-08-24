@@ -13,7 +13,7 @@
 --
 -- The functions in this module can be used to implement e.g. a
 -- resumable parser that is fed input incrementally.
-module Data.Ceason.Parser
+module Data.Csv.Parser
     ( DecodeOptions(..)
     , defaultDecodeOptions
     , csv
@@ -38,7 +38,7 @@ import Data.Monoid
 import qualified Data.Vector as V
 import Data.Word
 
-import Data.Ceason.Types
+import Data.Csv.Types
 
 -- | Options that controls how data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
