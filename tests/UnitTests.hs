@@ -41,7 +41,7 @@ namedEncodesAs :: [B.ByteString] -> [[(B.ByteString, B.ByteString)]]
                -> BL.ByteString -> Assertion
 namedEncodesAs hdr input expected =
     encodeByName (V.fromList hdr)
-    (V.fromList $ map (BSHashMap . HM.fromList) input) @?= expected
+    (V.fromList $ map HM.fromList input) @?= expected
 
 namedDecodesAs :: BL.ByteString -> [B.ByteString]
                -> [[(B.ByteString, B.ByteString)]] -> Assertion
@@ -51,7 +51,7 @@ namedDecodesAs input ehdr expected = case decodeByName input of
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
                 "parse error: " ++ err
   where
-    expected' = V.fromList $ map (BSHashMap . HM.fromList) expected
+    expected' = V.fromList $ map HM.fromList expected
 
 testRfc4180 :: Assertion
 testRfc4180 = (BL8.pack $
