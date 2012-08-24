@@ -16,6 +16,7 @@ Maintainer:          johan.tibell@gmail.com
 Category:            Text, Web, CSV
 Build-type:          Simple
 Cabal-version:       >=1.8
+Extra-source-files:  examples/*.hs
 
 
 Library
