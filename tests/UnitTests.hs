@@ -27,7 +27,15 @@ import Data.Csv
 -- Parse tests
 
 decodesAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
-decodesAs input expected = case decode input of
+decodesAs input expected = assertResult input expected $ decode input
+
+decodesWithAs :: DecodeOptions -> BL.ByteString -> [[B.ByteString]] -> Assertion
+decodesWithAs opts input expected =
+    assertResult input expected $ decodeWith opts input
+
+assertResult :: BL.ByteString -> [[B.ByteString]]
+             -> Either String (V.Vector (V.Vector B.ByteString)) -> Assertion
+assertResult input expected res = case res of
     Right r  -> V.fromList (map V.fromList expected) @=? r
     Left err -> assertFailure $
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
@@ -87,12 +95,17 @@ positionalTests =
          [["a", "b", "c"], ["d", "e", "f"]])
       , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
       ] ++ [testCase "rfc4180" testRfc4180]
+    , testGroup "decodeWith"
+      [ testCase "tab-delim" $ decodesWithAs (def { decDelimiter = 9 }) "1\t2"
+        [["1", "2"]]
+      ]
     ]
   where
     encodeTest (name, input, expected) =
         testCase name $ input `encodesAs` expected
     decodeTest (name, input, expected) =
         testCase name $ input `decodesAs` expected
+    def = defaultDecodeOptions
 
 nameBasedTests :: [TF.Test]
 nameBasedTests =

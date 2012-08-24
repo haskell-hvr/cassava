@@ -80,12 +80,12 @@ toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 -- | Parse a header, including the terminating line separator.
 header :: Word8  -- ^ Field delimiter
        -> AL.Parser Header
-header delim = V.fromList <$> name `sepBy1` (A.word8 delim) <* endOfLine
+header !delim = V.fromList <$> name delim `sepBy1` (A.word8 delim) <* endOfLine
 
 -- | Parse a header name. Header names have the same format as regular
 -- 'field's.
-name :: AL.Parser Field  -- TODO: Create Name type alias
-name = field
+name :: Word8 -> AL.Parser Field  -- TODO: Create Name type alias
+name !delim = field delim
 
 removeBlankLines :: [Record] -> [Record]
 removeBlankLines = filter (not . blankLine)
@@ -98,19 +98,19 @@ removeBlankLines = filter (not . blankLine)
 -- this parser.
 record :: Word8  -- ^ Field delimiter
        -> AL.Parser Record
-record !delim = V.fromList <$> field `sepBy1` (A.word8 delim)
+record !delim = V.fromList <$> field delim `sepBy1` (A.word8 delim)
 {-# INLINE record #-}
 
 -- | Parse a field. The field may be in either the escaped or
 -- non-escaped format. The return value is unescaped.
-field :: AL.Parser Field
-field = do
+field :: Word8 -> AL.Parser Field
+field !delim = do
     mb <- A.peekWord8
     -- We purposely don't use <|> as we want to commit to the first
     -- choice if we see a double quote.
     case mb of
         Just b | b == doubleQuote -> escapedField
-        _                         -> unescapedField
+        _                         -> unescapedField delim
 
 escapedField :: AL.Parser S.ByteString
 escapedField = do
@@ -127,11 +127,11 @@ escapedField = do
             Left err -> fail err
         else return s
 
-unescapedField :: AL.Parser S.ByteString
-unescapedField = A.takeWhile (\ c -> c /= doubleQuote &&
-                                     c /= newline &&
-                                     c /= commaB &&
-                                     c /= cr)
+unescapedField :: Word8 -> AL.Parser S.ByteString
+unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
+                                            c /= newline &&
+                                            c /= delim &&
+                                            c /= cr)
 
 dquote :: AL.Parser Char
 dquote = char '"'
@@ -151,8 +151,7 @@ unescape = toByteString <$> go mempty where
       then return (acc `mappend` fromByteString h)
       else rest
 
-doubleQuote, newline, commaB, cr :: Word8
+doubleQuote, newline, cr :: Word8
 doubleQuote = 34
 newline = 10
-commaB = 44
 cr = 13
