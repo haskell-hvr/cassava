@@ -1,4 +1,4 @@
-Name:                ceason
+Name:                cassava
 Version:             0.1.0.0
 Synopsis:            A CSV parsing and encoding library
 Description:
@@ -44,7 +44,7 @@ Test-suite unit-tests
   Build-depends:       attoparsec,
                        base,
                        bytestring,
-                       ceason,
+                       cassava,
                        HUnit,
                        QuickCheck >= 2.0,
                        test-framework,
@@ -62,7 +62,7 @@ Benchmark benchmarks
   Main-is: Benchmarks.hs
   Build-depends:       base,
                        bytestring,
-                       ceason,
+                       cassava,
                        criterion,
                        text,
                        unordered-containers,
