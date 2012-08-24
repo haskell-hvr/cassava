@@ -4,7 +4,7 @@ Synopsis:            A CSV parsing and encoding library
 Description:
   A CSV parsing and encoding library optimized for ease of use and high
   performance.
-Homepage:            https://github.com/tibbe/sea
+Homepage:            https://github.com/tibbe/cassava
 License:             BSD3
 License-file:        LICENSE
 Bug-reports:         https://github.com/tibbe/cassava/issues
