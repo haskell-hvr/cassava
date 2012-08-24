@@ -8,8 +8,7 @@
 -- Stability:   experimental
 -- Portability: portable
 --
--- Efficiently convert integers and floating point numbers to byte
--- strings.
+-- Encoding and decoding of data types into CSV.
 module Data.Ceason.Encoding
     (     
     -- * Encoding and decoding
