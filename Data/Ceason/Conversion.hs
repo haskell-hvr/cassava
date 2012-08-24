@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, Rank2Types #-}
+{-# LANGUAGE FlexibleInstances, OverloadedStrings, Rank2Types #-}
 module Data.Ceason.Conversion
     (
     -- * Type conversion
@@ -533,6 +533,16 @@ instance FromField LT.Text where
 -- | Uses UTF-8 encoding.
 instance ToField LT.Text where
     toField = toField . B.concat . L.toChunks . LT.encodeUtf8
+    {-# INLINE toField #-}
+
+-- | Assumes UTF-8 encoding.
+instance FromField [Char] where
+    parseField = fmap T.unpack . parseField
+    {-# INLINE parseField #-}
+
+-- | Uses UTF-8 encoding.
+instance ToField [Char] where
+    toField = toField . T.pack
     {-# INLINE toField #-}
 
 parseIntegral :: Integral a => String -> B.ByteString -> Parser a
