@@ -119,3 +119,9 @@ import Data.Ceason.Types
 -- as the header. Name-based conversion is more robust to changes in
 -- the file structure e.g. to reording or addition of columns, but can
 -- be a bit slower.
+
+-- $options
+--
+-- These functions can be used to control how data is encoded and
+-- decoded. For example, they can be used to encode data in a
+-- tab-separated format instead of in a comma-separated format.

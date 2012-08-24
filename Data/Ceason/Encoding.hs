@@ -13,14 +13,12 @@
 module Data.Ceason.Encoding
     (     
     -- * Encoding and decoding
-    -- $encoding
       decode
     , decodeByName
     , encode
     , encodeByName
 
     -- ** Encoding and decoding options
-    -- $options
     , DecodeOptions(..)
     , defaultDecodeOptions
     , decodeWith
