@@ -29,7 +29,7 @@ Library
 
   Build-depends:       array,
                        attoparsec >= 0.10.2,
-                       base,
+                       base < 5,
                        blaze-builder,
                        bytestring,
                        containers,
