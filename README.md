@@ -16,6 +16,10 @@ Jane Doe,60000
 here's how you'd process it record-by-record:
 
 ```haskell
+import Data.Csv
+import Data.ByteString.Lazy as BL
+import Data.Vector          as V
+
 main = do
     csvData <- BL.readFile "salaries.csv"
     case decode csvData of
