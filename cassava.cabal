@@ -7,6 +7,7 @@ Description:
 Homepage:            https://github.com/tibbe/sea
 License:             BSD3
 License-file:        LICENSE
+Bug-reports:         https://github.com/tibbe/cassava/issues
 Copyright:           (c) 2012 Johan Tibell
                      (c) 2012 Bryan O'Sullivan
                      (c) 2011 MailRank, Inc.
@@ -68,3 +69,7 @@ Benchmark benchmarks
                        unordered-containers,
                        vector
   hs-source-dirs: benchmarks
+
+source-repository head
+  type:     git
+  location: https://github.com/tibbe/cassava.git
