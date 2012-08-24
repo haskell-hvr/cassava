@@ -45,6 +45,10 @@ encodesAs :: [[B.ByteString]] -> BL.ByteString -> Assertion
 encodesAs input expected =
     encode (V.fromList (map V.fromList input)) @?= expected
 
+encodesWithAs :: EncodeOptions -> [[B.ByteString]] -> BL.ByteString -> Assertion
+encodesWithAs opts input expected =
+    encodeWith opts (V.fromList (map V.fromList input)) @?= expected
+
 namedEncodesAs :: [B.ByteString] -> [[(B.ByteString, B.ByteString)]]
                -> BL.ByteString -> Assertion
 namedEncodesAs hdr input expected =
@@ -87,6 +91,10 @@ positionalTests =
       , ("twoRecords",   [["abc"], ["def"]], "abc\r\ndef\r\n")
       , ("newline",      [["abc\ndef"]],     "\"abc\ndef\"\r\n")
       ]
+    , testGroup "encodeWith"
+      [ testCase "tab-delim" $ encodesWithAs (defEnc { encDelimiter = 9 })
+        [["1", "2"]] "1\t2\r\n"
+      ]
     , testGroup "decode" $ map decodeTest
       [ ("simple",       "a,b,c\n",        [["a", "b", "c"]])
       , ("crlf",         "a,b\r\nc,d\r\n", [["a", "b"], ["c", "d"]])
@@ -96,8 +104,8 @@ positionalTests =
       , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
       ] ++ [testCase "rfc4180" testRfc4180]
     , testGroup "decodeWith"
-      [ testCase "tab-delim" $ decodesWithAs (def { decDelimiter = 9 }) "1\t2"
-        [["1", "2"]]
+      [ testCase "tab-delim" $ decodesWithAs (defDec { decDelimiter = 9 })
+        "1\t2" [["1", "2"]]
       ]
     ]
   where
@@ -105,7 +113,8 @@ positionalTests =
         testCase name $ input `encodesAs` expected
     decodeTest (name, input, expected) =
         testCase name $ input `decodesAs` expected
-    def = defaultDecodeOptions
+    defEnc = defaultEncodeOptions
+    defDec = defaultDecodeOptions
 
 nameBasedTests :: [TF.Test]
 nameBasedTests =
