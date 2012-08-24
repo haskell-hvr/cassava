@@ -7,6 +7,7 @@ import Criterion.Main
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import Data.Vector (Vector)
 
@@ -38,6 +39,8 @@ instance ToNamedRecord President where
 
 
 fromStrict s = BL.fromChunks [s]
+
+type BSHashMap a = HM.HashMap B.ByteString a
 
 main :: IO ()
 main = do

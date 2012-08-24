@@ -4,8 +4,6 @@ module Data.Ceason.Conversion
     -- * Type conversion
       Only(..)
     , FromRecord(..)
-    , BSMap(..)
-    , BSHashMap(..)
     , FromNamedRecord(..)
     , ToNamedRecord(..)
     , FromField(..)
@@ -243,24 +241,6 @@ instance ToField a => ToRecord (Vector a) where
 ------------------------------------------------------------------------
 -- Name-based conversion
 
--- | A 'M.Map' keyed by 'B.ByteString' keys.
---
--- The primary use case of 'BSMap' is to decode a CSV file into a
--- @'BSMap' 'B.ByteString'@, which lets you process the CSV data
--- without converting it to a more specific type.
-newtype BSMap a = BSMap {
-      fromBSMap :: M.Map B.ByteString a
-    } deriving (Eq, Ord, Read, Show)
-
--- | A 'HM.HashMap' keyed by 'B.ByteString' keys.
---
--- The primary use case of 'BSHashMap' is to decode a CSV file into a
--- @'BSHashMap' 'B.ByteString'@, which lets you process the CSV data
--- without converting it to a more specific type.
-newtype BSHashMap a = BSHashMap {
-      fromBSHashMap :: HM.HashMap B.ByteString a
-    } deriving (Eq, Show)
-
 -- | A type that can be converted from a single CSV record, with the
 -- possibility of failure.
 --
@@ -304,20 +284,19 @@ class FromNamedRecord a where
 class ToNamedRecord a where
     toNamedRecord :: a -> NamedRecord
 
-instance FromField a => FromNamedRecord (BSMap a) where
-    parseNamedRecord m = BSMap . M.fromList <$>
+instance FromField a => FromNamedRecord (M.Map B.ByteString a) where
+    parseNamedRecord m = M.fromList <$>
                          (traverse parseSnd $ HM.toList m)
       where parseSnd (name, s) = (,) <$> pure name <*> parseField s
 
-instance ToField a => ToNamedRecord (BSMap a) where
-    toNamedRecord = HM.fromList . map (\ (k, v) -> (k, toField v)) . M.toList .
-                    fromBSMap
+instance ToField a => ToNamedRecord (M.Map B.ByteString a) where
+    toNamedRecord = HM.fromList . map (\ (k, v) -> (k, toField v)) . M.toList
 
-instance FromField a => FromNamedRecord (BSHashMap a) where
-    parseNamedRecord m = BSHashMap <$> traverse (\ s -> parseField s) m
+instance FromField a => FromNamedRecord (HM.HashMap B.ByteString a) where
+    parseNamedRecord m = traverse (\ s -> parseField s) m
 
-instance ToField a => ToNamedRecord (BSHashMap a) where
-    toNamedRecord = HM.map toField . fromBSHashMap
+instance ToField a => ToNamedRecord (HM.HashMap B.ByteString a) where
+    toNamedRecord = HM.map toField
 
 ------------------------------------------------------------------------
 -- Individual field conversion

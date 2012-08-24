@@ -59,8 +59,6 @@ module Data.Ceason
     , ToNamedRecord(..)
     , namedRecord
     , (.=)
-    , BSMap(..)
-    , BSHashMap(..)
 
     -- ** Field conversion
     , FromField(..)
