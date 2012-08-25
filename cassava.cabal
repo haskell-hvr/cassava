@@ -34,6 +34,7 @@ Library
                        blaze-builder,
                        bytestring,
                        containers,
+                       ghc-prim >= 0.2.0.0,
                        text,
                        unordered-containers,
                        vector
