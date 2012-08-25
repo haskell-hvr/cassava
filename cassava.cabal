@@ -22,6 +22,7 @@ Extra-source-files:  examples/*.hs
 Library
   Exposed-modules:     Data.Csv
                        Data.Csv.Parser
+                       Data.Csv.Conversion.Generics
 
   Other-modules:       Data.Csv.Conversion
                        Data.Csv.Conversion.Internal
@@ -34,6 +35,7 @@ Library
                        blaze-builder,
                        bytestring,
                        containers,
+                       ghc-prim >= 0.2,
                        text,
                        unordered-containers,
                        vector
