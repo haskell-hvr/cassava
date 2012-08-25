@@ -1,4 +1,6 @@
-{-# LANGUAGE FlexibleInstances, OverloadedStrings, Rank2Types #-}
+{-# LANGUAGE FlexibleInstances, OverloadedStrings, Rank2Types
+  , DefaultSignatures, FlexibleContexts
+  #-}
 module Data.Csv.Conversion
     (
     -- * Type conversion
@@ -42,6 +44,7 @@ import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import Data.Word
 import GHC.Float (double2Float)
+import GHC.Generics
 import Prelude hiding (takeWhile)
 
 import Data.Csv.Conversion.Internal
@@ -78,6 +81,38 @@ import Data.Csv.Types
 -- @
 class FromRecord a where
     parseRecord :: Record -> Parser a
+    
+    default parseRecord :: (Generic a, GFromRecord (Rep a)) => Record -> Parser a
+    parseRecord = fmap to . gparseRecord
+
+-- GHC Generics:
+class GFromRecord a where
+    gparseRecord :: Record -> Parser (a p)
+
+instance (GFromRecord a, GFromRecord b)=> GFromRecord ((:*:) a b) where
+    gparseRecord v | V.length v >= 2 = (:*:) <$> gparseRecord (V.singleton $ V.unsafeHead v)
+                                             <*> gparseRecord (V.unsafeTail v)
+                   | otherwise = mzero -- TODO: define lengthMismatch equivalent appropriate for generics
+ 
+-- try each constructor in order; this is a bit unusual, since re-arranging
+-- order of constructors of a FromRecord type can change program behavior
+instance (GFromRecord a, GFromRecord b)=> GFromRecord ((:+:) a b) where
+    gparseRecord v = L1 <$> gparseRecord v
+                 <|> R1 <$> gparseRecord v
+                 <|> mzero
+
+-- this could logically match only the empty line, but that's already handled
+-- in 'decode'. Instead, this encapsulates Record parse failure (see :+: above)
+instance GFromRecord U1 where
+    gparseRecord _ = return U1
+
+instance GFromRecord a => GFromRecord (M1 i c a) where
+    gparseRecord v = M1 <$> gparseRecord v
+
+instance FromField a => GFromRecord (K1 i a) where
+    gparseRecord v | V.length v == 1 = K1 <$> (v .! 0)
+                   | otherwise = mzero
+
 
 -- | Haskell lacks a single-element tuple type, so if you CSV data
 -- with just one column you can use the 'Only' type to represent a
