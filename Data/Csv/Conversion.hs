@@ -1,4 +1,8 @@
-{-# LANGUAGE FlexibleInstances, OverloadedStrings, Rank2Types #-}
+{-# LANGUAGE CPP, FlexibleInstances, OverloadedStrings, Rank2Types #-}
+#ifdef GENERICS
+{-# LANGUAGE DefaultSignatures, TypeOperators, KindSignatures, FlexibleContexts,
+             MultiParamTypeClasses, UndecidableInstances, ScopedTypeVariables #-}
+#endif
 module Data.Csv.Conversion
     (
     -- * Type conversion
@@ -21,6 +25,9 @@ module Data.Csv.Conversion
     , (.=)
     , record
     , namedRecord
+    
+    -- * Util
+    , lengthMismatch
     ) where
 
 import Control.Applicative
@@ -46,6 +53,11 @@ import Prelude hiding (takeWhile)
 
 import Data.Csv.Conversion.Internal
 import Data.Csv.Types
+
+#ifdef GENERICS
+import GHC.Generics
+import qualified Data.IntMap as IM
+#endif
 
 ------------------------------------------------------------------------
 -- Type conversion
@@ -78,6 +90,11 @@ import Data.Csv.Types
 -- @
 class FromRecord a where
     parseRecord :: Record -> Parser a
+  
+#ifdef GENERICS
+    default parseRecord :: (Generic a, GFromRecord (Rep a)) => Record -> Parser a
+    parseRecord r = to <$> gparseRecord r
+#endif
 
 -- | Haskell lacks a single-element tuple type, so if you CSV data
 -- with just one column you can use the 'Only' type to represent a
@@ -103,6 +120,11 @@ newtype Only a = Only {
 -- > Jane,55
 class ToRecord a where
     toRecord :: a -> Record
+
+#ifdef GENERICS
+    default toRecord :: (Generic a, GToRecord (Rep a) Field) => a -> Record
+    toRecord = V.fromList . gtoRecord . from
+#endif
 
 instance FromField a => FromRecord (Only a) where
     parseRecord v
@@ -270,6 +292,11 @@ instance ToField a => ToRecord (Vector a) where
 class FromNamedRecord a where
     parseNamedRecord :: NamedRecord -> Parser a
 
+#ifdef GENERICS
+    default parseNamedRecord :: (Generic a, GFromNamedRecord (Rep a)) => NamedRecord -> Parser a
+    parseNamedRecord r = to <$> gparseNamedRecord r
+#endif
+
 -- | A type that can be converted to a single CSV record.
 --
 -- An example type and instance:
@@ -282,6 +309,11 @@ class FromNamedRecord a where
 -- @
 class ToNamedRecord a where
     toNamedRecord :: a -> NamedRecord
+
+#ifdef GENERICS
+    default toNamedRecord :: (Generic a, GToRecord (Rep a) (B.ByteString, B.ByteString)) => a -> NamedRecord
+    toNamedRecord = namedRecord . gtoRecord . from
+#endif
 
 instance FromField a => FromNamedRecord (M.Map B.ByteString a) where
     parseNamedRecord m = M.fromList <$>
@@ -682,3 +714,97 @@ apP d e = do
 parse :: Parser a -> Result a
 parse p = runParser p Error Success
 {-# INLINE parse #-}
+
+
+
+#ifdef GENERICS
+
+class GFromRecord f where
+    gparseRecord :: Record -> Parser (f p)
+
+instance GFromRecordSum f Record => GFromRecord (M1 i n f) where
+    gparseRecord v = 
+        case (IM.lookup n gparseRecordSum) of
+            Nothing -> lengthMismatch n v 
+            Just p -> M1 <$> p v
+      where
+        n = V.length v
+
+class GFromNamedRecord f where
+    gparseNamedRecord :: NamedRecord -> Parser (f p)
+
+instance GFromRecordSum f NamedRecord => GFromNamedRecord (M1 i n f) where
+    gparseNamedRecord v = 
+        foldr (\f p -> p <|> M1 <$> f v) empty (IM.elems gparseRecordSum)
+
+
+class GFromRecordSum f r where
+    gparseRecordSum :: IM.IntMap (r -> Parser (f p))
+
+instance (GFromRecordSum a r, GFromRecordSum b r) => GFromRecordSum (a :+: b) r where
+    gparseRecordSum = 
+        IM.unionWith (\a b r -> a r <|> b r) 
+            (fmap (L1 <$>) <$> gparseRecordSum)
+            (fmap (R1 <$>) <$> gparseRecordSum)
+
+instance GFromRecordProd f r => GFromRecordSum (M1 i n f) r where
+    gparseRecordSum = IM.singleton n (fmap (M1 <$>) f)
+      where
+        (n, f) = gparseRecordProd 0
+
+class GFromRecordProd f r where
+    gparseRecordProd :: Int -> (Int, r -> Parser (f p))
+
+instance GFromRecordProd U1 r where
+    gparseRecordProd n = (n, const (pure U1))
+
+instance (GFromRecordProd a r, GFromRecordProd b r) => GFromRecordProd (a :*: b) r where
+    gparseRecordProd n0 = (n2, f)
+      where
+        f r = (:*:) <$> fa r <*> fb r
+        (n1, fa) = gparseRecordProd n0
+        (n2, fb) = gparseRecordProd n1
+
+instance GFromRecordProd f Record => GFromRecordProd (M1 i n f) Record where
+    gparseRecordProd n = fmap (M1 <$>) <$> gparseRecordProd n
+
+instance FromField a => GFromRecordProd (K1 i a) Record where
+    gparseRecordProd n = (n + 1, \v -> K1 <$> parseField (V.unsafeIndex v n))
+
+data Proxy s (f :: * -> *) a = Proxy
+
+instance (FromField a, Selector s) => GFromRecordProd (M1 S s (K1 i a)) NamedRecord where
+    gparseRecordProd n = (n + 1, \v -> (M1 . K1) <$> v .: name)
+      where
+        name = T.encodeUtf8 (T.pack (selName (Proxy :: Proxy s f a)))
+
+
+class GToRecord a f where
+    gtoRecord :: a p -> [f]
+
+instance GToRecord U1 f where
+    gtoRecord U1 = []
+
+instance (GToRecord a f, GToRecord b f) => GToRecord (a :*: b) f where
+    gtoRecord (a :*: b) = gtoRecord a ++ gtoRecord b
+
+instance (GToRecord a f, GToRecord b f) => GToRecord (a :+: b) f where
+    gtoRecord (L1 a) = gtoRecord a
+    gtoRecord (R1 b) = gtoRecord b
+
+instance GToRecord a f => GToRecord (M1 D c a) f where
+    gtoRecord (M1 a) = gtoRecord a
+
+instance GToRecord a f => GToRecord (M1 C c a) f where
+    gtoRecord (M1 a) = gtoRecord a
+
+instance GToRecord a Field => GToRecord (M1 S c a) Field where
+    gtoRecord (M1 a) = gtoRecord a
+
+instance ToField a => GToRecord (K1 i a) Field where
+    gtoRecord (K1 a) = [toField a]
+
+instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B.ByteString) where
+    gtoRecord m@(M1 (K1 a)) = [T.encodeUtf8 (T.pack (selName m)) .= toField a]
+
+#endif

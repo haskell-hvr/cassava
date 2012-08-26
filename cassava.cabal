@@ -1,5 +1,5 @@
 Name:                cassava
-Version:             0.1.0.1
+Version:             0.1.0.2
 Synopsis:            A CSV parsing and encoding library
 Description:
   A CSV parsing and encoding library optimized for ease of use and high
@@ -40,6 +40,10 @@ Library
 
   ghc-options:         -Wall -O2
 
+  if impl(ghc >= 7.2.1)
+    cpp-options:       -DGENERICS
+    build-depends:     ghc-prim >= 0.2
+  
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Main-is: UnitTests.hs
