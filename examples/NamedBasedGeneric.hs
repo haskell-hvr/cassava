@@ -2,7 +2,6 @@
 
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv
-import qualified Data.Csv.Conversion.Generics as G
 import qualified Data.Vector as V
 import GHC.Generics
 
@@ -12,10 +11,8 @@ data Person = Person
     }
     deriving Generic
 
-instance FromNamedRecord Person where
-    parseNamedRecord = G.parseNamedRecord
-instance ToNamedRecord Person where
-    toNamedRecord = G.toNamedRecord
+instance FromNamedRecord Person
+instance ToNamedRecord Person
 
 persons :: [Person]
 persons = [Person "John" 50000, Person "Jane" 60000]
