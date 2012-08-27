@@ -25,9 +25,6 @@ module Data.Csv.Conversion
     , (.=)
     , record
     , namedRecord
-    
-    -- * Util
-    , lengthMismatch
     ) where
 
 import Control.Applicative
