@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Data.Csv.Conversion.Internal
     ( decimal
     , realFloat
@@ -10,7 +11,11 @@ import Data.Array.IArray
 import qualified Data.ByteString as B
 import Data.Char (ord)
 import Data.Int
+#if MIN_VERSION_base(4,5,0)
 import Data.Monoid
+#else
+import Data.Monoid.CompatBase44
+#endif
 import Data.Word
 
 ------------------------------------------------------------------------

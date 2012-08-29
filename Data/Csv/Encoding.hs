@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, OverloadedStrings #-}
+{-# LANGUAGE BangPatterns, CPP, OverloadedStrings #-}
 
 -- Module:      Data.Csv.Encoding
 -- Copyright:   (c) 2011 MailRank, Inc.
@@ -38,6 +38,9 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.HashMap.Strict as HM
 import Data.Monoid
+#if !MIN_VERSION_base(4,5,0)
+import Data.Monoid.CompatBase44
+#endif
 import Data.Traversable
 import Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -47,6 +50,15 @@ import Prelude hiding (unlines)
 import Data.Csv.Conversion
 import Data.Csv.Parser
 import Data.Csv.Types
+
+-- #if !MIN_VERSION_base(4,5,0)
+-- infixr 6 <>
+
+-- -- | An infix synonym for 'mappend'.
+-- (<>) :: Monoid m => m -> m -> m
+-- (<>) = mappend
+-- {-# INLINE (<>) #-}
+-- #end if
 
 -- TODO: 'encode' isn't as efficient as it could be.
 

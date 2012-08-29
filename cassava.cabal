@@ -27,6 +27,7 @@ Library
                        Data.Csv.Conversion.Internal
                        Data.Csv.Encoding
                        Data.Csv.Types
+                       Data.Monoid.CompatBase44
 
   Build-depends:       array,
                        attoparsec >= 0.10.2,
