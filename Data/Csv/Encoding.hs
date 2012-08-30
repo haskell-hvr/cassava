@@ -37,13 +37,14 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.HashMap.Strict as HM
-import Data.Monoid
+import Data.Monoid (mconcat, mempty)
 import Data.Traversable
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Data.Word (Word8)
 import Prelude hiding (unlines)
 
+import Data.Csv.Compat.Monoid ((<>))
 import Data.Csv.Conversion
 import Data.Csv.Parser
 import Data.Csv.Types

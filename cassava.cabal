@@ -23,7 +23,8 @@ Library
   Exposed-modules:     Data.Csv
                        Data.Csv.Parser
 
-  Other-modules:       Data.Csv.Conversion
+  Other-modules:       Data.Csv.Compat.Monoid
+                       Data.Csv.Conversion
                        Data.Csv.Conversion.Internal
                        Data.Csv.Encoding
                        Data.Csv.Types
