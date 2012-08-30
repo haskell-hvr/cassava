@@ -22,6 +22,7 @@ Extra-source-files:  examples/*.hs
 Library
   Exposed-modules:     Data.Csv
                        Data.Csv.Parser
+                       Data.Csv.Streaming
 
   Other-modules:       Data.Csv.Compat.Monoid
                        Data.Csv.Conversion
