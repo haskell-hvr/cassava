@@ -57,8 +57,6 @@ import Data.Csv.Types
 -- | Efficiently deserialize CSV records from a lazy 'L.ByteString'.
 -- If this fails due to incomplete or invalid input, @'Left' msg@ is
 -- returned. Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
---
--- Use the 'decSkipHeader' and 'decodeWith' if the input has a header.
 decode :: FromRecord a => L.ByteString -> Either String (Vector a)
 decode = decodeWith defaultDecodeOptions
 {-# INLINE decode #-}

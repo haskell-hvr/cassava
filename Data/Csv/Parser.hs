@@ -27,7 +27,6 @@ module Data.Csv.Parser
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
 import Control.Applicative
-import Control.Monad (when)
 import Data.Attoparsec.Char8 hiding (Parser, Result, parse)
 import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
@@ -47,25 +46,17 @@ import Data.Csv.Types
 data DecodeOptions = DecodeOptions
     { -- | Field delimiter.
       decDelimiter  :: {-# UNPACK #-} !Word8
-
-      -- | If 'True', the CSV file must have a header and this header
-      -- will be skipped.
-    , decSkipHeader :: !Bool
     }
 
 -- | Decoding options for parsing CSV files.
 defaultDecodeOptions :: DecodeOptions
 defaultDecodeOptions = DecodeOptions
-    { decDelimiter  = 44  -- comma
-    , decSkipHeader = False
+    { decDelimiter = 44  -- comma
     }
 
 -- | Parse a CSV file that does not include a header.
 csv :: DecodeOptions -> AL.Parser Csv
 csv !opts = do
-    when (decSkipHeader opts) $ do
-        _ <- header (decDelimiter opts)
-        return ()
     vals <- record (decDelimiter opts) `sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
@@ -75,11 +66,7 @@ csv !opts = do
 
 -- | Parse a CSV file that includes a header.
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
-csvWithHeader !opts
-    | decSkipHeader opts = moduleError "csvWithHeader" $
-                           "decSkipHeader must not be used together with " ++
-                           "header-based parsing"
-csvWithHeader opts = do
+csvWithHeader !opts = do
     hdr <- header (decDelimiter opts)
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
             (record (decDelimiter opts)) `sepBy1` endOfLine
@@ -168,7 +155,3 @@ doubleQuote, newline, cr :: Word8
 doubleQuote = 34
 newline = 10
 cr = 13
-
-moduleError :: String -> String -> a
-moduleError func msg = error $ "Data.Csv.Parser." ++ func ++ ": " ++ msg
-{-# NOINLINE moduleError #-}
