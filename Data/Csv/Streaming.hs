@@ -9,11 +9,12 @@ import qualified Data.ByteString as B
 import Data.Csv.Conversion hiding (Result)
 import Data.Csv.Parser
 
-data Result a = Some [a] (B.ByteString -> Result a)
+data Result a = Fail B.ByteString String -- TODO: add more failure info
               | Partial (B.ByteString -> Result a)
-              | Fail B.ByteString String -- TODO: add more failure info
+              | Some a (B.ByteString -> Result a)
 
-decode :: FromRecord a => B.ByteString -> Result a
+
+decode :: FromRecord a => B.ByteString -> Result [a]
 decode = go
   where
     go s = case A.parse (csv defaultDecodeOptions) s of
