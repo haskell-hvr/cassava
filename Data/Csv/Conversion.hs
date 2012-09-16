@@ -18,6 +18,7 @@ module Data.Csv.Conversion
     , Result(..)
     , Parser
     , parse
+    , parseEither
 
     -- * Accessors
     , (.!)
@@ -707,12 +708,18 @@ apP d e = do
   return (b a)
 {-# INLINE apP #-}
 
+-- TODO: Result is basically just Either. Use that instead?
+
 -- | Run a 'Parser'.
 parse :: Parser a -> Result a
 parse p = runParser p Error Success
 {-# INLINE parse #-}
 
-
+-- | Run a 'Parser', returning either @'Left' msg@ or @'Right'
+-- result@.
+parseEither :: Parser a -> Either String a
+parseEither p = runParser p Left Right
+{-# INLINE parseEither #-}
 
 #ifdef GENERICS
 
