@@ -18,9 +18,7 @@ main = withFile "salaries.csv" ReadMode $ \ csvFile -> do
             isEof <- hIsEOF csvFile
             if isEof
                 then return $ k B.empty
-                else do
-                    bytes <- B.hGetSome csvFile 4096
-                    return $ k bytes
+                else k `fmap` B.hGetSome csvFile 4096
     isEof <- hIsEOF csvFile
     unless isEof $ do
         bytes <- B.hGetSome csvFile 4096
