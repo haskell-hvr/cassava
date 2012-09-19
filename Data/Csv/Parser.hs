@@ -74,7 +74,7 @@ csvWithHeader !opts = do
     endOfInput
     return (hdr, V.fromList vals)
 
-toNamedRecord :: V.Vector S.ByteString -> Record -> NamedRecord
+toNamedRecord :: Header -> Record -> NamedRecord
 toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 
 -- | Parse a header, including the terminating line separator.
