@@ -57,7 +57,10 @@ import Data.Csv.Types
 -- | Efficiently deserialize CSV records from a lazy 'L.ByteString'.
 -- If this fails due to incomplete or invalid input, @'Left' msg@ is
 -- returned. Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
-decode :: FromRecord a => L.ByteString -> Either String (Vector a)
+decode :: FromRecord a
+       => Bool          -- ^ Skip header
+       -> L.ByteString  -- ^ CSV data
+       -> Either String (Vector a)
 decode = decodeWith defaultDecodeOptions
 {-# INLINE decode #-}
 
@@ -65,8 +68,9 @@ decode = decodeWith defaultDecodeOptions
 -- If this fails due to incomplete or invalid input, @'Left' msg@ is
 -- returned. The data is assumed to be preceeded by a header.
 -- Equivalent to @'decodeByNameWith' 'defaultDecodeOptions'@.
-decodeByName :: FromNamedRecord a => L.ByteString
-                 -> Either String (Header, Vector a)
+decodeByName :: FromNamedRecord a
+             => L.ByteString  -- ^ CSV data
+             -> Either String (Header, Vector a)
 decodeByName = decodeByNameWith defaultDecodeOptions
 {-# INLINE decodeByName #-}
 
@@ -85,9 +89,12 @@ encodeByName = encodeByNameWith defaultEncodeOptions
 -- ** Encoding and decoding options
 
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
-decodeWith :: FromRecord a => DecodeOptions -> L.ByteString
+decodeWith :: FromRecord a
+           => DecodeOptions  -- ^ Decoding options
+           -> Bool           -- ^ Skip header
+           -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
-decodeWith !opts = decodeWithP (csv opts) (parse . traverse parseRecord)
+decodeWith = decodeWithC (parse . traverse parseRecord)
 {-# INLINE [1] decodeWith #-}
 
 {-# RULES
@@ -96,13 +103,23 @@ decodeWith !opts = decodeWithP (csv opts) (parse . traverse parseRecord)
 
 -- | Same as 'decodeWith', but more efficient as no type
 -- conversion is performed.
-idDecodeWith :: DecodeOptions -> L.ByteString
+idDecodeWith :: DecodeOptions -> Bool -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
-idDecodeWith !opts = decodeWithP (csv opts) pure
+idDecodeWith = decodeWithC pure
+
+decodeWithC :: (Csv -> Result a) -> DecodeOptions -> Bool -> L.ByteString
+            -> Either String a
+decodeWithC convert !opts skipHeader = decodeWithP parser convert
+  where parser
+            | skipHeader = header (decDelimiter opts) *> csv opts
+            | otherwise  = csv opts
+{-# INLINE decodeWithC #-}
 
 -- | Like 'decodeByName', but lets you customize how the CSV data is
 -- parsed.
-decodeByNameWith :: FromNamedRecord a => DecodeOptions -> L.ByteString
+decodeByNameWith :: FromNamedRecord a
+                 => DecodeOptions  -- ^ Decoding options
+                 -> L.ByteString   -- ^ CSV data
                  -> Either String (Header, Vector a)
 decodeByNameWith !opts =
     decodeWithP (csvWithHeader opts)
