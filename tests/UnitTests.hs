@@ -27,11 +27,11 @@ import Data.Csv
 -- Parse tests
 
 decodesAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
-decodesAs input expected = assertResult input expected $ decode input
+decodesAs input expected = assertResult input expected $ decode False input
 
 decodesWithAs :: DecodeOptions -> BL.ByteString -> [[B.ByteString]] -> Assertion
 decodesWithAs opts input expected =
-    assertResult input expected $ decodeWith opts input
+    assertResult input expected $ decodeWith opts False input
 
 assertResult :: BL.ByteString -> [[B.ByteString]]
              -> Either String (V.Vector (V.Vector B.ByteString)) -> Assertion
@@ -159,7 +159,7 @@ instance Arbitrary LT.Text where
 -- empty line (which we will ignore.) We therefore encode at least two
 -- columns.
 roundTrip :: (Eq a, FromField a, ToField a) => a -> Bool
-roundTrip x = case decode (encode (V.singleton (x, dummy))) of
+roundTrip x = case decode False (encode (V.singleton (x, dummy))) of
     Right v | V.length v == 1 -> let (y, _ :: Char) = v ! 0 in x == y
     _  -> False
   where dummy = 'a'
