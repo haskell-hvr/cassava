@@ -39,8 +39,6 @@ import Data.Csv.Types
 ------------------------------------------------------------------------
 -- * Decoding headers
 
--- TODO: Can this be simply be replaced by the 'header' parser?
-
 -- | An incremental parser that when fed data eventually returns a
 -- parsed 'Header', or an error.
 data HeaderParser a =
