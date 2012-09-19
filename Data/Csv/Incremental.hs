@@ -16,10 +16,12 @@ module Data.Csv.Incremental
     , Parser(..)
 
     -- ** Index-based record conversion
+    -- $indexbased
     , decode
     , decodeWith
 
     -- ** Name-based record conversion
+    -- $namebased
     , decodeByName
     , decodeByNameWith
     ) where
@@ -35,6 +37,16 @@ import Data.Csv.Conversion hiding (Parser, Result, record, toNamedRecord)
 import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Parser
 import Data.Csv.Types
+
+-- $indexbased
+--
+-- See documentation on index-based conversion in "Data.Csv" for more
+-- information.
+
+-- $namebased
+--
+-- See documentation on name-based conversion in "Data.Csv" for more
+-- information.
 
 ------------------------------------------------------------------------
 -- * Decoding headers
@@ -152,11 +164,18 @@ data More = Incomplete | Complete
 
 -- | Efficiently deserialize CSV in an incremental fashion. Equivalent
 -- to @'decodeByNameWith' 'defaultDecodeOptions'@.
-decode :: FromRecord a => Bool -> B.ByteString -> Parser a
+decode :: FromRecord a
+       => Bool          -- ^ Skip header (assumed present) 
+       -> B.ByteString  -- ^ Initial CSV data
+       -> Parser a
 decode = decodeWith defaultDecodeOptions
 
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
-decodeWith :: FromRecord a => DecodeOptions -> Bool -> B.ByteString -> Parser a
+decodeWith :: FromRecord a
+           => DecodeOptions  -- ^ Decoding options
+           -> Bool           -- ^ Skip header (assumed present) 
+           -> B.ByteString   -- ^ Initial CSV data
+           -> Parser a
 decodeWith !opts skipHeader s
     | skipHeader = go (decodeHeaderWith opts s)
     | otherwise  = decodeWithP parseRecord opts s
@@ -170,12 +189,16 @@ decodeWith !opts skipHeader s
 -- is assumed to be preceeded by a header. Returns a 'HeaderParser'
 -- that when done produces a 'Parser' for parsing the actual records.
 -- Equivalent to @'decodeByNameWith' 'defaultDecodeOptions'@.
-decodeByName :: FromNamedRecord a => B.ByteString -> HeaderParser (Parser a)
+decodeByName :: FromNamedRecord a
+             => B.ByteString  -- ^ Initial CSV data 
+             -> HeaderParser (Parser a)
 decodeByName = decodeByNameWith defaultDecodeOptions
 
 -- | Like 'decodeByName', but lets you customize how the CSV data is
 -- parsed.
-decodeByNameWith :: FromNamedRecord a => DecodeOptions -> B.ByteString
+decodeByNameWith :: FromNamedRecord a
+                 => DecodeOptions  -- ^ Decoding options
+                 -> B.ByteString   -- ^ Initial CSV data
                  -> HeaderParser (Parser a)
 decodeByNameWith !opts = runParser . decodeHeaderWith opts
   where

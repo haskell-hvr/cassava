@@ -58,7 +58,7 @@ import Data.Csv.Types
 -- If this fails due to incomplete or invalid input, @'Left' msg@ is
 -- returned. Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
-       => Bool          -- ^ Skip header
+       => Bool          -- ^ Skip header (assumed present)
        -> L.ByteString  -- ^ CSV data
        -> Either String (Vector a)
 decode = decodeWith defaultDecodeOptions
@@ -91,7 +91,7 @@ encodeByName = encodeByNameWith defaultEncodeOptions
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
 decodeWith :: FromRecord a
            => DecodeOptions  -- ^ Decoding options
-           -> Bool           -- ^ Skip header
+           -> Bool           -- ^ Skip header (assumed present)
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
 decodeWith = decodeWithC (parse . traverse parseRecord)
