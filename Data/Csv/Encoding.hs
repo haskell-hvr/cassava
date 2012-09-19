@@ -103,7 +103,7 @@ idDecodeWith !opts = decodeWithP (csv opts) pure
 -- | Like 'decodeByName', but lets you customize how the CSV data is
 -- parsed.
 decodeByNameWith :: FromNamedRecord a => DecodeOptions -> L.ByteString
-                     -> Either String (Header, Vector a)
+                 -> Either String (Header, Vector a)
 decodeByNameWith !opts =
     decodeWithP (csvWithHeader opts)
     (\ (hdr, vs) -> (,) <$> pure hdr <*> (parse $ traverse parseNamedRecord vs))
