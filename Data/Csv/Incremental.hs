@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns, DeriveFunctor #-}
 
-module Data.Csv.Streaming
+module Data.Csv.Incremental
     (
     -- * Continuation based parsing
       decodeHeader
@@ -98,5 +98,5 @@ blankLine :: V.Vector B.ByteString -> Bool
 blankLine v = V.length v == 1 && (B.null (V.head v))
 
 moduleError :: String -> String -> a
-moduleError func msg = error $ "Data.Csv.Streaming." ++ func ++ ": " ++ msg
+moduleError func msg = error $ "Data.Csv.Incremental." ++ func ++ ": " ++ msg
 {-# NOINLINE moduleError #-}
