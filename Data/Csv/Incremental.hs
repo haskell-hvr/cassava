@@ -12,9 +12,12 @@ module Data.Csv.Incremental
     , HeaderParser(..)
 
     -- * Decoding records
+    -- * Index-based record conversion
     , decode
     , decodeWith
     , Parser(..)
+    
+    -- * Name-based record conversion
     ) where
 
 import Control.Applicative
@@ -33,8 +36,6 @@ import Data.Csv.Types
 
 -- TODO: Write custom Show instance to avoid re-exporting orphan
 -- instance.
-
--- TODO: add more failure info
 
 -- | A parser that when fed data eventually returns a parsed 'Header',
 -- or an error.
@@ -91,8 +92,8 @@ data Parser a =
     | Partial (B.ByteString -> Parser a)
 
       -- | The parser parsed and converted some records. Any records
-      -- that failed type conversion are returned as @'Left' err@ and
-      -- the rest as @'Right' val@. Feed a 'B.ByteString' to the
+      -- that failed type conversion are returned as @'Left' errMsg@
+      -- and the rest as @'Right' val@. Feed a 'B.ByteString' to the
       -- continuation to continue parsing. Use an 'B.empty' string to
       -- indicate that no more input data is available. After fed an
       -- empty string, the continuation is guaranteed to return either
@@ -100,8 +101,8 @@ data Parser a =
     | Some [Either String a] (B.ByteString -> Parser a)
 
       -- | The parser parsed and converted some records. Any records
-      -- that failed type conversion are returned as @'Left' err@ and
-      -- the rest as @'Right' val@.
+      -- that failed type conversion are returned as @'Left' errMsg@
+      -- and the rest as @'Right' val@.
     | Done [Either String a]
     deriving (Functor, Show)
 
