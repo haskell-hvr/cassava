@@ -152,12 +152,17 @@ data More = Incomplete | Complete
 
 -- | Efficiently deserialize CSV in an incremental fashion. Equivalent
 -- to @'decodeByNameWith' 'defaultDecodeOptions'@.
-decode :: FromRecord a => B.ByteString -> Parser a
+decode :: FromRecord a => Bool -> B.ByteString -> Parser a
 decode = decodeWith defaultDecodeOptions
 
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
-decodeWith :: FromRecord a => DecodeOptions -> B.ByteString -> Parser a
-decodeWith = decodeWithP parseRecord
+decodeWith :: FromRecord a => DecodeOptions -> Bool -> B.ByteString -> Parser a
+decodeWith !opts skipHeader s
+    | skipHeader = go (decodeHeaderWith opts s)
+    | otherwise  = decodeWithP parseRecord opts s
+  where go (FailH rest msg) = Fail rest msg
+        go (PartialH k)     = Partial $ \ s' -> go (k s')
+        go (DoneH _ rest)   = decodeWithP parseRecord opts rest
 
 ------------------------------------------------------------------------
 

@@ -22,6 +22,6 @@ main = withFile "salaries.csv" ReadMode $ \ csvFile -> do
     isEof <- hIsEOF csvFile
     unless isEof $ do
         bytes <- B.hGetSome csvFile 4096
-        loop 0 (decode bytes)
+        loop 0 (decode False bytes)
   where
     sumSalaries rs = sum [salary | Right (_ :: String, salary :: Int) <- rs]
