@@ -39,7 +39,7 @@ import Data.Csv.Types
 -- | A parser that when fed data eventually returns a parsed 'Header',
 -- or an error.
 data HeaderParser =
-      -- | The input data was malformed. The second fields contains
+      -- | The input data was malformed. The second field contains
       -- information about the parse error.
       FailH !B.ByteString String
 
@@ -80,7 +80,7 @@ decodeHeaderWith !opts = go . parser
 -- records, converted to the desired type, or an error in case of
 -- malformed input data.
 data Parser a =
-    -- | The input data was malformed. The second fields contains
+    -- | The input data was malformed. The second field contains
     -- information about the parse error.
       Fail !B.ByteString String
 
