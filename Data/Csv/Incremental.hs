@@ -30,7 +30,6 @@ import Data.Attoparsec.Char8 (endOfLine)
 import qualified Data.ByteString as B
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
-import Text.Show.Functions ()
 
 import Data.Csv.Conversion hiding (Parser, Result, record, toNamedRecord)
 import qualified Data.Csv.Conversion as Conversion
@@ -39,9 +38,6 @@ import Data.Csv.Types
 
 ------------------------------------------------------------------------
 -- * Decoding headers
-
--- TODO: Write custom Show instance to avoid re-exporting orphan
--- instance.
 
 -- TODO: Can this be simply be replaced by the 'header' parser?
 
@@ -61,7 +57,23 @@ data HeaderParser a =
 
       -- | The parse succeeded and produced the given 'Header'.
     | DoneH !Header a
-    deriving (Functor, Show)
+    deriving Functor
+
+instance Show a => Show (HeaderParser a) where
+    showsPrec d (FailH rest msg) = showParen (d > appPrec) showStr
+      where
+        showStr = showString "FailH " . showsPrec (appPrec+1) rest .
+                  showString " " . showsPrec (appPrec+1) msg
+    showsPrec _ (PartialH _) = showString "PartialH <function>"
+    showsPrec d (DoneH hdr x) = showParen (d > appPrec) showStr
+      where
+        showStr = showString "DoneH " . showsPrec (appPrec+1) hdr .
+                  showString " " . showsPrec (appPrec+1) x
+
+-- Application has precedence one more than the most tightly-binding
+-- operator
+appPrec :: Int
+appPrec = 10
 
 -- | Parse a CSV header in an incremental fashion. When done, the
 -- 'HeaderParser' returns any unconsumed input in its second field.
@@ -118,7 +130,21 @@ data Parser a =
       -- that failed type conversion are returned as @'Left' errMsg@
       -- and the rest as @'Right' val@.
     | Done [Either String a]
-    deriving (Functor, Show)
+    deriving Functor
+
+instance Show a => Show (Parser a) where
+    showsPrec d (Fail rest msg) = showParen (d > appPrec) showStr
+      where
+        showStr = showString "Fail " . showsPrec (appPrec+1) rest .
+                  showString " " . showsPrec (appPrec+1) msg
+    showsPrec _ (Partial _) = showString "Partial <function>"
+    showsPrec d (Some rs _) = showParen (d > appPrec) showStr
+      where
+        showStr = showString "Some " . showsPrec (appPrec+1) rs .
+                  showString " <function>"
+    showsPrec d (Done rs) = showParen (d > appPrec) showStr
+      where
+        showStr = showString "Done " . showsPrec (appPrec+1) rs
 
 -- | Have we read all available input?
 data More = Incomplete | Complete
