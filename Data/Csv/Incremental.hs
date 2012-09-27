@@ -113,6 +113,8 @@ decodeHeaderWith !opts = go . parser
 -- ways to convert CSV records to and from and user-defined data
 -- types: index-based conversion and name-based conversion.
 
+-- TODO: Should 'Done' contain the unconsumed input?
+
 -- | An incremental parser that when fed data eventually produces some
 -- parsed records, converted to the desired type, or an error in case
 -- of malformed input data.
@@ -214,8 +216,6 @@ toNamedRecord :: Header -> Record -> NamedRecord
 toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 
 ------------------------------------------------------------------------
-
--- TODO: Call endOfLine parser once more when receiving empty input?
 
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
 decodeWithP :: (Record -> Conversion.Parser a) -> DecodeOptions -> B.ByteString
