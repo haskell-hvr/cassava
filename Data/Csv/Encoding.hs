@@ -73,11 +73,13 @@ decodeByName = decodeByNameWith defaultDecodeOptions
 -- | Efficiently serialize CVS records as a lazy 'L.ByteString'.
 encode :: ToRecord a => V.Vector a -> L.ByteString
 encode = encodeWith defaultEncodeOptions
+{-# INLINE encode #-}
 
 -- | Efficiently serialize CVS records as a lazy 'L.ByteString'. The
 -- header is written before any records and dictates the field order.
 encodeByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
 encodeByName = encodeByNameWith defaultEncodeOptions
+{-# INLINE encodeByName #-}
 
 ------------------------------------------------------------------------
 -- ** Encoding and decoding options
@@ -127,6 +129,7 @@ encodeWith opts = toLazyByteString
                   . unlines
                   . map (encodeRecord (encDelimiter opts) . toRecord)
                   . V.toList
+{-# INLINE encodeWith #-}
 
 encodeRecord :: Word8 -> Record -> Builder
 encodeRecord delim = mconcat . intersperse (fromWord8 delim)
@@ -145,6 +148,7 @@ encodeByNameWith opts hdr v =
               . map (encodeRecord (encDelimiter opts)
                      . namedRecordToRecord hdr . toNamedRecord)
               . V.toList $ v
+{-# INLINE encodeByNameWith #-}
 
 
 namedRecordToRecord :: Header -> NamedRecord -> Record
