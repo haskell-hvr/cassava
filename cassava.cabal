@@ -32,8 +32,7 @@ Library
   Build-depends:       array,
                        attoparsec >= 0.10.2,
                        base < 5,
-                       blaze-builder,
-                       bytestring,
+                       bytestring >= 0.10.2,
                        containers,
                        text,
                        unordered-containers,
@@ -44,7 +43,7 @@ Library
   if impl(ghc >= 7.2.1)
     cpp-options:       -DGENERICS
     build-depends:     ghc-prim >= 0.2
-  
+
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Main-is: UnitTests.hs

@@ -10,7 +10,7 @@
 --
 -- Encoding and decoding of data types into CSV.
 module Data.Csv.Encoding
-    (     
+    (
     -- * Encoding and decoding
       decode
     , decodeByName
@@ -28,8 +28,7 @@ module Data.Csv.Encoding
     , encodeByNameWith
     ) where
 
-import Blaze.ByteString.Builder
-import Blaze.ByteString.Builder.Char8
+import Data.ByteString.Builder
 import Control.Applicative
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
@@ -132,8 +131,8 @@ encodeWith opts = toLazyByteString
 {-# INLINE encodeWith #-}
 
 encodeRecord :: Word8 -> Record -> Builder
-encodeRecord delim = mconcat . intersperse (fromWord8 delim)
-                     . map fromByteString . V.toList
+encodeRecord delim = mconcat . intersperse (word8 delim)
+                     . map byteString . V.toList
 {-# INLINE encodeRecord #-}
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
@@ -142,7 +141,7 @@ encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> V.Vector a
                  -> L.ByteString
 encodeByNameWith opts hdr v =
     toLazyByteString ((encodeRecord (encDelimiter opts) hdr) <>
-                      fromByteString "\r\n" <> records)
+                      byteString "\r\n" <> records)
   where
     records = unlines
               . map (encodeRecord (encDelimiter opts)
@@ -166,7 +165,7 @@ moduleError func msg = error $ "Data.Csv.Encoding." ++ func ++ ": " ++ msg
 
 unlines :: [Builder] -> Builder
 unlines [] = mempty
-unlines (b:bs) = b <> fromString "\r\n" <> unlines bs
+unlines (b:bs) = b <> byteString "\r\n" <> unlines bs
 
 intersperse :: Builder -> [Builder] -> [Builder]
 intersperse _   []      = []
