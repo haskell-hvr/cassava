@@ -8,6 +8,8 @@ module Data.Csv.Streaming
     ( Records(..)
     , decode
     , decodeWith
+    , decodeByName
+    , decodeByNameWith
     ) where
 
 import qualified Data.ByteString as B
@@ -16,9 +18,11 @@ import Data.Foldable (Foldable(..))
 import Prelude hiding (foldr)
 
 import Data.Csv.Conversion
-import Data.Csv.Incremental hiding (decode, decodeWith)
+import Data.Csv.Incremental hiding (decode, decodeByName, decodeByNameWith,
+                                    decodeWith)
 import qualified Data.Csv.Incremental as I
 import Data.Csv.Parser
+import Data.Csv.Types
 
 -- | A stream of parsed records. If type conversion failed for the
 -- records, it's represented as @'Left' errMsg@.
@@ -54,7 +58,7 @@ foldlRecords' f = go
 {-# INLINE foldlRecords' #-}
 #endif
 
--- | Efficiently deserialize CSV records from a lazy 'BL.ByteString'.
+-- | Efficiently deserialize CSV records in a streaming fashion.
 -- Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
        => Bool           -- ^ Data contains header that should be
@@ -80,3 +84,34 @@ decodeWith !opts skipHeader s0 = case BL.toChunks s0 of
     go (s:ss) (Partial k) = go ss (k s)
     go [] (Some xs k)     = foldr Cons (go [] (k B.empty)) xs
     go (s:ss) (Some xs k) = foldr Cons (go ss (k s)) xs
+
+-- | Efficiently deserialize CSV in a streaming fashion. The data is
+-- assumed to be preceeded by a header. Returns @'Left' errMsg@ if
+-- parsing the header fails. Equivalent to @'decodeByNameWith'
+-- 'defaultDecodeOptions'@.
+decodeByName :: FromNamedRecord a
+             => BL.ByteString  -- ^ CSV data
+             -> Either String (Header, Records a)
+decodeByName = decodeByNameWith defaultDecodeOptions
+
+-- | Like 'decodeByName', but lets you customize how the CSV data is
+-- parsed.
+decodeByNameWith :: FromNamedRecord a
+                 => DecodeOptions  -- ^ Decoding options
+                 -> BL.ByteString  -- ^ CSV data
+                 -> Either String (Header, Records a)
+decodeByNameWith !opts s0 = case BL.toChunks s0 of
+    []     -> go [] (I.decodeByNameWith opts B.empty)
+    (s:ss) -> go ss (I.decodeByNameWith opts s)
+  where
+    go ss (DoneH hdr p)    = Right (hdr, go2 ss p)
+    go ss (FailH rest err) = Left err  -- TODO: Add more information
+    go [] (PartialH k)     = go [] (k B.empty)
+    go (s:ss) (PartialH k) = go ss (k s)
+
+    go2 ss (Done xs)       = foldr Cons (Nil Nothing (BL.fromChunks ss)) xs
+    go2 ss (Fail rest err) = Nil (Just err) (BL.fromChunks (rest:ss))
+    go2 [] (Partial k)     = go2 [] (k B.empty)
+    go2 (s:ss) (Partial k) = go2 ss (k s)
+    go2 [] (Some xs k)     = foldr Cons (go2 [] (k B.empty)) xs
+    go2 (s:ss) (Some xs k) = foldr Cons (go2 ss (k s)) xs
