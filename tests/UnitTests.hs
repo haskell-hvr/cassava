@@ -22,6 +22,7 @@ import Test.QuickCheck
 import Test.Framework.Providers.QuickCheck2 as TF
 
 import Data.Csv
+import qualified Data.Csv.Streaming as S
 
 ------------------------------------------------------------------------
 -- Parse tests
@@ -65,6 +66,25 @@ namedDecodesAs input ehdr expected = case decodeByName input of
   where
     expected' = V.fromList $ map HM.fromList expected
 
+recordsToList :: S.Records a -> Either String [a]
+recordsToList (S.Nil (Just err) _)  = Left err
+recordsToList (S.Nil Nothing _)     = Right []
+recordsToList (S.Cons (Left err) _) = Left err
+recordsToList (S.Cons (Right x) rs) = case recordsToList rs of
+    l@(Left _) -> l
+    (Right xs) -> Right (x : xs)
+
+decodesStreamingAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
+decodesStreamingAs input expected =
+    assertResult input expected $ fmap (V.fromList . map V.fromList) $
+    recordsToList $ S.decode False input
+
+decodesWithStreamingAs :: DecodeOptions -> BL.ByteString -> [[B.ByteString]]
+                       -> Assertion
+decodesWithStreamingAs opts input expected =
+    assertResult input expected $ fmap (V.fromList . map V.fromList) $
+    recordsToList $ S.decodeWith opts False input
+
 testRfc4180 :: Assertion
 testRfc4180 = (BL8.pack $
                "#field1,field2,field3\n" ++
@@ -95,24 +115,37 @@ positionalTests =
       [ testCase "tab-delim" $ encodesWithAs (defEnc { encDelimiter = 9 })
         [["1", "2"]] "1\t2\r\n"
       ]
-    , testGroup "decode" $ map decodeTest
-      [ ("simple",       "a,b,c\n",        [["a", "b", "c"]])
-      , ("crlf",         "a,b\r\nc,d\r\n", [["a", "b"], ["c", "d"]])
-      , ("noEol",        "a,b,c",          [["a", "b", "c"]])
-      , ("blankLine",    "a,b,c\n\nd,e,f\n\n",
-         [["a", "b", "c"], ["d", "e", "f"]])
-      , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
-      ] ++ [testCase "rfc4180" testRfc4180]
-    , testGroup "decodeWith"
-      [ testCase "tab-delim" $ decodesWithAs (defDec { decDelimiter = 9 })
-        "1\t2" [["1", "2"]]
+    , testGroup "decode" $ map decodeTest decodeTests ++
+      [testCase "rfc4180" testRfc4180]
+    , testGroup "decodeWith" $ map decodeWithTest decodeWithTests
+    , testGroup "streaming"
+      [ testGroup "decode" $ map streamingDecodeTest decodeTests
+      , testGroup "decodeWith" $ map streamingDecodeWithTest decodeWithTests
       ]
     ]
   where
+    decodeTests =
+        [ ("simple",       "a,b,c\n",        [["a", "b", "c"]])
+        , ("crlf",         "a,b\r\nc,d\r\n", [["a", "b"], ["c", "d"]])
+        , ("noEol",        "a,b,c",          [["a", "b", "c"]])
+        , ("blankLine",    "a,b,c\n\nd,e,f\n\n",
+           [["a", "b", "c"], ["d", "e", "f"]])
+        , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
+        ]
+    decodeWithTests =
+        [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
+        ]
+
     encodeTest (name, input, expected) =
         testCase name $ input `encodesAs` expected
     decodeTest (name, input, expected) =
         testCase name $ input `decodesAs` expected
+    decodeWithTest (name, opts, input, expected) =
+        testCase name $ decodesWithAs opts input expected
+    streamingDecodeTest (name, input, expected) =
+        testCase name $ input `decodesStreamingAs` expected
+    streamingDecodeWithTest (name, opts, input, expected) =
+        testCase name $ decodesWithStreamingAs opts input expected
     defEnc = defaultEncodeOptions
     defDec = defaultDecodeOptions
 
