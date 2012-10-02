@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, DeriveFunctor #-}
+{-# LANGUAGE BangPatterns, CPP, DeriveFunctor #-}
 
 -- | This module allows for streaming decoding of CSV data. This is
 -- useful if you need to parse large amount of input in constant
@@ -12,6 +12,8 @@ module Data.Csv.Streaming
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import Data.Foldable (Foldable(..))
+import Prelude hiding (foldr)
 
 import Data.Csv.Conversion
 import Data.Csv.Incremental hiding (decode, decodeWith)
@@ -29,6 +31,26 @@ data Records a
       -- The second field contains any unconsumed input.
     | Nil (Maybe String) BL.ByteString
     deriving (Eq, Functor, Show)
+
+instance Foldable Records where
+    foldr = foldrRecords
+#if MIN_VERSION_base(4,6,0)
+    foldl' = foldlRecords'
+#endif
+
+foldrRecords :: (a -> b -> b) -> b -> Records a -> b
+foldrRecords f = go
+  where
+    go z (Cons (Right x) rs) = f x (go z rs)
+    go z _ = z
+
+#if MIN_VERSION_base(4,6,0)
+foldlRecords' :: (a -> b -> a) -> a -> Records b -> a
+foldlRecords' f = go
+  where
+    go z (Cons (Right x) rs) = let z' = f z x in z' `seq` go z' rs
+    go z _ = z
+#endif
 
 -- | Efficiently deserialize CSV records from a lazy 'BL.ByteString'.
 -- Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
