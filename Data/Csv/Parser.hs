@@ -24,8 +24,7 @@ module Data.Csv.Parser
     , field
     ) where
 
-import Blaze.ByteString.Builder (fromByteString, toByteString)
-import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
+import Data.ByteString.Builder (byteString, toLazyByteString, charUtf8)
 import Control.Applicative
 import Data.Attoparsec.Char8 hiding (Parser, Result, parse)
 import qualified Data.Attoparsec as A
@@ -33,6 +32,7 @@ import qualified Data.Attoparsec.Lazy as AL
 import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Unsafe as S
+import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as HM
 import Data.Monoid
 import qualified Data.Vector as V
@@ -137,18 +137,18 @@ dquote :: AL.Parser Char
 dquote = char '"'
 
 unescape :: Z.Parser S.ByteString
-unescape = toByteString <$> go mempty where
+unescape = (L.toStrict . toLazyByteString) <$> go mempty where
   go acc = do
     h <- Z.takeWhile (/= doubleQuote)
     let rest = do
           start <- Z.take 2
           if (S.unsafeHead start == doubleQuote &&
               S.unsafeIndex start 1 == doubleQuote)
-              then go (acc `mappend` fromByteString h `mappend` fromChar '"')
+              then go (acc `mappend` byteString h `mappend` charUtf8 '"')
               else fail "invalid CSV escape sequence"
     done <- Z.atEnd
     if done
-      then return (acc `mappend` fromByteString h)
+      then return (acc `mappend` byteString h)
       else rest
 
 doubleQuote, newline, cr :: Word8

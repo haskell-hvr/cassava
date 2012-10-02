@@ -3,11 +3,12 @@ module Data.Csv.Conversion.Internal
     , realFloat
     ) where
 
-import Blaze.ByteString.Builder
-import Blaze.ByteString.Builder.Char8
+import Data.ByteString.Builder
+import qualified Data.ByteString.Builder.Prim as BP
 import Data.Array.Base (unsafeAt)
 import Data.Array.IArray
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as L
 import Data.Char (ord)
 import Data.Int
 import Data.Word
@@ -18,7 +19,7 @@ import Data.Csv.Compat.Monoid ((<>))
 -- Integers
 
 decimal :: Integral a => a -> B.ByteString
-decimal = toByteString . formatDecimal
+decimal = L.toStrict . toLazyByteString . formatDecimal
 {-# INLINE decimal #-}
 
 -- TODO: Add an optimized version for Integer.
@@ -79,13 +80,13 @@ formatPositive = go
              | otherwise = go (n `quot` 10) <> digit (n `rem` 10)
 
 minus :: Builder
-minus = fromWord8 45
+minus = word8 45
 
 zero :: Word8
 zero = 48
 
 digit :: Integral a => a -> Builder
-digit n = fromWord8 $! i2w (fromIntegral n)
+digit n = word8 $! i2w (fromIntegral n)
 {-# INLINE digit #-}
 
 i2w :: Int -> Word8
@@ -98,7 +99,7 @@ i2w i = zero + fromIntegral i
 realFloat :: RealFloat a => a -> B.ByteString
 {-# SPECIALIZE realFloat :: Float -> B.ByteString #-}
 {-# SPECIALIZE realFloat :: Double -> B.ByteString #-}
-realFloat = toByteString . formatRealFloat Generic
+realFloat = L.toStrict . toLazyByteString . formatRealFloat Generic
 
 -- | Control the rendering of floating point numbers.
 data FPFormat = Exponent
@@ -114,10 +115,10 @@ formatRealFloat :: RealFloat a => FPFormat -> a -> Builder
 {-# SPECIALIZE formatRealFloat :: FPFormat -> Float -> Builder #-}
 {-# SPECIALIZE formatRealFloat :: FPFormat -> Double -> Builder #-}
 formatRealFloat fmt x
-   | isNaN x                   = fromString "NaN"
+   | isNaN x                   = string8 "NaN"
    | isInfinite x              = if x < 0
-                                 then fromString "-Infinity"
-                                 else fromString "Infinity"
+                                 then string8 "-Infinity"
+                                 else string8 "Infinity"
    | x < 0 || isNegativeZero x = minus <> doFmt fmt (floatToDigits (-x))
    | otherwise                 = doFmt fmt (floatToDigits x)
  where
@@ -130,23 +131,23 @@ formatRealFloat fmt x
      Exponent ->
         let show_e' = formatDecimal (e-1) in
         case ds of
-          [48]    -> fromString "0.0e0"
-          [d]     -> fromWord8 d <> fromString ".0e" <> show_e'
-          (d:ds') -> fromWord8 d <> fromChar '.' <> fromWord8s ds' <>
-                     fromChar 'e' <> show_e'
+          [48]    -> string8 "0.0e0"
+          [d]     -> word8 d <> string8 ".0e" <> show_e'
+          (d:ds') -> word8 d <> char8 '.' <> word8s ds' <>
+                     char8 'e' <> show_e'
           []      -> error "formatRealFloat/doFmt/Exponent: []"
      Fixed
-          | e <= 0    -> fromString "0." <>
-                         fromByteString (B.replicate (-e) zero) <>
-                         fromWord8s ds
+          | e <= 0    -> string8 "0." <>
+                         byteString (B.replicate (-e) zero) <>
+                         word8s ds
           | otherwise ->
              let
-                f 0 s    rs  = mk0 (reverse s) <> fromChar '.' <> mk0 rs
+                f 0 s    rs  = mk0 (reverse s) <> char8 '.' <> mk0 rs
                 f n s    []  = f (n-1) (zero:s) []
                 f n s (r:rs) = f (n-1) (r:s) rs
              in
                 f e [] ds
-       where mk0 ls = case ls of { [] -> fromWord8 zero ; _ -> fromWord8s ls}
+       where mk0 ls = case ls of { [] -> word8 zero ; _ -> word8s ls}
 
 -- Based on "Printing Floating-Point Numbers Quickly and Accurately"
 -- by R.G. Burger and R.K. Dybvig in PLDI 96.
@@ -282,3 +283,7 @@ expts10 = array (minExpt,maxExpt10) [(n,10^n) | n <- [minExpt .. maxExpt10]]
 {-# INLINE i2d #-}
 i2d :: Int -> Word8
 i2d i = fromIntegral (ord '0' + i)
+
+-- | Word8 list rendering
+word8s :: [Word8] -> Builder
+word8s = BP.primMapListFixed BP.word8

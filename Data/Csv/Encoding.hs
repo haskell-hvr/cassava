@@ -10,7 +10,7 @@
 --
 -- Encoding and decoding of data types into CSV.
 module Data.Csv.Encoding
-    (     
+    (
     -- * Encoding and decoding
       decode
     , decodeByName
@@ -28,8 +28,7 @@ module Data.Csv.Encoding
     , encodeByNameWith
     ) where
 
-import Blaze.ByteString.Builder
-import Blaze.ByteString.Builder.Char8
+import Data.ByteString.Builder
 import Control.Applicative
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
@@ -125,15 +124,14 @@ defaultEncodeOptions = EncodeOptions
 -- | Like 'encode', but lets you customize how the CSV data is
 -- encoded.
 encodeWith :: ToRecord a => EncodeOptions -> V.Vector a -> L.ByteString
-encodeWith opts = toLazyByteString
-                  . unlines
-                  . map (encodeRecord (encDelimiter opts) . toRecord)
-                  . V.toList
+encodeWith opts =
+    toLazyByteString
+  . encodeLines (encodeRecord (encDelimiter opts) . toRecord)
+  . V.toList
 {-# INLINE encodeWith #-}
 
 encodeRecord :: Word8 -> Record -> Builder
-encodeRecord delim = mconcat . intersperse (fromWord8 delim)
-                     . map fromByteString . V.toList
+encodeRecord delim = encodeSeparated byteString (word8 delim) . V.toList
 {-# INLINE encodeRecord #-}
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
@@ -142,12 +140,14 @@ encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> V.Vector a
                  -> L.ByteString
 encodeByNameWith opts hdr v =
     toLazyByteString ((encodeRecord (encDelimiter opts) hdr) <>
-                      fromByteString "\r\n" <> records)
+                      crlf <> records)
   where
-    records = unlines
-              . map (encodeRecord (encDelimiter opts)
-                     . namedRecordToRecord hdr . toNamedRecord)
-              . V.toList $ v
+    encodeNamedRecord =
+        encodeRecord (encDelimiter opts)
+      . namedRecordToRecord hdr
+      . toNamedRecord
+
+    records = encodeLines encodeNamedRecord $ V.toList v
 {-# INLINE encodeByNameWith #-}
 
 
@@ -164,17 +164,28 @@ moduleError :: String -> String -> a
 moduleError func msg = error $ "Data.Csv.Encoding." ++ func ++ ": " ++ msg
 {-# NOINLINE moduleError #-}
 
-unlines :: [Builder] -> Builder
-unlines [] = mempty
-unlines (b:bs) = b <> fromString "\r\n" <> unlines bs
+crlf :: Builder
+crlf = char8 '\r' <> char8 '\n'
+{-# INLINE crlf #-}
 
-intersperse :: Builder -> [Builder] -> [Builder]
-intersperse _   []      = []
-intersperse sep (x:xs)  = x : prependToAll sep xs
+encodeSeparated :: (a -> Builder) -> Builder -> [a] -> Builder
+encodeSeparated enc sep =
+    goFirst
+  where
+    goFirst []     = mempty
+    goFirst (x:xs) = enc x <> go xs
 
-prependToAll :: Builder -> [Builder] -> [Builder]
-prependToAll _   []     = []
-prependToAll sep (x:xs) = sep <> x : prependToAll sep xs
+    go []     = mempty
+    go (x:xs) = sep <> enc x <> go xs
+{-# INLINE encodeSeparated #-}
+
+encodeLines :: (a -> Builder) -> [a] -> Builder
+encodeLines enc =
+    go
+  where
+    go []     = mempty
+    go (x:xs) = enc x <> crlf <> go xs
+{-# INLINE encodeLines #-}
 
 decodeWithP :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Either String b
 decodeWithP p to s =
@@ -185,3 +196,4 @@ decodeWithP p to s =
       AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
                             show (BL8.unpack left)
 {-# INLINE decodeWithP #-}
+
