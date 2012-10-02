@@ -1,5 +1,9 @@
 {-# LANGUAGE BangPatterns, DeriveFunctor #-}
 
+-- | This module allows for streaming decoding of CSV data. This is
+-- useful if you need to parse large amount of input in constant
+-- space. The API also allow you to ignore type conversion errors on a
+-- per-record basis.
 module Data.Csv.Streaming
     ( Records(..)
     , decode
@@ -14,10 +18,20 @@ import Data.Csv.Incremental hiding (decode, decodeWith)
 import qualified Data.Csv.Incremental as I
 import Data.Csv.Parser
 
-data Records a = Cons (Either String a) (Records a)
-               | Nil (Maybe String) BL.ByteString
-               deriving (Eq, Functor, Show)
+-- | A stream of parsed records. If type conversion failed for the
+-- records, it's represented as @'Left' errMsg@.
+data Records a
+    = -- | A record or an error message, followed by more records.
+      Cons (Either String a) (Records a)
 
+      -- | End of stream, potentially due to a parse error. If a parse
+      -- error occured, the first field contains the error message.
+      -- The second field contains any unconsumed input.
+    | Nil (Maybe String) BL.ByteString
+    deriving (Eq, Functor, Show)
+
+-- | Efficiently deserialize CSV records from a lazy 'BL.ByteString'.
+-- Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
        => Bool           -- ^ Data contains header that should be
                          -- skipped
@@ -25,6 +39,7 @@ decode :: FromRecord a
        -> Records a
 decode = decodeWith defaultDecodeOptions
 
+-- | Like 'decode', but lets you customize how the CSV data is parsed.
 decodeWith :: FromRecord a
            => DecodeOptions  -- ^ Decoding options
            -> Bool           -- ^ Data contains header that should be
