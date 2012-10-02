@@ -43,6 +43,7 @@ foldrRecords f = go
   where
     go z (Cons (Right x) rs) = f x (go z rs)
     go z _ = z
+{-# INLINE foldrRecords #-}
 
 #if MIN_VERSION_base(4,6,0)
 foldlRecords' :: (a -> b -> a) -> a -> Records b -> a
@@ -50,6 +51,7 @@ foldlRecords' f = go
   where
     go z (Cons (Right x) rs) = let z' = f z x in z' `seq` go z' rs
     go z _ = z
+{-# INLINE foldlRecords' #-}
 #endif
 
 -- | Efficiently deserialize CSV records from a lazy 'BL.ByteString'.
