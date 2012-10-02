@@ -85,19 +85,6 @@ decodesWithStreamingAs opts input expected =
     assertResult input expected $ fmap (V.fromList . map V.fromList) $
     recordsToList $ S.decodeWith opts False input
 
-testRfc4180 :: Assertion
-testRfc4180 = (BL8.pack $
-               "#field1,field2,field3\n" ++
-               "\"aaa\",\"bb\n" ++
-               "b\",\"ccc\"\n" ++
-               "\"a,a\",\"b\"\"bb\",\"ccc\"\n" ++
-               "zzz,yyy,xxx\n")
-              `decodesAs`
-              [["#field1", "field2", "field3"],
-               ["aaa", "bb\nb", "ccc"],
-               ["a,a", "b\"bb", "ccc"],
-               ["zzz", "yyy", "xxx"]]
-
 positionalTests :: [TF.Test]
 positionalTests =
     [ testGroup "encode" $ map encodeTest
@@ -115,8 +102,7 @@ positionalTests =
       [ testCase "tab-delim" $ encodesWithAs (defEnc { encDelimiter = 9 })
         [["1", "2"]] "1\t2\r\n"
       ]
-    , testGroup "decode" $ map decodeTest decodeTests ++
-      [testCase "rfc4180" testRfc4180]
+    , testGroup "decode" $ map decodeTest decodeTests
     , testGroup "decodeWith" $ map decodeWithTest decodeWithTests
     , testGroup "streaming"
       [ testGroup "decode" $ map streamingDecodeTest decodeTests
@@ -124,6 +110,16 @@ positionalTests =
       ]
     ]
   where
+    rfc4180Input = BL8.pack $
+                   "#field1,field2,field3\n" ++
+                   "\"aaa\",\"bb\n" ++
+                   "b\",\"ccc\"\n" ++
+                   "\"a,a\",\"b\"\"bb\",\"ccc\"\n" ++
+                   "zzz,yyy,xxx\n"
+    rfc4180Output = [["#field1", "field2", "field3"],
+                     ["aaa", "bb\nb", "ccc"],
+                     ["a,a", "b\"bb", "ccc"],
+                     ["zzz", "yyy", "xxx"]]
     decodeTests =
         [ ("simple",       "a,b,c\n",        [["a", "b", "c"]])
         , ("crlf",         "a,b\r\nc,d\r\n", [["a", "b"], ["c", "d"]])
@@ -131,6 +127,7 @@ positionalTests =
         , ("blankLine",    "a,b,c\n\nd,e,f\n\n",
            [["a", "b", "c"], ["d", "e", "f"]])
         , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
+        , ("rfc4180", rfc4180Input, rfc4180Output)
         ]
     decodeWithTests =
         [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
