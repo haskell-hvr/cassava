@@ -12,9 +12,11 @@ module Data.Csv.Streaming
     , decodeByNameWith
     ) where
 
+import Control.Applicative ((<$>), (<*>), pure)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import Data.Foldable (Foldable(..))
+import Data.Traversable (Traversable(..))
 import Prelude hiding (foldr)
 
 import Data.Csv.Conversion
@@ -57,6 +59,13 @@ foldlRecords' f = go
     go z _ = z
 {-# INLINE foldlRecords' #-}
 #endif
+
+instance Traversable Records where
+    traverse _ (Nil merr rest) = pure $ Nil merr rest
+    traverse f (Cons x xs)     = Cons <$> traverseElem x <*> traverse f xs
+      where
+        traverseElem (Left err) = pure $ Left err
+        traverseElem (Right y)  = Right <$> f y
 
 -- | Efficiently deserialize CSV records in a streaming fashion.
 -- Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
