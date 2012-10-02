@@ -162,8 +162,6 @@ instance Show a => Show (Parser a) where
 data More = Incomplete | Complete
           deriving (Eq, Show)
 
--- TODO: Give option to skip header.
-
 -- | Efficiently deserialize CSV in an incremental fashion. Equivalent
 -- to @'decodeByNameWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
