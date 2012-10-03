@@ -85,6 +85,20 @@ decodesWithStreamingAs opts input expected =
     assertResult input expected $ fmap (V.fromList . map V.fromList) $
     recordsToList $ S.decodeWith opts False input
 
+namedDecodesStreamingAs :: BL.ByteString -> [B.ByteString]
+                        -> [[(B.ByteString, B.ByteString)]] -> Assertion
+namedDecodesStreamingAs input ehdr expected = case S.decodeByName input of
+    Right (hdr, rs) -> case recordsToList rs of
+        Right xs -> (V.fromList ehdr, expected') @=? (hdr, xs)
+        Left err -> assertFailure $
+                    "           input: " ++ show (BL8.unpack input) ++ "\n" ++
+                    "conversion error: " ++ err
+    Left err -> assertFailure $
+                "      input: " ++ show (BL8.unpack input) ++ "\n" ++
+                "parse error: " ++ err
+  where
+    expected' = map HM.fromList expected
+
 positionalTests :: [TF.Test]
 positionalTests =
     [ testGroup "encode" $ map encodeTest
@@ -156,19 +170,26 @@ nameBasedTests =
       , ("twoRecords", ["field"], [[("field", "abc")], [("field", "def")]],
          "field\r\nabc\r\ndef\r\n")
       ]
-    , testGroup "decode" $ map decodeTest
-      [("simple", "field\r\nabc\r\n", ["field"], [[("field", "abc")]])
-      , ("twoFields", "field1,field2\r\nabc,def\r\n", ["field1", "field2"],
-         [[("field1", "abc"), ("field2", "def")]])
-      , ("twoRecords", "field\r\nabc\r\ndef\r\n", ["field"],
-         [[("field", "abc")], [("field", "def")]])
+    , testGroup "decode" $ map decodeTest decodeTests
+    , testGroup "streaming"
+      [ testGroup "decode" $ map streamingDecodeTest decodeTests
       ]
     ]
   where
+    decodeTests =
+        [ ("simple", "field\r\nabc\r\n", ["field"], [[("field", "abc")]])
+        , ("twoFields", "field1,field2\r\nabc,def\r\n", ["field1", "field2"],
+           [[("field1", "abc"), ("field2", "def")]])
+        , ("twoRecords", "field\r\nabc\r\ndef\r\n", ["field"],
+           [[("field", "abc")], [("field", "def")]])
+        ]
+
     encodeTest (name, hdr, input, expected) =
         testCase name $ namedEncodesAs hdr input expected
     decodeTest (name, input, hdr, expected) =
         testCase name $ namedDecodesAs input hdr expected
+    streamingDecodeTest (name, input, hdr, expected) =
+        testCase name $ namedDecodesStreamingAs input hdr expected
 
 ------------------------------------------------------------------------
 -- Conversion tests
