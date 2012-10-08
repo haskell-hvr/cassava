@@ -368,6 +368,16 @@ class FromField a where
 class ToField a where
     toField :: a -> Field
 
+instance FromField a => FromField (Maybe a) where
+    parseField s
+        | B.null s  = pure Nothing
+        | otherwise = Just <$> parseField s
+    {-# INLINE parseField #-}
+
+instance ToField a => ToField (Maybe a) where
+    toField = maybe B.empty toField
+    {-# INLINE toField #-}
+
 instance FromField Char where
     parseField s
         | T.compareLength t 1 == EQ = pure (T.head t)
