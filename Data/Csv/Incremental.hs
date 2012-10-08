@@ -10,6 +10,9 @@ module Data.Csv.Incremental
       HeaderParser(..)
     , decodeHeader
     , decodeHeaderWith
+    -- ** Providing input
+    , feedChunkH
+    , feedEndOfInputH
 
     -- * Decoding records
     -- $typeconversion
@@ -24,6 +27,10 @@ module Data.Csv.Incremental
     -- $namebased
     , decodeByName
     , decodeByNameWith
+
+    -- ** Providing input
+    , feedChunk
+    , feedEndOfInput
     ) where
 
 import Control.Applicative
@@ -85,15 +92,25 @@ instance Show a => Show (HeaderParser a) where
 appPrec :: Int
 appPrec = 10
 
+feedChunkH :: HeaderParser B.ByteString -> B.ByteString
+           -> HeaderParser B.ByteString
+feedChunkH (FailH rest err) s = FailH (B.append rest s) err
+feedChunkH (PartialH k) s     = k s
+feedChunkH (DoneH hdr rest) s = DoneH hdr (B.append rest s)
+
+feedEndOfInputH :: HeaderParser a -> HeaderParser a
+feedEndOfInputH (PartialH k) = k B.empty
+feedEndOfInputH p            = p
+
 -- | Parse a CSV header in an incremental fashion. When done, the
 -- 'HeaderParser' returns any unconsumed input in its second field.
-decodeHeader :: B.ByteString -> HeaderParser B.ByteString
+decodeHeader :: HeaderParser B.ByteString
 decodeHeader = decodeHeaderWith defaultDecodeOptions
 
 -- | Like 'decodeHeader', but lets you customize how the CSV data is
 -- parsed.
-decodeHeaderWith :: DecodeOptions -> B.ByteString -> HeaderParser B.ByteString
-decodeHeaderWith !opts = go . parser
+decodeHeaderWith :: DecodeOptions -> HeaderParser B.ByteString
+decodeHeaderWith !opts = PartialH (go . parser)
   where
     parser = A.parse (header $ decDelimiter opts)
 
@@ -158,6 +175,21 @@ instance Show a => Show (Parser a) where
       where
         showStr = showString "Done " . showsPrec (appPrec+1) rs
 
+-- | Feed a 'Parser' with more input. If the 'Parser' is 'Fail' it
+-- will add the input to 'B.ByteString' of unconsumed input.
+feedChunk :: Parser a -> B.ByteString -> Parser a
+feedChunk (Fail rest err) s = Fail (B.append rest s) err
+feedChunk (Partial k) s     = k s
+feedChunk (Some xs k) s     = Some xs (\ s' -> k s `feedChunk` s')
+feedChunk (Done xs) _s      = Done xs  -- TODO: Don't throw away input
+
+-- | Tell a 'Parser' that there is no more input. This passes
+-- 'Nothing' to a 'Partial' parser, otherwise returns the parser
+-- unchanged.
+feedEndOfInput :: Parser a -> Parser a
+feedEndOfInput (Partial k)     = k B.empty
+feedEndOfInput p               = p
+
 -- | Have we read all available input?
 data More = Incomplete | Complete
           deriving (Eq, Show)
@@ -167,7 +199,6 @@ data More = Incomplete | Complete
 decode :: FromRecord a
        => Bool          -- ^ Data contains header that should be
                         -- skipped
-       -> B.ByteString  -- ^ Initial CSV data
        -> Parser a
 decode = decodeWith defaultDecodeOptions
 
@@ -176,11 +207,10 @@ decodeWith :: FromRecord a
            => DecodeOptions  -- ^ Decoding options
            -> Bool           -- ^ Data contains header that should be
                              -- skipped
-           -> B.ByteString   -- ^ Initial CSV data
            -> Parser a
-decodeWith !opts skipHeader s
-    | skipHeader = go (decodeHeaderWith opts s)
-    | otherwise  = decodeWithP parseRecord opts s
+decodeWith !opts skipHeader
+    | skipHeader = Partial $ \ s -> go (decodeHeaderWith opts `feedChunkH` s)
+    | otherwise  = Partial (decodeWithP parseRecord opts)
   where go (FailH rest msg) = Fail rest msg
         go (PartialH k)     = Partial $ \ s' -> go (k s')
         go (DoneH _ rest)   = decodeWithP parseRecord opts rest
@@ -192,17 +222,16 @@ decodeWith !opts skipHeader s
 -- that when done produces a 'Parser' for parsing the actual records.
 -- Equivalent to @'decodeByNameWith' 'defaultDecodeOptions'@.
 decodeByName :: FromNamedRecord a
-             => B.ByteString  -- ^ Initial CSV data 
-             -> HeaderParser (Parser a)
+             => HeaderParser (Parser a)
 decodeByName = decodeByNameWith defaultDecodeOptions
 
 -- | Like 'decodeByName', but lets you customize how the CSV data is
 -- parsed.
 decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
-                 -> B.ByteString   -- ^ Initial CSV data
                  -> HeaderParser (Parser a)
-decodeByNameWith !opts = runParser . decodeHeaderWith opts
+decodeByNameWith !opts =
+    PartialH (runParser . (decodeHeaderWith opts `feedChunkH`))
   where
     runParser (FailH rest msg) = FailH rest msg
     runParser (PartialH k)     = PartialH $ \ s -> runParser (k s)
