@@ -44,6 +44,7 @@ import qualified Data.Text.Lazy.Encoding as LT
 import Data.Traversable
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as U
 import Data.Word
 import GHC.Float (double2Float)
 import Prelude hiding (takeWhile)
@@ -255,6 +256,12 @@ instance FromField a => FromRecord (V.Vector a) where
 
 instance ToField a => ToRecord (Vector a) where
     toRecord = V.map toField
+
+instance (FromField a, U.Unbox a) => FromRecord (U.Vector a) where
+    parseRecord = fmap U.convert . traverse parseField
+
+instance (ToField a, U.Unbox a) => ToRecord (U.Vector a) where
+    toRecord = V.map toField . U.convert
 
 ------------------------------------------------------------------------
 -- Name-based conversion
