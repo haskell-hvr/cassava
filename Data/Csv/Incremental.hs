@@ -92,12 +92,18 @@ instance Show a => Show (HeaderParser a) where
 appPrec :: Int
 appPrec = 10
 
-feedChunkH :: HeaderParser B.ByteString -> B.ByteString
-           -> HeaderParser B.ByteString
+-- | Feed a 'HeaderParser' with more input. If the 'HeaderParser' is
+-- 'FailH' it will add the input to 'B.ByteString' of unconsumed
+-- input. If the 'HeaderParser' is 'DoneH' it will drop the extra
+-- input on the floor.
+feedChunkH :: HeaderParser a -> B.ByteString -> HeaderParser a
 feedChunkH (FailH rest err) s = FailH (B.append rest s) err
 feedChunkH (PartialH k) s     = k s
-feedChunkH (DoneH hdr rest) s = DoneH hdr (B.append rest s)
+feedChunkH d@(DoneH _ _) _s   = d
 
+-- | Tell a 'HeaderParser' that there is no more input. This passes
+-- 'Nothing' to a 'PartialH' parser, otherwise returns the parser
+-- unchanged.
 feedEndOfInputH :: HeaderParser a -> HeaderParser a
 feedEndOfInputH (PartialH k) = k B.empty
 feedEndOfInputH p            = p
@@ -129,8 +135,6 @@ decodeHeaderWith !opts = PartialH (go . parser)
 -- Just like in the case of non-incremental decoding, there are two
 -- ways to convert CSV records to and from and user-defined data
 -- types: index-based conversion and name-based conversion.
-
--- TODO: Should 'Done' contain the unconsumed input?
 
 -- | An incremental parser that when fed data eventually produces some
 -- parsed records, converted to the desired type, or an error in case
@@ -176,12 +180,13 @@ instance Show a => Show (Parser a) where
         showStr = showString "Done " . showsPrec (appPrec+1) rs
 
 -- | Feed a 'Parser' with more input. If the 'Parser' is 'Fail' it
--- will add the input to 'B.ByteString' of unconsumed input.
+-- will add the input to 'B.ByteString' of unconsumed input. If the
+-- 'Parser' is 'Done' it will drop the extra input on the floor.
 feedChunk :: Parser a -> B.ByteString -> Parser a
 feedChunk (Fail rest err) s = Fail (B.append rest s) err
 feedChunk (Partial k) s     = k s
 feedChunk (Some xs k) s     = Some xs (\ s' -> k s `feedChunk` s')
-feedChunk (Done xs) _s      = Done xs  -- TODO: Don't throw away input
+feedChunk (Done xs) _s      = Done xs
 
 -- | Tell a 'Parser' that there is no more input. This passes
 -- 'Nothing' to a 'Partial' parser, otherwise returns the parser
