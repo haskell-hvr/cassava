@@ -35,7 +35,7 @@ module Data.Csv.Incremental
 
 import Control.Applicative
 import qualified Data.Attoparsec as A
-import Data.Attoparsec.Char8 (endOfLine)
+import Data.Attoparsec.Char8 (endOfInput, endOfLine)
 import qualified Data.ByteString as B
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
@@ -252,7 +252,7 @@ toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
 decodeWithP :: (Record -> Conversion.Parser a) -> DecodeOptions -> B.ByteString
             -> Parser a
-decodeWithP p !opts = go Incomplete [] . initialParser
+decodeWithP p !opts = go Incomplete [] . parser
   where
     go !_ !acc (A.Fail rest _ msg)
         | null acc  = Fail rest err
@@ -277,8 +277,7 @@ decodeWithP p !opts = go Incomplete [] . initialParser
             acc' | blankLine r = acc
                  | otherwise   = convert r : acc
 
-    initialParser = A.parse (record (decDelimiter opts))
-    parser = A.parse (endOfLine *> record (decDelimiter opts))
+    parser = A.parse (record (decDelimiter opts) <* (endOfLine <|> endOfInput))
     convert = parseEither . p
 {-# INLINE decodeWithP #-}
 

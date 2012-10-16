@@ -103,6 +103,8 @@ decodeByName :: FromNamedRecord a
              -> Either String (Header, Records a)
 decodeByName = decodeByNameWith defaultDecodeOptions
 
+-- TODO: Include something more in error messages?
+
 -- | Like 'decodeByName', but lets you customize how the CSV data is
 -- parsed.
 decodeByNameWith :: FromNamedRecord a
@@ -111,7 +113,7 @@ decodeByNameWith :: FromNamedRecord a
                  -> Either String (Header, Records a)
 decodeByNameWith !opts s0 = case BL.toChunks s0 of
     []     -> go [] (feedEndOfInputH $ I.decodeByNameWith opts)
-    (s:ss) -> go ss undefined  -- (I.decodeByNameWith opts `feedChunkH` s)
+    (s:ss) -> go ss (I.decodeByNameWith opts `feedChunkH` s)
   where
     go ss (DoneH hdr p)    = Right (hdr, go2 ss p)
     go ss (FailH rest err) = Left err  -- TODO: Add more information
