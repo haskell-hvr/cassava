@@ -16,12 +16,16 @@
 module Data.Csv.Parser
     ( DecodeOptions(..)
     , defaultDecodeOptions
+      -- * CSV
     , csv
     , csvWithHeader
     , header
     , record
     , name
     , field
+      -- * Tables
+    , table
+    , recordTable
     ) where
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
@@ -132,6 +136,37 @@ unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
                                             c /= newline &&
                                             c /= delim &&
                                             c /= cr)
+
+-- |
+table :: AL.Parser Csv
+table = do
+  vals <- recordTable `sepBy1` endOfLine
+  _    <- optional endOfLine
+  endOfInput
+  return $ V.fromList $ removeBlankLines vals
+{-# INLINE table #-}
+
+-- | Parse record for space-separated files.
+recordTable :: AL.Parser Record
+recordTable = V.fromList <$> fieldTable `sepBy1` delimTable
+{-# INLINE recordTable #-}
+
+fieldTable :: AL.Parser Field
+fieldTable = do
+  mb <- A.peekWord8
+  case mb of
+    Just b | b == doubleQuote -> escapedField
+    _                         -> unescapedFieldTable
+
+unescapedFieldTable :: AL.Parser Field
+unescapedFieldTable = A.takeWhile (\c -> c /= doubleQuote &&
+                                        c /= newline     &&
+                                        c /= cr          &&
+                                        c /= 9           &&
+                                        c /= 32          )
+
+delimTable :: AL.Parser ()
+delimTable = () <$ AL.many1 (A.satisfy $ \c -> c == 32 || c == 9)
 
 dquote :: AL.Parser Char
 dquote = char '"'
