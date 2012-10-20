@@ -26,6 +26,9 @@ module Data.Csv.Encoding
     , defaultEncodeOptions
     , encodeWith
     , encodeByNameWith
+
+    -- * Space-delimited files
+    , decodeTable
     ) where
 
 import Blaze.ByteString.Builder
@@ -185,3 +188,10 @@ decodeWithP p to s =
       AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
                             show (BL8.unpack left)
 {-# INLINE decodeWithP #-}
+
+
+------------------------------------------------------------------------
+-- * Space-delimited files
+
+decodeTable :: FromRecord a => L.ByteString -> Either String (Vector a)
+decodeTable = decodeWithP table (parse . traverse parseRecord)

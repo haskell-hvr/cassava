@@ -32,6 +32,9 @@ module Data.Csv
     , encodeWith
     , encodeByNameWith
 
+    -- * Space-delimited
+    , decodeTable
+
     -- * Core CSV types
     , Csv
     , Record
