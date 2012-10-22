@@ -146,9 +146,24 @@ table = do
   return $ V.fromList $ removeBlankLines vals
 {-# INLINE table #-}
 
--- | Parse record for space-separated files.
+-- | Parse record for space-separated files. It's more complicated
+--   that CSV parser because we need to drop both
 recordTable :: AL.Parser Record
-recordTable = V.fromList <$> fieldTable `sepBy1` delimTable
+recordTable
+  = V.fromList <$>
+    ((delimTable <|> pure ()) *>
+     (fieldTable `sepBy11` delimTable)
+    )
+  where
+    sepBy11 p s = liftA2 (:) p scan
+      where
+        scan =  s *> (([] <$ eol) <|> (liftA2 (:) p scan))
+            <|> pure []
+        eol = ([] <$ endOfInput) <|> do
+          mb <- AL.peekWord8
+          case mb of
+            Just b | b == newline || b == cr -> pure []
+            _                                -> empty
 {-# INLINE recordTable #-}
 
 fieldTable :: AL.Parser Field
