@@ -181,7 +181,7 @@ unescapedFieldTable = A.takeWhile (\c -> c /= doubleQuote &&
                                          c /= wspace      )
 
 delimTable :: AL.Parser ()
-delimTable = () <$ AL.many1 (A.satisfy $ \c -> c == wspace || c == tab)
+delimTable = () <$ A.takeWhile1 (\c -> c == wspace || c == tab)
 
 dquote :: AL.Parser Char
 dquote = char '"'
