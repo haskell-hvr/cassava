@@ -175,13 +175,13 @@ fieldTable = do
 
 unescapedFieldTable :: AL.Parser Field
 unescapedFieldTable = A.takeWhile (\c -> c /= doubleQuote &&
-                                        c /= newline     &&
-                                        c /= cr          &&
-                                        c /= 9           &&
-                                        c /= 32          )
+                                         c /= newline     &&
+                                         c /= cr          &&
+                                         c /= tab         &&
+                                         c /= wspace      )
 
 delimTable :: AL.Parser ()
-delimTable = () <$ AL.many1 (A.satisfy $ \c -> c == 32 || c == 9)
+delimTable = () <$ AL.many1 (A.satisfy $ \c -> c == wspace || c == tab)
 
 dquote :: AL.Parser Char
 dquote = char '"'
@@ -201,7 +201,9 @@ unescape = toByteString <$> go mempty where
       then return (acc `mappend` fromByteString h)
       else rest
 
-doubleQuote, newline, cr :: Word8
+doubleQuote, newline, cr, tab, wspace :: Word8
 doubleQuote = 34
-newline = 10
-cr = 13
+newline     = 10
+cr          = 13
+tab         = 9
+wspace      = 32
