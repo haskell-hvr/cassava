@@ -40,6 +40,7 @@ Library
                        vector
 
   ghc-options:         -Wall -O2
+  ghc-prof-options:    -auto-all
 
   if impl(ghc >= 7.2.1)
     cpp-options:       -DGENERICS
