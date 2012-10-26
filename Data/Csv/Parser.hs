@@ -25,7 +25,11 @@ module Data.Csv.Parser
     , field
       -- * Tables
     , table
+    , tableWithHeader
+    , tableHeader
     , recordTable
+    , tableName
+    , fieldTable
     ) where
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
@@ -145,6 +149,21 @@ table = do
   endOfInput
   return $ V.fromList $ removeBlankLines vals
 {-# INLINE table #-}
+
+tableWithHeader :: AL.Parser (Header, V.Vector NamedRecord)
+tableWithHeader = do
+    hdr  <- tableHeader
+    vals <- map (toNamedRecord hdr) . removeBlankLines <$>
+            recordTable `sepBy1` endOfLine
+    _ <- optional endOfLine
+    endOfInput
+    return (hdr, V.fromList vals)
+
+tableHeader :: AL.Parser Record
+tableHeader = recordTable <* endOfLine
+
+tableName :: AL.Parser Field
+tableName = fieldTable
 
 -- | Parse record for space-separated files. It's more complicated
 --   that CSV parser because we need to drop both

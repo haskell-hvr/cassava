@@ -32,7 +32,7 @@ module Data.Csv
     , encodeWith
     , encodeByNameWith
 
-    -- * Space-delimited
+    -- * Space-delimited files
     , decodeTable
 
     -- * Core CSV types
