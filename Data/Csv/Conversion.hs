@@ -507,29 +507,12 @@ instance ToField Word64 where
     toField = decimal
     {-# INLINE toField #-}
 
--- TODO: Optimize
-escape :: B.ByteString -> B.ByteString
-escape s
-    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
-                     b == sp) s == Nothing = s
-    | otherwise =
-        B.concat ["\"",
-                  B.concatMap
-                  (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
-                  "\""]
-  where
-    dquote = 34
-    comma  = 44
-    nl     = 10
-    cr     = 13
-    sp     = 32
-
 instance FromField B.ByteString where
     parseField = pure
     {-# INLINE parseField #-}
 
 instance ToField B.ByteString where
-    toField = escape
+    toField = id
     {-# INLINE toField #-}
 
 instance FromField L.ByteString where
