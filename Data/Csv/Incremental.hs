@@ -264,16 +264,16 @@ decodeWithP p !opts = go Incomplete [] . parser
       where cont s = go m [] (k s)
               where m | B.null s  = Complete
                       | otherwise = Incomplete
-    go Complete _ (A.Partial _) = moduleError "decodeWith" msg
+    go Complete _ (A.Partial _) = moduleError "decodeWithP" msg
         where msg = "attoparsec should never return Partial in this case"
     go m acc (A.Done rest r)
         | B.null rest = case m of
             Complete   -> Done (reverse acc')
             Incomplete -> Partial cont
         | otherwise   = go m acc' (parser rest)
-      where cont s = go m' acc' (parser s)
-              where m' | B.null s  = Complete
-                       | otherwise = Incomplete
+      where cont s
+                | B.null s  = Done (reverse acc')
+                | otherwise = go Incomplete acc' (parser s)
             acc' | blankLine r = acc
                  | otherwise   = convert r : acc
 
