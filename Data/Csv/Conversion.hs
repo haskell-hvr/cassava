@@ -7,6 +7,7 @@ module Data.Csv.Conversion
     (
     -- * Type conversion
       Only(..)
+    , NonEmpty(..)
     , FromRecord(..)
     , FromNamedRecord(..)
     , ToNamedRecord(..)
@@ -100,6 +101,25 @@ class FromRecord a where
 -- single-column result.
 newtype Only a = Only {
       fromOnly :: a
+    } deriving (Eq, Ord, Read, Show)
+
+-- | If you require your 'Field' to be non empty you can 'fmap'
+-- 'nonEmpty' over the field 'Parser'. For example if you require the
+-- @name@ field to be non empty in the 'FromRecord' example, you can
+-- just do:
+--
+-- @
+-- data Person = Person { name :: Text, age :: Int }
+--
+-- instance FromRecord Person where
+--      parseRecord v
+--          | length v == 2 = Person \<$\>
+--                            (nonEmpty \<$\> v .! 0) \<*\>
+--                                          v .! 1
+--          | otherwise     = mzero
+-- @
+newtype NonEmpty a = NonEmpty {
+      nonEmpty :: a
     } deriving (Eq, Ord, Read, Show)
 
 -- | A type that can be converted to a single CSV record.
@@ -375,6 +395,15 @@ class FromField a where
 -- @
 class ToField a where
     toField :: a -> Field
+
+instance FromField a => FromField (NonEmpty a) where
+    parseField s | B.null s  = fail "empty field"
+                 | otherwise = NonEmpty <$> parseField s
+    {-# INLINE parseField #-}
+
+instance ToField a => ToField (NonEmpty a) where
+    toField = toField . nonEmpty
+    {-# INLINE toField #-}
 
 instance FromField a => FromField (Maybe a) where
     parseField s

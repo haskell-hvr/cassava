@@ -51,6 +51,7 @@ module Data.Csv
     , ToRecord(..)
     , record
     , Only(..)
+    , NonEmpty(..)
 
     -- ** Name-based record conversion
     -- $namebased
