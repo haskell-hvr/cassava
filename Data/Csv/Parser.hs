@@ -61,7 +61,7 @@ csv !opts = do
     _ <- optional endOfLine
     endOfInput
     let nonEmpty = removeBlankLines vals
-    return (V.fromList nonEmpty)
+    return $! V.fromList nonEmpty
 {-# INLINE csv #-}
 
 -- | Parse a CSV file that includes a header.
@@ -98,7 +98,9 @@ removeBlankLines = filter (not . blankLine)
 -- this parser.
 record :: Word8  -- ^ Field delimiter
        -> AL.Parser Record
-record !delim = V.fromList <$> field delim `sepBy1` (A.word8 delim)
+record !delim = do
+    fs <- field delim `sepBy1` (A.word8 delim)
+    return $! V.fromList fs
 {-# INLINE record #-}
 
 -- | Parse a field. The field may be in either the escaped or
