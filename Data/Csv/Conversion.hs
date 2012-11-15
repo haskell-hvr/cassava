@@ -708,8 +708,6 @@ apP d e = do
   return (b a)
 {-# INLINE apP #-}
 
--- TODO: Result is basically just Either. Use that instead?
-
 -- | Run a 'Parser'.
 parse :: Parser a -> Result a
 parse p = runParser p Error Success
