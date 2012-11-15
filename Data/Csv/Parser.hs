@@ -84,7 +84,7 @@ header !delim = V.fromList <$> name delim `sepBy1` (A.word8 delim) <* endOfLine
 
 -- | Parse a header name. Header names have the same format as regular
 -- 'field's.
-name :: Word8 -> AL.Parser Field  -- TODO: Create Name type alias
+name :: Word8 -> AL.Parser Name
 name !delim = field delim
 
 removeBlankLines :: [Record] -> [Record]
