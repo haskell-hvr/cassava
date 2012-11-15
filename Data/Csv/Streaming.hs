@@ -15,6 +15,7 @@ module Data.Csv.Streaming
 import Control.Applicative ((<$>), (<*>), pure)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.Char8 as BL8
 import Data.Foldable (Foldable(..))
 import Data.Traversable (Traversable(..))
 import Prelude hiding (foldr)
@@ -116,7 +117,8 @@ decodeByNameWith !opts s0 = case BL.toChunks s0 of
     (s:ss) -> go ss (I.decodeByNameWith opts `feedChunkH` s)
   where
     go ss (DoneH hdr p)    = Right (hdr, go2 ss p)
-    go ss (FailH rest err) = Left err  -- TODO: Add more information
+    go ss (FailH rest err) = Left $ err ++ " at " ++
+                             show (BL8.unpack . BL.fromChunks $ rest : ss)
     go [] (PartialH k)     = go [] (k B.empty)
     go (s:ss) (PartialH k) = go ss (k s)
 
