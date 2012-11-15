@@ -21,7 +21,7 @@ import Test.Framework.Providers.HUnit as TF
 import Test.QuickCheck
 import Test.Framework.Providers.QuickCheck2 as TF
 
-import Data.Csv
+import Data.Csv hiding (record)
 import qualified Data.Csv.Streaming as S
 
 ------------------------------------------------------------------------
@@ -210,16 +210,17 @@ instance Arbitrary LT.Text where
 -- empty line (which we will ignore.) We therefore encode at least two
 -- columns.
 roundTrip :: (Eq a, FromField a, ToField a) => a -> Bool
-roundTrip x = case decode False (encode (V.singleton (x, dummy))) of
-    Right v | V.length v == 1 -> let (y, _ :: Char) = v ! 0 in x == y
-    _  -> False
-  where dummy = 'a'
+roundTrip x = Right record == decode False (encode record) 
+  where record = V.singleton (x, dummy)
+        dummy = 'a'
+
+roundTripUnicode :: T.Text -> Assertion
+roundTripUnicode x = Right record @=? decode False (encode record)
+  where record = V.singleton (x, dummy)
+        dummy = 'a'
 
 boundary :: forall a. (Bounded a, Eq a, FromField a, ToField a) => a -> Bool
 boundary _dummy = roundTrip (minBound :: a) && roundTrip (maxBound :: a)
-
--- TODO: Right now we only encode ASCII properly. Should we support
--- UTF-8? Arbitrary byte strings?
 
 conversionTests :: [TF.Test]
 conversionTests =
@@ -253,6 +254,13 @@ conversionTests =
       , testProperty "Word16" (boundary (undefined :: Word16))
       , testProperty "Word32" (boundary (undefined :: Word32))
       , testProperty "Word64" (boundary (undefined :: Word64))
+      ]
+    , testGroup "Unicode"
+      [ testCase "Chinese" (roundTripUnicode "我能吞下玻璃而不伤身体。")
+      , testCase "Icelandic" (roundTripUnicode
+                              "Sævör grét áðan því úlpan var ónýt.")
+      , testCase "Turkish" (roundTripUnicode
+                            "Cam yiyebilirim, bana zararı dokunmaz.")
       ]
     ]
 
