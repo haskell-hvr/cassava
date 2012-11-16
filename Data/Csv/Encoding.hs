@@ -103,12 +103,14 @@ parseCsv :: FromRecord a => Vector Record -> Parser (Vector a)
 parseCsv xs = V.fromList <$> mapM' parseRecord (V.toList xs)
 
 mapM' :: Monad m => (a -> m b) -> [a] -> m [b]
-mapM' f as = foldr k (return []) (map f as)
+mapM' f = go
   where
-    k m m' = do
-        !x <- m
-        xs <- m'
-        return (x:xs)
+    go [] = return []
+    go (x:xs) = do
+        !y <- f x
+        ys <- go xs
+        return (y : ys)
+{-# INLINE mapM' #-}
 
 {-# RULES
     "idDecodeWith" decodeWith = idDecodeWith

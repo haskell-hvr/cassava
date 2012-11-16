@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP, FlexibleInstances, OverloadedStrings, Rank2Types #-}
+{-# LANGUAGE BangPatterns, CPP, FlexibleInstances, OverloadedStrings,
+             Rank2Types #-}
 #ifdef GENERICS
 {-# LANGUAGE DefaultSignatures, TypeOperators, KindSignatures, FlexibleContexts,
              MultiParamTypeClasses, UndecidableInstances, ScopedTypeVariables #-}
@@ -708,15 +709,23 @@ apP d e = do
   return (b a)
 {-# INLINE apP #-}
 
--- | Run a 'Parser'.
+-- | Run a 'Parser'. Forces the value in the 'Success' or 'Error'
+-- constructors to weak head normal form.
 parse :: Parser a -> Result a
-parse p = runParser p Error Success
+parse p = runParser p err success
+  where
+    err !errMsg = Error errMsg
+    success !x = Success x
 {-# INLINE parse #-}
 
 -- | Run a 'Parser', returning either @'Left' msg@ or @'Right'
--- result@.
+-- result@. Forces the value in the 'Left' or 'Right' constructors to
+-- weak head normal form.
 parseEither :: Parser a -> Either String a
-parseEither p = runParser p Left Right
+parseEither p = runParser p left right
+  where
+    left !errMsg = Left errMsg
+    right !x = Right x
 {-# INLINE parseEither #-}
 
 #ifdef GENERICS
