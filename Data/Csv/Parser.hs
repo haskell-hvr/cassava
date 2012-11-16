@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns, CPP #-}
 
 -- | A CSV parser. The parser defined here is RFC 4180 compliant, with
 -- the following extensions:
@@ -30,6 +30,7 @@ import Control.Applicative
 import Data.Attoparsec.Char8 hiding (Parser, Result, parse)
 import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
+import Data.Attoparsec.Types (Parser)
 import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Unsafe as S
@@ -57,19 +58,36 @@ defaultDecodeOptions = DecodeOptions
 -- | Parse a CSV file that does not include a header.
 csv :: DecodeOptions -> AL.Parser Csv
 csv !opts = do
-    vals <- record (decDelimiter opts) `sepBy1` endOfLine
+    vals <- record (decDelimiter opts) `sepBy1'` endOfLine
     _ <- optional endOfLine
     endOfInput
     let nonEmpty = removeBlankLines vals
     return $! V.fromList nonEmpty
 {-# INLINE csv #-}
 
+-- | @sepBy1' p sep@ applies /one/ or more occurrences of @p@,
+-- separated by @sep@. Returns a list of the values returned by @p@.
+-- The value returned by @p@ is forced to WHNF.
+--
+-- > commaSep p  = p `sepBy1'` (symbol ",")
+sepBy1' :: (Alternative f, Monad f) => f a -> f s -> f [a]
+sepBy1' p s = go
+  where
+    go = do
+        !a <- p
+        as <- ((s *> go) <|> pure [])
+        return (a : as)
+#if __GLASGOW_HASKELL__ >= 700
+{-# SPECIALIZE sepBy1' :: Parser S.ByteString a -> Parser S.ByteString s
+                       -> Parser S.ByteString [a] #-}
+#endif
+
 -- | Parse a CSV file that includes a header.
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader !opts = do
     hdr <- header (decDelimiter opts)
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
-            (record (decDelimiter opts)) `sepBy1` endOfLine
+            (record (decDelimiter opts)) `sepBy1'` endOfLine
     _ <- optional endOfLine
     endOfInput
     return (hdr, V.fromList vals)
@@ -80,7 +98,7 @@ toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 -- | Parse a header, including the terminating line separator.
 header :: Word8  -- ^ Field delimiter
        -> AL.Parser Header
-header !delim = V.fromList <$> name delim `sepBy1` (A.word8 delim) <* endOfLine
+header !delim = V.fromList <$> name delim `sepBy1'` (A.word8 delim) <* endOfLine
 
 -- | Parse a header name. Header names have the same format as regular
 -- 'field's.
@@ -99,7 +117,7 @@ removeBlankLines = filter (not . blankLine)
 record :: Word8  -- ^ Field delimiter
        -> AL.Parser Record
 record !delim = do
-    fs <- field delim `sepBy1` (A.word8 delim)
+    fs <- field delim `sepBy1'` (A.word8 delim)
     return $! V.fromList fs
 {-# INLINE record #-}
 
