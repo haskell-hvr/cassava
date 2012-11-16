@@ -96,8 +96,19 @@ decodeWith :: FromRecord a
                              -- skipped
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
-decodeWith = decodeWithC (parse . traverse parseRecord)
+decodeWith = decodeWithC (parse . parseCsv)
 {-# INLINE [1] decodeWith #-}
+
+parseCsv :: FromRecord a => Vector Record -> Parser (Vector a)
+parseCsv xs = V.fromList <$> mapM' parseRecord (V.toList xs)
+
+mapM' :: Monad m => (a -> m b) -> [a] -> m [b]
+mapM' f as = foldr k (return []) (map f as)
+  where
+    k m m' = do
+        !x <- m
+        xs <- m'
+        return (x:xs)
 
 {-# RULES
     "idDecodeWith" decodeWith = idDecodeWith
