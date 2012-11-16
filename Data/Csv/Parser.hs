@@ -131,6 +131,7 @@ field !delim = do
     case mb of
         Just b | b == doubleQuote -> escapedField
         _                         -> unescapedField delim
+{-# INLINE field #-}
 
 escapedField :: AL.Parser S.ByteString
 escapedField = do
