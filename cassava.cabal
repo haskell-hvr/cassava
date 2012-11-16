@@ -30,6 +30,7 @@ Library
                        Data.Csv.Conversion.Internal
                        Data.Csv.Encoding
                        Data.Csv.Types
+                       Data.Csv.Util
 
   Build-depends:       array,
                        attoparsec >= 0.10.2,

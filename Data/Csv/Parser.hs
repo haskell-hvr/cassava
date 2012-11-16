@@ -40,6 +40,7 @@ import qualified Data.Vector as V
 import Data.Word
 
 import Data.Csv.Types
+import Data.Csv.Util ((<$!>))
 
 -- | Options that controls how data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
@@ -85,12 +86,13 @@ sepBy1' p s = go
 -- | Parse a CSV file that includes a header.
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader !opts = do
-    hdr <- header (decDelimiter opts)
+    !hdr <- header (decDelimiter opts)
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
             (record (decDelimiter opts)) `sepBy1'` endOfLine
     _ <- optional endOfLine
     endOfInput
-    return (hdr, V.fromList vals)
+    let !v = V.fromList vals
+    return (hdr, v)
 
 toNamedRecord :: Header -> Record -> NamedRecord
 toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
@@ -98,7 +100,7 @@ toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 -- | Parse a header, including the terminating line separator.
 header :: Word8  -- ^ Field delimiter
        -> AL.Parser Header
-header !delim = V.fromList <$> name delim `sepBy1'` (A.word8 delim) <* endOfLine
+header !delim = V.fromList <$!> name delim `sepBy1'` (A.word8 delim) <* endOfLine
 
 -- | Parse a header name. Header names have the same format as regular
 -- 'field's.
@@ -158,7 +160,7 @@ dquote :: AL.Parser Char
 dquote = char '"'
 
 unescape :: Z.Parser S.ByteString
-unescape = toByteString <$> go mempty where
+unescape = toByteString <$!> go mempty where
   go acc = do
     h <- Z.takeWhile (/= doubleQuote)
     let rest = do

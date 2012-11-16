@@ -38,7 +38,6 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.HashMap.Strict as HM
 import Data.Monoid (mconcat, mempty)
-import Data.Traversable
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Data.Word (Word8)
@@ -48,6 +47,7 @@ import Data.Csv.Compat.Monoid ((<>))
 import Data.Csv.Conversion
 import Data.Csv.Parser
 import Data.Csv.Types
+import Data.Csv.Util ((<$!>))
 
 -- TODO: 'encode' isn't as efficient as it could be.
 
@@ -99,8 +99,8 @@ decodeWith :: FromRecord a
 decodeWith = decodeWithC (parse . parseCsv)
 {-# INLINE [1] decodeWith #-}
 
-parseCsv :: FromRecord a => Vector Record -> Parser (Vector a)
-parseCsv xs = V.fromList <$> mapM' parseRecord (V.toList xs)
+parseCsv :: FromRecord a => Csv -> Parser (Vector a)
+parseCsv xs = V.fromList <$!> mapM' parseRecord (V.toList xs)
 
 mapM' :: Monad m => (a -> m b) -> [a] -> m [b]
 mapM' f = go
@@ -138,7 +138,10 @@ decodeByNameWith :: FromNamedRecord a
                  -> Either String (Header, Vector a)
 decodeByNameWith !opts =
     decodeWithP (csvWithHeader opts)
-    (\ (hdr, vs) -> (,) <$> pure hdr <*> (parse $ traverse parseNamedRecord vs))
+    (\ (hdr, vs) -> (,) <$> pure hdr <*> (parse $ parseNamedCsv vs))
+
+parseNamedCsv :: FromNamedRecord a => Vector NamedRecord -> Parser (Vector a)
+parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
 
 -- | Options that controls how data is encoded. These options can be
 -- used to e.g. encode data in a tab-separated format instead of in a
