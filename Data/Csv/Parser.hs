@@ -75,7 +75,7 @@ sepBy1' p s = go
   where
     go = do
         !a <- p
-        as <- ((s *> go) <|> pure [])
+        as <- (s *> go) <|> pure []
         return (a : as)
 #if __GLASGOW_HASKELL__ >= 700
 {-# SPECIALIZE sepBy1' :: Parser S.ByteString a -> Parser S.ByteString s
