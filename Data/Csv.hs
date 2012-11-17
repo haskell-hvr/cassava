@@ -50,6 +50,7 @@ module Data.Csv
     -- $indexbased
     , FromRecord(..)
     , Parser
+    -- TODO: Expose 'parse' and 'parseEither'.
     , (.!)
     , ToRecord(..)
     , record
