@@ -1,9 +1,9 @@
 {-# LANGUAGE BangPatterns, CPP, DeriveFunctor #-}
 
 -- | This module allows for streaming decoding of CSV data. This is
--- useful if you need to parse large amount of input in constant
--- space. The API also allow you to ignore type conversion errors on a
--- per-record basis.
+-- useful if you need to parse large amounts of input in constant
+-- space. The API also allows you to ignore type conversion errors on
+-- a per-record basis.
 module Data.Csv.Streaming
     ( Records(..)
     , decode
@@ -28,7 +28,7 @@ import Data.Csv.Parser
 import Data.Csv.Types
 
 -- | A stream of parsed records. If type conversion failed for the
--- records, it's represented as @'Left' errMsg@.
+-- record, the error is returned as @'Left' errMsg@.
 data Records a
     = -- | A record or an error message, followed by more records.
       Cons (Either String a) (Records a)
