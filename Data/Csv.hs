@@ -85,7 +85,7 @@ import Data.Csv.Types
 --
 -- A short decoding usage example:
 --
--- @ >>> 'decode' \"John,27\\r\\nJane,28\\r\\n\" :: Either String (Vector (Text, Int))
+-- @ >>> 'decode' 'False' \"John,27\\r\\nJane,28\\r\\n\" :: Either String (Vector (Text, Int))
 -- Right (fromList [(\"John\",27),(\"Jane\",28)])
 -- @
 
