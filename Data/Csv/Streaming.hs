@@ -6,6 +6,9 @@
 -- a per-record basis.
 module Data.Csv.Streaming
     (
+    -- * Usage example
+    -- $example
+
     -- * Stream representation
     -- $stream-representation
       Records(..)
@@ -38,6 +41,18 @@ import Data.Csv.Incremental hiding (decode, decodeByName, decodeByNameWith,
 import qualified Data.Csv.Incremental as I
 import Data.Csv.Parser
 import Data.Csv.Types
+
+-- $example
+--
+-- A short usage example:
+--
+-- @ for_ ('decode' False \"John,27\\r\\nJane,28\\r\\n\") $ \\ (name, age :: Int) ->
+--     putStrLn $ name ++ \" is \" ++ show age ++ \" years old\"
+-- @
+--
+-- N.B. The 'Foldable' instance, which is used above, skips records
+-- that failed to convert. If you don't want this behavior, work
+-- directly with the 'Cons' and 'Nil' constructors.
 
 -- $stream-representation
 --
