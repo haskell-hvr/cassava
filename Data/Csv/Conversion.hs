@@ -377,12 +377,14 @@ class FromField a where
 class ToField a where
     toField :: a -> Field
 
+-- | 'Nothing' if the field is empty, 'Just' otherwise.
 instance FromField a => FromField (Maybe a) where
     parseField s
         | B.null s  = pure Nothing
         | otherwise = Just <$> parseField s
     {-# INLINE parseField #-}
 
+-- | 'Nothing' is encoded as an empty field.
 instance ToField a => ToField (Maybe a) where
     toField = maybe B.empty toField
     {-# INLINE toField #-}
