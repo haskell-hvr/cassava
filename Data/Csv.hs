@@ -14,6 +14,9 @@ module Data.Csv
     -- * Usage example
     -- $example
 
+    -- * Treating CSV data as opaque byte strings
+    -- $generic-processing
+
     -- * Encoding and decoding
     -- $encoding
       decode
@@ -88,6 +91,27 @@ import Data.Csv.Types
 -- @ >>> 'decode' 'False' \"John,27\\r\\nJane,28\\r\\n\" :: Either String (Vector (Text, Int))
 -- Right (fromList [(\"John\",27),(\"Jane\",28)])
 -- @
+--
+-- We pass 'False' as the first argument to indicate that the CSV
+-- input data isn't preceded by a header.
+--
+-- In practice, the return type of 'decode' rarely needs to be given,
+-- as it can often be inferred from the context.
+
+-- $generic-processing
+--
+-- Sometimes you might want to work with a CSV file which contents is
+-- unknown to you. For example, you might want remove the second
+-- column of a file without knowing anything about its content. To
+-- parse a CSV file to a generic representation, just convert each
+-- record to a @'Vector' 'ByteString'@ value, like so:
+--
+-- @ 'decode' 'False' \"John,27\\r\\nJane,28\\r\\n\" :: Either String (Vector (Vector ByteString))
+-- Right (fromList [fromList [\"John\",\"27\"],fromList [\"Jane\",\"28\"]])
+-- @
+--
+-- As the example output above shows, all the fields are returned as
+-- uninterpreted 'ByteString' values.
 
 -- $encoding
 --
