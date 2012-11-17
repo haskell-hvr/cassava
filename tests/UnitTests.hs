@@ -12,7 +12,6 @@ import qualified Data.HashMap.Strict as HM
 import Data.Int
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
-import Data.Vector ((!))
 import qualified Data.Vector as V
 import Data.Word
 import Test.HUnit
