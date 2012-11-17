@@ -5,9 +5,21 @@
 -- space. The API also allows you to ignore type conversion errors on
 -- a per-record basis.
 module Data.Csv.Streaming
-    ( Records(..)
+    (
+    -- * Stream representation
+    -- $stream-representation
+      Records(..)
+
+    -- * Decoding records
+    -- $typeconversion
+
+    -- ** Index-based record conversion
+    -- $indexbased
     , decode
     , decodeWith
+
+    -- ** Name-based record conversion
+    -- $namebased
     , decodeByName
     , decodeByNameWith
     ) where
@@ -27,6 +39,27 @@ import qualified Data.Csv.Incremental as I
 import Data.Csv.Parser
 import Data.Csv.Types
 
+-- $stream-representation
+--
+-- A stream of records is represented like a (lazy) list that may
+-- contain errors.
+
+-- $typeconversion
+--
+-- Just like in the case of non-streaming decoding, there are two ways
+-- to convert CSV records to and from and user-defined data types:
+-- index-based conversion and name-based conversion.
+
+-- $indexbased
+--
+-- See documentation on index-based conversion in "Data.Csv" for more
+-- information.
+
+-- $namebased
+--
+-- See documentation on name-based conversion in "Data.Csv" for more
+-- information.
+
 -- | A stream of parsed records. If type conversion failed for the
 -- record, the error is returned as @'Left' errMsg@.
 data Records a
@@ -39,6 +72,7 @@ data Records a
     | Nil (Maybe String) BL.ByteString
     deriving (Eq, Functor, Show)
 
+-- | Skips records that failed to convert.
 instance Foldable Records where
     foldr = foldrRecords
 #if MIN_VERSION_base(4,6,0)
