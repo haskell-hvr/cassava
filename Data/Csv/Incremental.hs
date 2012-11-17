@@ -11,6 +11,7 @@ module Data.Csv.Incremental
     , decodeHeader
     , decodeHeaderWith
     -- ** Providing input
+    -- $feed-header
     , feedChunkH
     , feedEndOfInputH
 
@@ -29,6 +30,7 @@ module Data.Csv.Incremental
     , decodeByNameWith
 
     -- ** Providing input
+    -- $feed-records
     , feedChunk
     , feedEndOfInput
     ) where
@@ -45,6 +47,12 @@ import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Parser
 import Data.Csv.Types
 
+-- $feed-header
+--
+-- These functions are sometimes convenient when working with
+-- 'HeaderParser', but don't let you do anything you couldn't already
+-- do using the 'HeaderParser' constructors directly.
+
 -- $indexbased
 --
 -- See documentation on index-based conversion in "Data.Csv" for more
@@ -55,19 +63,26 @@ import Data.Csv.Types
 -- See documentation on name-based conversion in "Data.Csv" for more
 -- information.
 
+-- $feed-records
+--
+-- These functions are sometimes convenient when working with
+-- 'Parser', but don't let you do anything you couldn't already do
+-- using the 'Parser' constructors directly.
+
 ------------------------------------------------------------------------
 -- * Decoding headers
 
 -- | An incremental parser that when fed data eventually returns a
 -- parsed 'Header', or an error.
 data HeaderParser a =
-      -- | The input data was malformed. The second field contains
-      -- information about the parse error.
+      -- | The input data was malformed. The first field contains any
+      -- unconsumed input and second field contains information about
+      -- the parse error.
       FailH !B.ByteString String
 
       -- | The parser needs more input data before it can produce a
       -- result. Use an 'B.empty' string to indicate that no more
-      -- input data is available. After fed an empty string, the
+      -- input data is available. If fed an 'B.empty string', the
       -- continuation is guaranteed to return either 'FailH' or
       -- 'DoneH'.
     | PartialH (B.ByteString -> HeaderParser a)
@@ -102,7 +117,7 @@ feedChunkH (PartialH k) s     = k s
 feedChunkH d@(DoneH _ _) _s   = d
 
 -- | Tell a 'HeaderParser' that there is no more input. This passes
--- 'Nothing' to a 'PartialH' parser, otherwise returns the parser
+-- 'B.empty' to a 'PartialH' parser, otherwise returns the parser
 -- unchanged.
 feedEndOfInputH :: HeaderParser a -> HeaderParser a
 feedEndOfInputH (PartialH k) = k B.empty
@@ -140,13 +155,14 @@ decodeHeaderWith !opts = PartialH (go . parser)
 -- parsed records, converted to the desired type, or an error in case
 -- of malformed input data.
 data Parser a =
-    -- | The input data was malformed. The second field contains
-    -- information about the parse error.
+      -- | The input data was malformed. The first field contains any
+      -- unconsumed input and second field contains information about
+      -- the parse error.
       Fail !B.ByteString String
 
       -- | The parser needs more input data before it can produce a
       -- result. Use an 'B.empty' string to indicate that no more
-      -- input data is available. After fed an empty string, the
+      -- input data is available. If fed an 'B.empty' string, the
       -- continuation is guaranteed to return either 'Fail' or 'Done'.
     | Partial (B.ByteString -> Parser a)
 
@@ -154,9 +170,9 @@ data Parser a =
       -- that failed type conversion are returned as @'Left' errMsg@
       -- and the rest as @'Right' val@. Feed a 'B.ByteString' to the
       -- continuation to continue parsing. Use an 'B.empty' string to
-      -- indicate that no more input data is available. After fed an
-      -- empty string, the continuation is guaranteed to return either
-      -- 'Fail' or 'Done'.
+      -- indicate that no more input data is available. If fed an
+      -- 'B.empty' string, the continuation is guaranteed to return
+      -- either 'Fail' or 'Done'.
     | Some [Either String a] (B.ByteString -> Parser a)
 
       -- | The parser parsed and converted some records. Any records
@@ -188,9 +204,8 @@ feedChunk (Partial k) s     = k s
 feedChunk (Some xs k) s     = Some xs (\ s' -> k s `feedChunk` s')
 feedChunk (Done xs) _s      = Done xs
 
--- | Tell a 'Parser' that there is no more input. This passes
--- 'Nothing' to a 'Partial' parser, otherwise returns the parser
--- unchanged.
+-- | Tell a 'Parser' that there is no more input. This passes 'empty'
+-- to a 'Partial' parser, otherwise returns the parser unchanged.
 feedEndOfInput :: Parser a -> Parser a
 feedEndOfInput (Partial k)     = k B.empty
 feedEndOfInput p               = p
