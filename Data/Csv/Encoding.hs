@@ -75,12 +75,12 @@ decodeByName :: FromNamedRecord a
 decodeByName = decodeByNameWith defaultDecodeOptions
 {-# INLINE decodeByName #-}
 
--- | Efficiently serialize CVS records as a lazy 'L.ByteString'.
+-- | Efficiently serialize CSV records as a lazy 'L.ByteString'.
 encode :: ToRecord a => V.Vector a -> L.ByteString
 encode = encodeWith defaultEncodeOptions
 {-# INLINE encode #-}
 
--- | Efficiently serialize CVS records as a lazy 'L.ByteString'. The
+-- | Efficiently serialize CSV records as a lazy 'L.ByteString'. The
 -- header is written before any records and dictates the field order.
 encodeByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
 encodeByName = encodeByNameWith defaultEncodeOptions
