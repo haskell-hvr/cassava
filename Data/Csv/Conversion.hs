@@ -338,6 +338,8 @@ instance ToField a => ToNamedRecord (HM.HashMap B.ByteString a) where
 ------------------------------------------------------------------------
 -- Individual field conversion
 
+-- TODO: Document the format each instance recognizes/uses.
+
 -- | A type that can be converted from a single CSV field, with the
 -- possibility of failure.
 --
