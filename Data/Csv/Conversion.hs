@@ -17,7 +17,7 @@ module Data.Csv.Conversion
 
     -- * Parser
     , Parser
-    , parseEither
+    , runParser
 
     -- * Accessors
     , (.!)
@@ -669,15 +669,15 @@ apP d e = do
   return (b a)
 {-# INLINE apP #-}
 
--- | Run a 'Parser', returning either @'Left' msg@ or @'Right'
+-- | Run a 'Parser', returning either @'Left' errMsg@ or @'Right'
 -- result@. Forces the value in the 'Left' or 'Right' constructors to
 -- weak head normal form.
-parseEither :: Parser a -> Either String a
-parseEither p = runParser p left right
+runParser :: Parser a -> Either String a
+runParser p = runParser p left right
   where
     left !errMsg = Left errMsg
     right !x = Right x
-{-# INLINE parseEither #-}
+{-# INLINE runParser #-}
 
 #ifdef GENERICS
 

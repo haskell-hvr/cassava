@@ -293,7 +293,7 @@ decodeWithP p !opts = go Incomplete [] . parser
                  | otherwise   = convert r : acc
 
     parser = A.parse (record (decDelimiter opts) <* (endOfLine <|> endOfInput))
-    convert = parseEither . p
+    convert = runParser . p
 {-# INLINE decodeWithP #-}
 
 blankLine :: V.Vector B.ByteString -> Bool
