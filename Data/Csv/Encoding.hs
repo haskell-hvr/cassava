@@ -96,7 +96,7 @@ decodeWith :: FromRecord a
                              -- skipped
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
-decodeWith = decodeWithC (parse . parseCsv)
+decodeWith = decodeWithC (parseEither . parseCsv)
 {-# INLINE [1] decodeWith #-}
 
 parseCsv :: FromRecord a => Csv -> Parser (Vector a)
@@ -122,7 +122,7 @@ idDecodeWith :: DecodeOptions -> Bool -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
 idDecodeWith = decodeWithC pure
 
-decodeWithC :: (Csv -> Result a) -> DecodeOptions -> Bool -> L.ByteString
+decodeWithC :: (Csv -> Either String a) -> DecodeOptions -> Bool -> L.ByteString
             -> Either String a
 decodeWithC convert !opts skipHeader = decodeWithP parser convert
   where parser
@@ -138,7 +138,7 @@ decodeByNameWith :: FromNamedRecord a
                  -> Either String (Header, Vector a)
 decodeByNameWith !opts =
     decodeWithP (csvWithHeader opts)
-    (\ (hdr, vs) -> (,) <$> pure hdr <*> (parse $ parseNamedCsv vs))
+    (\ (hdr, vs) -> (,) <$> pure hdr <*> (parseEither $ parseNamedCsv vs))
 
 parseNamedCsv :: FromNamedRecord a => Vector NamedRecord -> Parser (Vector a)
 parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
@@ -228,12 +228,12 @@ prependToAll :: Builder -> [Builder] -> [Builder]
 prependToAll _   []     = []
 prependToAll sep (x:xs) = sep <> x : prependToAll sep xs
 
-decodeWithP :: AL.Parser a -> (a -> Result b) -> L.ByteString -> Either String b
+decodeWithP :: AL.Parser a -> (a -> Either String b) -> L.ByteString -> Either String b
 decodeWithP p to s =
     case AL.parse p s of
       AL.Done _ v     -> case to v of
-          Success a -> Right a
-          Error msg -> Left $ "conversion error: " ++ msg
+          Right a  -> Right a
+          Left msg -> Left $ "conversion error: " ++ msg
       AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
                             show (BL8.unpack left)
 {-# INLINE decodeWithP #-}

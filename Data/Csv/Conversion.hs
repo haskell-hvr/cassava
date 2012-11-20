@@ -16,9 +16,7 @@ module Data.Csv.Conversion
     , ToField(..)
 
     -- * Parser
-    , Result(..)
     , Parser
-    , parse
     , parseEither
 
     -- * Accessors
@@ -609,48 +607,6 @@ namedRecord = HM.fromList
 ------------------------------------------------------------------------
 -- Parser for converting records to data types
 
--- | The result of running a 'Parser'.
-data Result a = Error String
-              | Success a
-                deriving (Eq, Show)
-
-instance Functor Result where
-    fmap f (Success a) = Success (f a)
-    fmap _ (Error err) = Error err
-    {-# INLINE fmap #-}
-
-instance Monad Result where
-    return = Success
-    {-# INLINE return #-}
-    Success a >>= k = k a
-    Error err >>= _ = Error err
-    {-# INLINE (>>=) #-}
-
-instance Applicative Result where
-    pure  = return
-    {-# INLINE pure #-}
-    (<*>) = ap
-    {-# INLINE (<*>) #-}
-
-instance MonadPlus Result where
-    mzero = fail "mzero"
-    {-# INLINE mzero #-}
-    mplus a@(Success _) _ = a
-    mplus _ b             = b
-    {-# INLINE mplus #-}
-
-instance Alternative Result where
-    empty = mzero
-    {-# INLINE empty #-}
-    (<|>) = mplus
-    {-# INLINE (<|>) #-}
-
-instance Monoid (Result a) where
-    mempty  = fail "mempty"
-    {-# INLINE mempty #-}
-    mappend = mplus
-    {-# INLINE mappend #-}
-
 -- | Failure continuation.
 type Failure f r   = String -> f r
 -- | Success continuation.
@@ -712,15 +668,6 @@ apP d e = do
   a <- e
   return (b a)
 {-# INLINE apP #-}
-
--- | Run a 'Parser'. Forces the value in the 'Success' or 'Error'
--- constructors to weak head normal form.
-parse :: Parser a -> Result a
-parse p = runParser p err success
-  where
-    err !errMsg = Error errMsg
-    success !x = Success x
-{-# INLINE parse #-}
 
 -- | Run a 'Parser', returning either @'Left' msg@ or @'Right'
 -- result@. Forces the value in the 'Left' or 'Right' constructors to

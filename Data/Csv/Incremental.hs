@@ -42,7 +42,7 @@ import qualified Data.ByteString as B
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
 
-import Data.Csv.Conversion hiding (Parser, Result, record, toNamedRecord)
+import Data.Csv.Conversion hiding (Parser, record, toNamedRecord)
 import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Parser
 import Data.Csv.Types
