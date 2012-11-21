@@ -17,6 +17,9 @@ module Data.Csv
     -- * Treating CSV data as opaque byte strings
     -- $generic-processing
 
+    -- * Custom type conversions
+    -- $customtypeconversions
+
     -- * Encoding and decoding
     -- $encoding
       decode
@@ -68,6 +71,7 @@ module Data.Csv
     , (.=)
 
     -- ** Field conversion
+    -- $fieldconversion
     , FromField(..)
     , ToField(..)
     ) where
@@ -119,6 +123,31 @@ import Data.Csv.Types
 -- As the example output above shows, all the fields are returned as
 -- uninterpreted 'ByteString' values.
 
+-- $customtypeconversions
+--
+-- Most of the time the existing 'FromField' and 'ToField' instances
+-- do what you want. However, if you need to parse a different format
+-- (e.g. hex) but use a type (e.g. 'Int') for which there's already a
+-- 'FromField' instance, you need to use a @newtype@. Example:
+--
+-- > newtype Hex = Hex Int
+-- >
+-- > parseHex :: ByteString -> Parser Int
+-- > parseHex = ...
+-- >
+-- > instance FromField Hex where
+-- >     parseField s = Hex <$> parseHex s
+--
+-- Other than giving an explicit type signature, you can pattern match
+-- on the @newtype@ constructor to indicate which type conversion you
+-- want to have the library use:
+--
+-- > case decode False "0xff,0xaa\r\n0x11,0x22\r\n" of
+-- >     Left err -> putStrLn err
+-- >     Right v  -> V.forM_ v $ \ (Hex val1, Hex val2) ->
+-- >         print (val1, val2)
+
+
 -- $encoding
 --
 -- Encoding and decoding is a two step process. To encode a value, it
@@ -155,3 +184,10 @@ import Data.Csv.Types
 -- These functions can be used to control how data is encoded and
 -- decoded. For example, they can be used to encode data in a
 -- tab-separated format instead of in a comma-separated format.
+
+-- $fieldconversion
+--
+-- The 'FromField' and 'ToField' define how to convert between
+-- 'Field's and values you care about (e.g. 'Int's). Most of the time
+-- you don't need to write your own instances as the standard ones
+-- cover most use cases.
