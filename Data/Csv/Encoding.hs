@@ -146,10 +146,20 @@ parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
 -- | Options that controls how data is encoded. These options can be
 -- used to e.g. encode data in a tab-separated format instead of in a
 -- comma-separated format.
+--
+-- To avoid having your program stop compiling when new fields are
+-- added to 'EncodeOptions', create option records by overriding
+-- values in 'defaultEncodeOptions'. Example:
+--
+-- @
+-- myOptions = defaultEncodeOptions {
+--       encDelimiter = fromIntegral (ord '\t')
+--     }
+-- @
 data EncodeOptions = EncodeOptions
     { -- | Field delimiter.
       encDelimiter  :: {-# UNPACK #-} !Word8
-    }
+    } deriving (Eq, Show)
 
 -- | Encoding options for CSV files.
 defaultEncodeOptions :: EncodeOptions

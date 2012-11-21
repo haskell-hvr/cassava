@@ -45,10 +45,20 @@ import Data.Csv.Util ((<$!>))
 -- | Options that controls how data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
 -- data.
+--
+-- To avoid having your program stop compiling when new fields are
+-- added to 'DecodeOptions', create option records by overriding
+-- values in 'defaultDecodeOptions'. Example:
+--
+-- @
+-- myOptions = defaultDecodeOptions {
+--       decDelimiter = fromIntegral (ord '\t')
+--     }
+-- @
 data DecodeOptions = DecodeOptions
     { -- | Field delimiter.
       decDelimiter  :: {-# UNPACK #-} !Word8
-    }
+    } deriving (Eq, Show)
 
 -- | Decoding options for parsing CSV files.
 defaultDecodeOptions :: DecodeOptions
