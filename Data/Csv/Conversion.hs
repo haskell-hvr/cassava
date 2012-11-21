@@ -617,15 +617,15 @@ type Success a f r = a -> f r
 -- lets you compose several field conversions together in such a way
 -- that if any of them fail, the whole record conversion fails.
 newtype Parser a = Parser {
-      runParser :: forall f r.
-                   Failure f r
-                -> Success a f r
-                -> f r
+      unParser :: forall f r.
+                  Failure f r
+               -> Success a f r
+               -> f r
     }
 
 instance Monad Parser where
-    m >>= g = Parser $ \kf ks -> let ks' a = runParser (g a) kf ks
-                                 in runParser m kf ks'
+    m >>= g = Parser $ \kf ks -> let ks' a = unParser (g a) kf ks
+                                 in unParser m kf ks'
     {-# INLINE (>>=) #-}
     return a = Parser $ \_kf ks -> ks a
     {-# INLINE return #-}
@@ -634,7 +634,7 @@ instance Monad Parser where
 
 instance Functor Parser where
     fmap f m = Parser $ \kf ks -> let ks' a = ks (f a)
-                                  in runParser m kf ks'
+                                  in unParser m kf ks'
     {-# INLINE fmap #-}
 
 instance Applicative Parser where
@@ -652,8 +652,8 @@ instance Alternative Parser where
 instance MonadPlus Parser where
     mzero = fail "mzero"
     {-# INLINE mzero #-}
-    mplus a b = Parser $ \kf ks -> let kf' _ = runParser b kf ks
-                                   in runParser a kf' ks
+    mplus a b = Parser $ \kf ks -> let kf' _ = unParser b kf ks
+                                   in unParser a kf' ks
     {-# INLINE mplus #-}
 
 instance Monoid (Parser a) where
@@ -673,7 +673,7 @@ apP d e = do
 -- result@. Forces the value in the 'Left' or 'Right' constructors to
 -- weak head normal form.
 runParser :: Parser a -> Either String a
-runParser p = runParser p left right
+runParser p = unParser p left right
   where
     left !errMsg = Left errMsg
     right !x = Right x

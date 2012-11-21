@@ -251,11 +251,11 @@ decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> HeaderParser (Parser a)
 decodeByNameWith !opts =
-    PartialH (runParser . (decodeHeaderWith opts `feedChunkH`))
+    PartialH (go . (decodeHeaderWith opts `feedChunkH`))
   where
-    runParser (FailH rest msg) = FailH rest msg
-    runParser (PartialH k)     = PartialH $ \ s -> runParser (k s)
-    runParser (DoneH hdr rest) =
+    go (FailH rest msg) = FailH rest msg
+    go (PartialH k)     = PartialH $ \ s -> go (k s)
+    go (DoneH hdr rest) =
         DoneH hdr (decodeWithP (parseNamedRecord . toNamedRecord hdr) opts rest)
 
 -- Copied from Data.Csv.Parser

@@ -96,7 +96,7 @@ decodeWith :: FromRecord a
                              -- skipped
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
-decodeWith = decodeWithC (parseEither . parseCsv)
+decodeWith = decodeWithC (runParser . parseCsv)
 {-# INLINE [1] decodeWith #-}
 
 parseCsv :: FromRecord a => Csv -> Parser (Vector a)
@@ -138,7 +138,7 @@ decodeByNameWith :: FromNamedRecord a
                  -> Either String (Header, Vector a)
 decodeByNameWith !opts =
     decodeWithP (csvWithHeader opts)
-    (\ (hdr, vs) -> (,) <$> pure hdr <*> (parseEither $ parseNamedCsv vs))
+    (\ (hdr, vs) -> (,) <$> pure hdr <*> (runParser $ parseNamedCsv vs))
 
 parseNamedCsv :: FromNamedRecord a => Vector NamedRecord -> Parser (Vector a)
 parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
