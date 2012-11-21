@@ -29,7 +29,8 @@ module Data.Csv.Conversion
 
 import Control.Applicative
 import Control.Monad
-import Data.Attoparsec.Char8 (double, number, parseOnly)
+import Data.Attoparsec.Char8 (double, parseOnly)
+import qualified Data.Attoparsec.Char8 as A8
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
@@ -377,7 +378,7 @@ class FromField a where
 class ToField a where
     toField :: a -> Field
 
--- | 'Nothing' if the field is empty, 'Just' otherwise.
+-- | 'Nothing' if the 'Field' is 'B.empty', 'Just' otherwise.
 instance FromField a => FromField (Maybe a) where
     parseField s
         | B.null s  = pure Nothing
@@ -389,6 +390,7 @@ instance ToField a => ToField (Maybe a) where
     toField = maybe B.empty toField
     {-# INLINE toField #-}
 
+-- | Assumes UTF-8 encoding.
 instance FromField Char where
     parseField s
         | T.compareLength t 1 == EQ = pure (T.head t)
@@ -396,22 +398,29 @@ instance FromField Char where
       where t = T.decodeUtf8 s
     {-# INLINE parseField #-}
 
+-- | Uses UTF-8 encoding.
 instance ToField Char where
     toField = toField . T.encodeUtf8 . T.singleton
     {-# INLINE toField #-}
 
+-- | Accepts same syntax as 'rational'.
 instance FromField Double where
     parseField = parseDouble
     {-# INLINE parseField #-}
 
+-- | Uses decimal notation for values between @0.1@ and @9,999,999@,
+-- and scientific notation otherwise.
 instance ToField Double where
     toField = realFloat
     {-# INLINE toField #-}
 
+-- | Accepts same syntax as 'rational'.
 instance FromField Float where
     parseField s = double2Float <$> parseDouble s
     {-# INLINE parseField #-}
 
+-- | Uses decimal notation for values between @0.1@ and @9,999,999@,
+-- and scientific notation otherwise.
 instance ToField Float where
     toField = realFloat
     {-# INLINE toField #-}
@@ -422,90 +431,112 @@ parseDouble s = case parseOnly double s of
     Right n  -> pure n
 {-# INLINE parseDouble #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int where
-    parseField = parseIntegral "Int"
+    parseField = parseSigned "Int"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Integer where
-    parseField = parseIntegral "Integer"
+    parseField = parseSigned "Integer"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Integer where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int8 where
-    parseField = parseIntegral "Int8"
+    parseField = parseSigned "Int8"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int8 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int16 where
-    parseField = parseIntegral "Int16"
+    parseField = parseSigned "Int16"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int16 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int32 where
-    parseField = parseIntegral "Int32"
+    parseField = parseSigned "Int32"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int32 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int64 where
-    parseField = parseIntegral "Int64"
+    parseField = parseSigned "Int64"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int64 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word where
-    parseField = parseIntegral "Word"
+    parseField = parseUnsigned "Word"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word8 where
-    parseField = parseIntegral "Word8"
+    parseField = parseUnsigned "Word8"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word8 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word16 where
-    parseField = parseIntegral "Word16"
+    parseField = parseUnsigned "Word16"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word16 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word32 where
-    parseField = parseIntegral "Word32"
+    parseField = parseUnsigned "Word32"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word32 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word64 where
-    parseField = parseIntegral "Word64"
+    parseField = parseUnsigned "Word64"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word64 where
     toField = decimal
     {-# INLINE toField #-}
@@ -556,11 +587,17 @@ instance ToField [Char] where
     toField = toField . T.pack
     {-# INLINE toField #-}
 
-parseIntegral :: Integral a => String -> B.ByteString -> Parser a
-parseIntegral typ s = case parseOnly number s of
+parseSigned :: (Integral a, Num a) => String -> B.ByteString -> Parser a
+parseSigned typ s = case parseOnly (A8.signed A8.decimal) s of
     Left err -> typeError typ s (Just err)
-    Right n  -> pure (floor n)
-{-# INLINE parseIntegral #-}
+    Right n  -> pure n
+{-# INLINE parseSigned #-}
+
+parseUnsigned :: Integral a => String -> B.ByteString -> Parser a
+parseUnsigned typ s = case parseOnly A8.decimal s of
+    Left err -> typeError typ s (Just err)
+    Right n  -> pure n
+{-# INLINE parseUnsigned #-}
 
 typeError :: String -> B.ByteString -> Maybe String -> Parser a
 typeError typ s mmsg =
