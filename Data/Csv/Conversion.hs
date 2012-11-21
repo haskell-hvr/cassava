@@ -353,11 +353,11 @@ instance ToField a => ToNamedRecord (HM.HashMap B.ByteString a) where
 -- data Color = Red | Green | Blue
 --
 -- instance FromField Color where
---     parseField s
---         | s == \"R\"  = pure Red
---         | s == \"G\"  = pure Green
---         | s == \"B\"  = pure Blue
---         | otherwise = mzero
+--    parseField s
+--        | s == \"R\"  = pure Red
+--        | s == \"G\"  = pure Green
+--        | s == \"B\"  = pure Blue
+--        | otherwise = mzero
 -- @
 class FromField a where
     parseField :: Field -> Parser a
@@ -371,9 +371,9 @@ class FromField a where
 -- data Color = Red | Green | Blue
 --
 -- instance ToField Color where
---     toField Red   = \"R\"
---     toField Green = \"G\"
---     toField Blue  = \"B\"
+--    toField Red   = \"R\"
+--    toField Green = \"G\"
+--    toField Blue  = \"B\"
 -- @
 class ToField a where
     toField :: a -> Field
