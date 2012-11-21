@@ -151,11 +151,9 @@ parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
 -- added to 'EncodeOptions', create option records by overriding
 -- values in 'defaultEncodeOptions'. Example:
 --
--- @
--- myOptions = defaultEncodeOptions {
---       encDelimiter = fromIntegral (ord '\t')
---     }
--- @
+-- > myOptions = defaultEncodeOptions {
+-- >       encDelimiter = fromIntegral (ord '\t')
+-- >     }
 data EncodeOptions = EncodeOptions
     { -- | Field delimiter.
       encDelimiter  :: {-# UNPACK #-} !Word8

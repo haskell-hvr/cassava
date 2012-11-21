@@ -50,11 +50,9 @@ import Data.Csv.Util ((<$!>))
 -- added to 'DecodeOptions', create option records by overriding
 -- values in 'defaultDecodeOptions'. Example:
 --
--- @
--- myOptions = defaultDecodeOptions {
---       decDelimiter = fromIntegral (ord '\t')
---     }
--- @
+-- > myOptions = defaultDecodeOptions {
+-- >       decDelimiter = fromIntegral (ord '\t')
+-- >     }
 data DecodeOptions = DecodeOptions
     { -- | Field delimiter.
       decDelimiter  :: {-# UNPACK #-} !Word8

@@ -187,7 +187,7 @@ import Data.Csv.Types
 
 -- $fieldconversion
 --
--- The 'FromField' and 'ToField' define how to convert between
+-- The 'FromField' and 'ToField' classes define how to convert between
 -- 'Field's and values you care about (e.g. 'Int's). Most of the time
 -- you don't need to write your own instances as the standard ones
 -- cover most use cases.
