@@ -615,8 +615,10 @@ typeError typ s mmsg =
 -- 'empty' if the value cannot be converted to the desired type.
 -- Raises an exception if the index is out of bounds.
 --
--- If you're certain that the index is not out of bounds, using
--- @'parseField' (`V.unsafeIndex` v idx)@ is somewhat faster.
+-- 'index' is a simple convenience function that is equivalent to
+-- @'parseField' (v '!' idx)@. If you're certain that the index is not
+-- out of bounds, using @'parseField' (`V.unsafeIndex` v idx)@ is
+-- somewhat faster.
 index :: FromField a => Record -> Int -> Parser a
 index v idx = parseField (v ! idx)
 {-# INLINE index #-}
