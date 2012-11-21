@@ -81,15 +81,14 @@ import qualified Data.IntMap as IM
 --
 -- here's an example type and instance:
 --
--- @data Person = Person { name :: Text, age :: Int }
---
--- instance FromRecord Person where
---     parseRecord v
---         | 'V.length' v == 2 = Person '<$>'
---                           v '.!' 0 '<*>'
---                           v '.!' 1
---         | otherwise     = mzero
--- @
+-- > data Person = Person { name :: Text, age :: Int }
+-- >
+-- > instance FromRecord Person where
+-- >     parseRecord v
+-- >         | length v == 2 = Person <$>
+-- >                           v .! 0 <*>
+-- >                           v .! 1
+-- >         | otherwise     = mzero
 class FromRecord a where
     parseRecord :: Record -> Parser a
   
@@ -109,12 +108,11 @@ newtype Only a = Only {
 --
 -- An example type and instance:
 --
--- @data Person = Person { name :: Text, age :: Int }
---
--- instance ToRecord Person where
---     toRecord (Person name age) = 'record' [
---        'toField' name, 'toField' age]
--- @
+-- > data Person = Person { name :: Text, age :: Int }
+-- >
+-- > instance ToRecord Person where
+-- >     toRecord (Person name age) = 'record' [
+-- >         'toField' name, 'toField' age]
 --
 -- Outputs data on this form:
 --
@@ -285,15 +283,14 @@ instance (ToField a, U.Unbox a) => ToRecord (U.Vector a) where
 --
 -- here's an example type and instance:
 --
--- @{-\# LANGUAGE OverloadedStrings \#-}
---
--- data Person = Person { name :: Text, age :: Int }
---
--- instance FromRecord Person where
---     parseNamedRecord m = Person '<$>'
---                          m '.:' \"name\" '<*>'
---                          m '.:' \"age\"
--- @
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > data Person = Person { name :: Text, age :: Int }
+-- >
+-- > instance FromRecord Person where
+-- >     parseNamedRecord m = Person <$>
+-- >                          m .: "name" <*>
+-- >                          m .: "age"
 --
 -- Note the use of the @OverloadedStrings@ language extension which
 -- enables 'B8.ByteString' values to be written as string literals.
@@ -309,12 +306,11 @@ class FromNamedRecord a where
 --
 -- An example type and instance:
 --
--- @data Person = Person { name :: Text, age :: Int }
---
--- instance ToRecord Person where
---     toNamedRecord (Person name age) = 'namedRecord' [
---        \"name\" '.=' name, \"age\" '.=' age]
--- @
+-- > data Person = Person { name :: Text, age :: Int }
+-- >
+-- > instance ToRecord Person where
+-- >     toNamedRecord (Person name age) = namedRecord [
+-- >         "name" .= name, "age" .= age]
 class ToNamedRecord a where
     toNamedRecord :: a -> NamedRecord
 
@@ -349,17 +345,16 @@ instance ToField a => ToNamedRecord (HM.HashMap B.ByteString a) where
 --
 -- Example type and instance:
 --
--- @{-\# LANGUAGE OverloadedStrings \#-}
---
--- data Color = Red | Green | Blue
---
--- instance FromField Color where
---    parseField s
---        | s == \"R\"  = pure Red
---        | s == \"G\"  = pure Green
---        | s == \"B\"  = pure Blue
---        | otherwise = mzero
--- @
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > data Color = Red | Green | Blue
+-- >
+-- > instance FromField Color where
+-- >     parseField s
+-- >         | s == "R"  = pure Red
+-- >         | s == "G"  = pure Green
+-- >         | s == "B"  = pure Blue
+-- >         | otherwise = mzero
 class FromField a where
     parseField :: Field -> Parser a
 
@@ -367,15 +362,14 @@ class FromField a where
 --
 -- Example type and instance:
 --
--- @{-\# LANGUAGE OverloadedStrings \#-}
---
--- data Color = Red | Green | Blue
---
--- instance ToField Color where
---    toField Red   = \"R\"
---    toField Green = \"G\"
---    toField Blue  = \"B\"
--- @
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > data Color = Red | Green | Blue
+-- >
+-- > instance ToField Color where
+-- >     toField Red   = "R"
+-- >     toField Green = "G"
+-- >     toField Blue  = "B"
 class ToField a where
     toField :: a -> Field
 

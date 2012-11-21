@@ -86,9 +86,8 @@ import Data.Csv.Types
 --
 -- A short encoding usage example:
 --
--- @ >>> 'encode' $ fromList [(\"John\" :: Text, 27), (\"Jane\", 28)]
--- Chunk \"John,27\\r\\nJane,28\\r\\n\" Empty
--- @
+-- > >>> encode $ fromList [("John" :: Text, 27), ("Jane", 28)]
+-- > Chunk "John,27\r\nJane,28\r\n" Empty
 --
 -- Since string literals are overloaded we have to supply a type
 -- signature as the compiler couldn't deduce which string type (i.e.
@@ -98,9 +97,8 @@ import Data.Csv.Types
 --
 -- A short decoding usage example:
 --
--- @ >>> 'decode' 'False' \"John,27\\r\\nJane,28\\r\\n\" :: Either String (Vector (Text, Int))
--- Right (fromList [(\"John\",27),(\"Jane\",28)])
--- @
+-- > >>> decode False "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
+-- > Right (fromList [("John",27),("Jane",28)])
 --
 -- We pass 'False' as the first argument to indicate that the CSV
 -- input data isn't preceded by a header.
@@ -116,9 +114,8 @@ import Data.Csv.Types
 -- parse a CSV file to a generic representation, just convert each
 -- record to a @'Vector' 'ByteString'@ value, like so:
 --
--- @ 'decode' 'False' \"John,27\\r\\nJane,28\\r\\n\" :: Either String (Vector (Vector ByteString))
--- Right (fromList [fromList [\"John\",\"27\"],fromList [\"Jane\",\"28\"]])
--- @
+-- > decode False "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
+-- > Right (fromList [fromList ["John","27"],fromList ["Jane","28"]])
 --
 -- As the example output above shows, all the fields are returned as
 -- uninterpreted 'ByteString' values.
@@ -144,7 +141,7 @@ import Data.Csv.Types
 --
 -- > case decode False "0xff,0xaa\r\n0x11,0x22\r\n" of
 -- >     Left err -> putStrLn err
--- >     Right v  -> V.forM_ v $ \ (Hex val1, Hex val2) ->
+-- >     Right v  -> forM_ v $ \ (Hex val1, Hex val2) ->
 -- >         print (val1, val2)
 
 
