@@ -408,8 +408,8 @@ instance FromField Double where
     parseField = parseDouble
     {-# INLINE parseField #-}
 
--- | Uses decimal notation for values between @0.1@ and @9,999,999@,
--- and scientific notation otherwise.
+-- | Uses decimal notation or scientific notation, depending on the
+-- number.
 instance ToField Double where
     toField = realFloat
     {-# INLINE toField #-}
@@ -419,8 +419,8 @@ instance FromField Float where
     parseField s = double2Float <$> parseDouble s
     {-# INLINE parseField #-}
 
--- | Uses decimal notation for values between @0.1@ and @9,999,999@,
--- and scientific notation otherwise.
+-- | Uses decimal notation or scientific notation, depending on the
+-- number.
 instance ToField Float where
     toField = realFloat
     {-# INLINE toField #-}
