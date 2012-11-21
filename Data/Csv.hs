@@ -51,6 +51,7 @@ module Data.Csv
     , FromRecord(..)
     , Parser
     , runParser
+    , index
     , (.!)
     , ToRecord(..)
     , record
@@ -59,15 +60,19 @@ module Data.Csv
     -- ** Name-based record conversion
     -- $namebased
     , FromNamedRecord(..)
+    , lookup
     , (.:)
     , ToNamedRecord(..)
     , namedRecord
+    , namedField
     , (.=)
 
     -- ** Field conversion
     , FromField(..)
     , ToField(..)
     ) where
+
+import Prelude hiding (lookup)
 
 import Data.Csv.Conversion
 import Data.Csv.Encoding

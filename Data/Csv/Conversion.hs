@@ -20,8 +20,11 @@ module Data.Csv.Conversion
     , runParser
 
     -- * Accessors
+    , index
     , (.!)
+    , lookup
     , (.:)
+    , namedField
     , (.=)
     , record
     , namedRecord
@@ -48,7 +51,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import Data.Word
 import GHC.Float (double2Float)
-import Prelude hiding (takeWhile)
+import Prelude hiding (lookup, takeWhile)
 
 import Data.Csv.Conversion.Internal
 import Data.Csv.Types
@@ -611,22 +614,40 @@ typeError typ s mmsg =
 -- | Retrieve the /n/th field in the given record. The result is
 -- 'empty' if the value cannot be converted to the desired type.
 -- Raises an exception if the index is out of bounds.
+--
+-- If you're certain that the index is not out of bounds, using
+-- @'parseField' (`V.unsafeIndex` v idx)@ is somewhat faster.
+index :: FromField a => Record -> Int -> Parser a
+index v idx = parseField (v ! idx)
+{-# INLINE index #-}
+
+-- | Alias for 'index'.
 (.!) :: FromField a => Record -> Int -> Parser a
-v .! idx = parseField (v ! idx)
+(.!) = index
 {-# INLINE (.!) #-}
 
 -- | Retrieve a field in the given record by name.  The result is
 -- 'empty' if the field is missing or if the value cannot be converted
 -- to the desired type.
-(.:) :: FromField a => NamedRecord -> B.ByteString -> Parser a
-m .: name = maybe (fail err) parseField $ HM.lookup name m
+lookup :: FromField a => NamedRecord -> B.ByteString -> Parser a
+lookup m name = maybe (fail err) parseField $ HM.lookup name m
   where err = "no field named " ++ show (B8.unpack name)
+{-# INLINE lookup #-}
+
+-- | Alias for 'lookup'.
+(.:) :: FromField a => NamedRecord -> B.ByteString -> Parser a
+(.:) = lookup
 {-# INLINE (.:) #-}
 
 -- | Construct a pair from a name and a value.  For use with
 -- 'namedRecord'.
+namedField :: ToField a => B.ByteString -> a -> (B.ByteString, B.ByteString)
+namedField name val = (name, toField val)
+{-# INLINE namedField #-}
+
+-- | Alias for 'namedField'.
 (.=) :: ToField a => B.ByteString -> a -> (B.ByteString, B.ByteString)
-name .= val = (name, toField val)
+(.=) = namedField
 {-# INLINE (.=) #-}
 
 -- | Construct a record from a list of 'B.ByteString's.  Use 'toField'
@@ -707,6 +728,9 @@ apP d e = do
 -- | Run a 'Parser', returning either @'Left' errMsg@ or @'Right'
 -- result@. Forces the value in the 'Left' or 'Right' constructors to
 -- weak head normal form.
+--
+-- You most likely won't need to use this function directly, but it's
+-- included for completeness.
 runParser :: Parser a -> Either String a
 runParser p = unParser p left right
   where
