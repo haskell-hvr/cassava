@@ -6,7 +6,7 @@
 --  * Empty lines are ignored.
 --
 --  * Non-escaped fields may contain any characters except
---    double-quotes, commas, carriage returns, and newlines
+--    double-quotes, commas, carriage returns, and newlines.
 --
 --  * Escaped fields may contain any characters (but double-quotes
 --    need to be escaped).

@@ -124,7 +124,8 @@ feedEndOfInputH (PartialH k) = k B.empty
 feedEndOfInputH p            = p
 
 -- | Parse a CSV header in an incremental fashion. When done, the
--- 'HeaderParser' returns any unconsumed input in its second field.
+-- 'HeaderParser' returns any unconsumed input in the second field of
+-- the 'DoneH' constructor.
 decodeHeader :: HeaderParser B.ByteString
 decodeHeader = decodeHeaderWith defaultDecodeOptions
 

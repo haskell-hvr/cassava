@@ -46,9 +46,8 @@ import Data.Csv.Types
 --
 -- A short usage example:
 --
--- @ for_ ('decode' False \"John,27\\r\\nJane,28\\r\\n\") $ \\ (name, age :: Int) ->
---     putStrLn $ name ++ \" is \" ++ show age ++ \" years old\"
--- @
+-- > for_ (decode False "John,27\r\nJane,28\r\n") $ \ (name, age :: Int) ->
+-- >     putStrLn $ name ++ " is " ++ show age ++ " years old"
 --
 -- N.B. The 'Foldable' instance, which is used above, skips records
 -- that failed to convert. If you don't want this behavior, work
@@ -56,7 +55,7 @@ import Data.Csv.Types
 
 -- $stream-representation
 --
--- A stream of records is represented like a (lazy) list that may
+-- A stream of records is represented as a (lazy) list that may
 -- contain errors.
 
 -- $typeconversion
