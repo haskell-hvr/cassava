@@ -380,7 +380,7 @@ instance FromField a => FromField (Maybe a) where
         | otherwise = Just <$> parseField s
     {-# INLINE parseField #-}
 
--- | 'Nothing' is encoded as an empty field.
+-- | 'Nothing' is encoded as an 'B.empty' field.
 instance ToField a => ToField (Maybe a) where
     toField = maybe B.empty toField
     {-# INLINE toField #-}
