@@ -216,7 +216,7 @@ data More = Incomplete | Complete
           deriving (Eq, Show)
 
 -- | Efficiently deserialize CSV in an incremental fashion. Equivalent
--- to @'decodeByNameWith' 'defaultDecodeOptions'@.
+-- to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
        => Bool          -- ^ Data contains header that should be
                         -- skipped
