@@ -285,11 +285,13 @@ decodeWithP p !opts = go Incomplete [] . parser
     go m acc (A.Done rest r)
         | B.null rest = case m of
             Complete   -> Done (reverse acc')
-            Incomplete -> Partial cont
+            Incomplete
+                | null acc' -> Partial (cont acc')
+                | otherwise -> Some (reverse acc') (cont [])
         | otherwise   = go m acc' (parser rest)
-      where cont s
-                | B.null s  = Done (reverse acc')
-                | otherwise = go Incomplete acc' (parser s)
+      where cont acc'' s
+                | B.null s  = Done (reverse acc'')
+                | otherwise = go Incomplete acc'' (parser s)
             acc' | blankLine r = acc
                  | otherwise   = convert r : acc
 
