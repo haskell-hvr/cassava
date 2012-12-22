@@ -28,9 +28,10 @@ module Data.Csv.Encoding
     , encodeByNameWith
     ) where
 
-import Blaze.ByteString.Builder
-import Blaze.ByteString.Builder.Char8
-import Control.Applicative
+import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
+                                 toLazyByteString)
+import Blaze.ByteString.Builder.Char8 (fromString)
+import Control.Applicative ((*>), (<$>), (<*>), pure)
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8

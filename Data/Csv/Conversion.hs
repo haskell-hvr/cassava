@@ -30,26 +30,27 @@ module Data.Csv.Conversion
     , namedRecord
     ) where
 
-import Control.Applicative
-import Control.Monad
+import Control.Applicative (Alternative, Applicative, (<*>), (<$>), (<|>),
+                            empty, pure)
+import Control.Monad (MonadPlus, mplus, mzero)
 import Data.Attoparsec.Char8 (double, parseOnly)
 import qualified Data.Attoparsec.Char8 as A8
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Lazy as HM
-import Data.Int
+import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.Map as M
-import Data.Monoid
+import Data.Monoid (Monoid, mappend, mempty)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
-import Data.Traversable
+import Data.Traversable (traverse)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
-import Data.Word
+import Data.Word (Word, Word8, Word16, Word32, Word64)
 import GHC.Float (double2Float)
 import Prelude hiding (lookup, takeWhile)
 

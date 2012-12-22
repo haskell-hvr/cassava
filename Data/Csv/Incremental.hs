@@ -35,7 +35,7 @@ module Data.Csv.Incremental
     , feedEndOfInput
     ) where
 
-import Control.Applicative
+import Control.Applicative ((<*), (<|>))
 import qualified Data.Attoparsec as A
 import Data.Attoparsec.Char8 (endOfInput, endOfLine)
 import qualified Data.ByteString as B

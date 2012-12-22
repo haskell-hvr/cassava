@@ -26,8 +26,9 @@ module Data.Csv.Parser
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
-import Control.Applicative
-import Data.Attoparsec.Char8 hiding (Parser, Result, parse)
+import Control.Applicative (Alternative, (*>), (<$>), (<*), (<|>), optional,
+                            pure)
+import Data.Attoparsec.Char8 (char, endOfInput, endOfLine)
 import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
 import Data.Attoparsec.Types (Parser)
@@ -35,9 +36,9 @@ import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Unsafe as S
 import qualified Data.HashMap.Strict as HM
-import Data.Monoid
+import Data.Monoid (mappend, mempty)
 import qualified Data.Vector as V
-import Data.Word
+import Data.Word (Word8)
 
 import Data.Csv.Types
 import Data.Csv.Util ((<$!>))
