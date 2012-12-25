@@ -30,6 +30,8 @@ module Data.Csv.Encoding
     -- * Space-delimited files
     , decodeTable
     , decodeTableByName
+    , encodeTable
+    , encodeTableByName
     ) where
 
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
@@ -267,3 +269,26 @@ decodeTableByName :: FromNamedRecord a => L.ByteString -> Either String (Header,
 decodeTableByName =
     decodeWithP tableWithHeader
     (\(hdr, vs) -> (,) <$> pure hdr <*> (runParser $ parseNamedCsv vs))
+
+encodeTable :: ToRecord a => V.Vector a -> L.ByteString
+encodeTable = toLazyByteString
+            . unlines
+            . map (encodeTableRow . toRecord)
+            . V.toList
+{-# INLINE encodeTable #-}
+
+encodeTableByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
+encodeTableByName hdr v =
+    toLazyByteString (  encodeTableRow hdr
+                     <> fromByteString "\r\n"
+                     <> records )
+  where
+    records = unlines
+            . map (encodeTableRow . namedRecordToRecord hdr . toNamedRecord)
+            . V.toList $ v
+{-# INLINE encodeTableByName #-}
+
+encodeTableRow :: Record -> Builder
+encodeTableRow = mconcat . intersperse (fromWord8 9)
+               . map fromByteString . map escape . V.toList
+{-# INLINE encodeTableRow #-}
