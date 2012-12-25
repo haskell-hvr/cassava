@@ -29,6 +29,7 @@ module Data.Csv.Encoding
 
     -- * Space-delimited files
     , decodeTable
+    , decodeTableByName
     ) where
 
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
@@ -259,4 +260,9 @@ decodeWithP p to s =
 
 decodeTable :: FromRecord a => Bool -> L.ByteString -> Either String (Vector a)
 decodeTable =
-  decodeWithC tableHeader table (runParser . parseCsv)
+    decodeWithC tableHeader table (runParser . parseCsv)
+
+decodeTableByName :: FromNamedRecord a => L.ByteString -> Either String (Header, Vector a)
+decodeTableByName =
+    decodeWithP tableWithHeader
+    (\(hdr, vs) -> (,) <$> pure hdr <*> (runParser $ parseNamedCsv vs))
