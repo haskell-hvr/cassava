@@ -1,5 +1,5 @@
 Name:                cassava
-Version:             0.1.0.2
+Version:             0.2.1.2
 Synopsis:            A CSV parsing and encoding library
 Description:
   A CSV parsing and encoding library optimized for ease of use and high
@@ -21,30 +21,33 @@ Extra-source-files:  examples/*.hs
 
 Library
   Exposed-modules:     Data.Csv
+                       Data.Csv.Incremental
                        Data.Csv.Parser
+                       Data.Csv.Streaming
 
   Other-modules:       Data.Csv.Compat.Monoid
                        Data.Csv.Conversion
                        Data.Csv.Conversion.Internal
                        Data.Csv.Encoding
                        Data.Csv.Types
+                       Data.Csv.Util
 
-  Build-depends:       array,
-                       attoparsec >= 0.10.2,
+  Build-depends:       array < 0.5,
+                       attoparsec >= 0.10.2 && < 0.11,
                        base < 5,
-                       blaze-builder,
-                       bytestring,
-                       containers,
-                       text,
-                       unordered-containers,
-                       vector
+                       blaze-builder < 0.4,
+                       bytestring < 0.11,
+                       containers < 0.6,
+                       text < 0.12,
+                       unordered-containers < 0.3,
+                       vector < 0.11
 
   ghc-options:         -Wall -O2
   ghc-prof-options:    -auto-all
 
   if impl(ghc >= 7.2.1)
     cpp-options:       -DGENERICS
-    build-depends:     ghc-prim >= 0.2
+    build-depends:     ghc-prim >= 0.2 && < 0.4
   
 Test-suite unit-tests
   Type: exitcode-stdio-1.0

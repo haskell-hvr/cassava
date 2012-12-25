@@ -12,7 +12,6 @@ import qualified Data.HashMap.Strict as HM
 import Data.Int
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
-import Data.Vector ((!))
 import qualified Data.Vector as V
 import Data.Word
 import Test.HUnit
@@ -21,17 +20,18 @@ import Test.Framework.Providers.HUnit as TF
 import Test.QuickCheck
 import Test.Framework.Providers.QuickCheck2 as TF
 
-import Data.Csv
+import Data.Csv hiding (record)
+import qualified Data.Csv.Streaming as S
 
 ------------------------------------------------------------------------
 -- Parse tests
 
 decodesAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
-decodesAs input expected = assertResult input expected $ decode input
+decodesAs input expected = assertResult input expected $ decode False input
 
 decodesWithAs :: DecodeOptions -> BL.ByteString -> [[B.ByteString]] -> Assertion
 decodesWithAs opts input expected =
-    assertResult input expected $ decodeWith opts input
+    assertResult input expected $ decodeWith opts False input
 
 assertResult :: BL.ByteString -> [[B.ByteString]]
              -> Either String (V.Vector (V.Vector B.ByteString)) -> Assertion
@@ -65,18 +65,38 @@ namedDecodesAs input ehdr expected = case decodeByName input of
   where
     expected' = V.fromList $ map HM.fromList expected
 
-testRfc4180 :: Assertion
-testRfc4180 = (BL8.pack $
-               "#field1,field2,field3\n" ++
-               "\"aaa\",\"bb\n" ++
-               "b\",\"ccc\"\n" ++
-               "\"a,a\",\"b\"\"bb\",\"ccc\"\n" ++
-               "zzz,yyy,xxx\n")
-              `decodesAs`
-              [["#field1", "field2", "field3"],
-               ["aaa", "bb\nb", "ccc"],
-               ["a,a", "b\"bb", "ccc"],
-               ["zzz", "yyy", "xxx"]]
+recordsToList :: S.Records a -> Either String [a]
+recordsToList (S.Nil (Just err) _)  = Left err
+recordsToList (S.Nil Nothing _)     = Right []
+recordsToList (S.Cons (Left err) _) = Left err
+recordsToList (S.Cons (Right x) rs) = case recordsToList rs of
+    l@(Left _) -> l
+    (Right xs) -> Right (x : xs)
+
+decodesStreamingAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
+decodesStreamingAs input expected =
+    assertResult input expected $ fmap (V.fromList . map V.fromList) $
+    recordsToList $ S.decode False input
+
+decodesWithStreamingAs :: DecodeOptions -> BL.ByteString -> [[B.ByteString]]
+                       -> Assertion
+decodesWithStreamingAs opts input expected =
+    assertResult input expected $ fmap (V.fromList . map V.fromList) $
+    recordsToList $ S.decodeWith opts False input
+
+namedDecodesStreamingAs :: BL.ByteString -> [B.ByteString]
+                        -> [[(B.ByteString, B.ByteString)]] -> Assertion
+namedDecodesStreamingAs input ehdr expected = case S.decodeByName input of
+    Right (hdr, rs) -> case recordsToList rs of
+        Right xs -> (V.fromList ehdr, expected') @=? (hdr, xs)
+        Left err -> assertFailure $
+                    "           input: " ++ show (BL8.unpack input) ++ "\n" ++
+                    "conversion error: " ++ err
+    Left err -> assertFailure $
+                "      input: " ++ show (BL8.unpack input) ++ "\n" ++
+                "parse error: " ++ err
+  where
+    expected' = map HM.fromList expected
 
 positionalTests :: [TF.Test]
 positionalTests =
@@ -95,24 +115,47 @@ positionalTests =
       [ testCase "tab-delim" $ encodesWithAs (defEnc { encDelimiter = 9 })
         [["1", "2"]] "1\t2\r\n"
       ]
-    , testGroup "decode" $ map decodeTest
-      [ ("simple",       "a,b,c\n",        [["a", "b", "c"]])
-      , ("crlf",         "a,b\r\nc,d\r\n", [["a", "b"], ["c", "d"]])
-      , ("noEol",        "a,b,c",          [["a", "b", "c"]])
-      , ("blankLine",    "a,b,c\n\nd,e,f\n\n",
-         [["a", "b", "c"], ["d", "e", "f"]])
-      , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
-      ] ++ [testCase "rfc4180" testRfc4180]
-    , testGroup "decodeWith"
-      [ testCase "tab-delim" $ decodesWithAs (defDec { decDelimiter = 9 })
-        "1\t2" [["1", "2"]]
+    , testGroup "decode" $ map decodeTest decodeTests
+    , testGroup "decodeWith" $ map decodeWithTest decodeWithTests
+    , testGroup "streaming"
+      [ testGroup "decode" $ map streamingDecodeTest decodeTests
+      , testGroup "decodeWith" $ map streamingDecodeWithTest decodeWithTests
       ]
     ]
   where
+    rfc4180Input = BL8.pack $
+                   "#field1,field2,field3\n" ++
+                   "\"aaa\",\"bb\n" ++
+                   "b\",\"ccc\"\n" ++
+                   "\"a,a\",\"b\"\"bb\",\"ccc\"\n" ++
+                   "zzz,yyy,xxx\n"
+    rfc4180Output = [["#field1", "field2", "field3"],
+                     ["aaa", "bb\nb", "ccc"],
+                     ["a,a", "b\"bb", "ccc"],
+                     ["zzz", "yyy", "xxx"]]
+    decodeTests =
+        [ ("simple",       "a,b,c\n",        [["a", "b", "c"]])
+        , ("crlf",         "a,b\r\nc,d\r\n", [["a", "b"], ["c", "d"]])
+        , ("noEol",        "a,b,c",          [["a", "b", "c"]])
+        , ("blankLine",    "a,b,c\n\nd,e,f\n\n",
+           [["a", "b", "c"], ["d", "e", "f"]])
+        , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
+        , ("rfc4180", rfc4180Input, rfc4180Output)
+        ]
+    decodeWithTests =
+        [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
+        ]
+
     encodeTest (name, input, expected) =
         testCase name $ input `encodesAs` expected
     decodeTest (name, input, expected) =
         testCase name $ input `decodesAs` expected
+    decodeWithTest (name, opts, input, expected) =
+        testCase name $ decodesWithAs opts input expected
+    streamingDecodeTest (name, input, expected) =
+        testCase name $ input `decodesStreamingAs` expected
+    streamingDecodeWithTest (name, opts, input, expected) =
+        testCase name $ decodesWithStreamingAs opts input expected
     defEnc = defaultEncodeOptions
     defDec = defaultDecodeOptions
 
@@ -126,19 +169,26 @@ nameBasedTests =
       , ("twoRecords", ["field"], [[("field", "abc")], [("field", "def")]],
          "field\r\nabc\r\ndef\r\n")
       ]
-    , testGroup "decode" $ map decodeTest
-      [("simple", "field\r\nabc\r\n", ["field"], [[("field", "abc")]])
-      , ("twoFields", "field1,field2\r\nabc,def\r\n", ["field1", "field2"],
-         [[("field1", "abc"), ("field2", "def")]])
-      , ("twoRecords", "field\r\nabc\r\ndef\r\n", ["field"],
-         [[("field", "abc")], [("field", "def")]])
+    , testGroup "decode" $ map decodeTest decodeTests
+    , testGroup "streaming"
+      [ testGroup "decode" $ map streamingDecodeTest decodeTests
       ]
     ]
   where
+    decodeTests =
+        [ ("simple", "field\r\nabc\r\n", ["field"], [[("field", "abc")]])
+        , ("twoFields", "field1,field2\r\nabc,def\r\n", ["field1", "field2"],
+           [[("field1", "abc"), ("field2", "def")]])
+        , ("twoRecords", "field\r\nabc\r\ndef\r\n", ["field"],
+           [[("field", "abc")], [("field", "def")]])
+        ]
+
     encodeTest (name, hdr, input, expected) =
         testCase name $ namedEncodesAs hdr input expected
     decodeTest (name, input, hdr, expected) =
         testCase name $ namedDecodesAs input hdr expected
+    streamingDecodeTest (name, input, hdr, expected) =
+        testCase name $ namedDecodesStreamingAs input hdr expected
 
 ------------------------------------------------------------------------
 -- Conversion tests
@@ -159,16 +209,17 @@ instance Arbitrary LT.Text where
 -- empty line (which we will ignore.) We therefore encode at least two
 -- columns.
 roundTrip :: (Eq a, FromField a, ToField a) => a -> Bool
-roundTrip x = case decode (encode (V.singleton (x, dummy))) of
-    Right v | V.length v == 1 -> let (y, _ :: Char) = v ! 0 in x == y
-    _  -> False
-  where dummy = 'a'
+roundTrip x = Right record == decode False (encode record) 
+  where record = V.singleton (x, dummy)
+        dummy = 'a'
+
+roundTripUnicode :: T.Text -> Assertion
+roundTripUnicode x = Right record @=? decode False (encode record)
+  where record = V.singleton (x, dummy)
+        dummy = 'a'
 
 boundary :: forall a. (Bounded a, Eq a, FromField a, ToField a) => a -> Bool
 boundary _dummy = roundTrip (minBound :: a) && roundTrip (maxBound :: a)
-
--- TODO: Right now we only encode ASCII properly. Should we support
--- UTF-8? Arbitrary byte strings?
 
 conversionTests :: [TF.Test]
 conversionTests =
@@ -202,6 +253,13 @@ conversionTests =
       , testProperty "Word16" (boundary (undefined :: Word16))
       , testProperty "Word32" (boundary (undefined :: Word32))
       , testProperty "Word64" (boundary (undefined :: Word64))
+      ]
+    , testGroup "Unicode"
+      [ testCase "Chinese" (roundTripUnicode "我能吞下玻璃而不伤身体。")
+      , testCase "Icelandic" (roundTripUnicode
+                              "Sævör grét áðan því úlpan var ónýt.")
+      , testCase "Turkish" (roundTripUnicode
+                            "Cam yiyebilirim, bana zararı dokunmaz.")
       ]
     ]
 

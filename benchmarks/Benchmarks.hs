@@ -71,13 +71,13 @@ main = do
         ]
   where
     decodePresidents :: BL.ByteString -> Either String (Vector President)
-    decodePresidents = decode
+    decodePresidents = decode False
 
     decodePresidentsN :: BL.ByteString -> Either String (Header, Vector President)
     decodePresidentsN = decodeByName
 
     idDecode :: BL.ByteString -> Either String (Vector (Vector B.ByteString))
-    idDecode = decode
+    idDecode = decode False
 
     idDecodeN :: BL.ByteString -> Either String (Header, Vector (BSHashMap B.ByteString))
     idDecodeN = decodeByName

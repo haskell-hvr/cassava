@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP, FlexibleInstances, OverloadedStrings, Rank2Types #-}
+{-# LANGUAGE BangPatterns, CPP, FlexibleInstances, OverloadedStrings,
+             Rank2Types #-}
 #ifdef GENERICS
 {-# LANGUAGE DefaultSignatures, TypeOperators, KindSignatures, FlexibleContexts,
              MultiParamTypeClasses, UndecidableInstances, ScopedTypeVariables #-}
@@ -15,39 +16,43 @@ module Data.Csv.Conversion
     , ToField(..)
 
     -- * Parser
-    , Result(..)
     , Parser
-    , parse
+    , runParser
 
     -- * Accessors
+    , index
     , (.!)
+    , lookup
     , (.:)
+    , namedField
     , (.=)
     , record
     , namedRecord
     ) where
 
-import Control.Applicative
-import Control.Monad
-import Data.Attoparsec.Char8 (double, number, parseOnly)
+import Control.Applicative (Alternative, Applicative, (<*>), (<$>), (<|>),
+                            empty, pure)
+import Control.Monad (MonadPlus, mplus, mzero)
+import Data.Attoparsec.Char8 (double, parseOnly)
+import qualified Data.Attoparsec.Char8 as A8
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Lazy as HM
-import Data.Int
+import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.Map as M
-import Data.Monoid
+import Data.Monoid (Monoid, mappend, mempty)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
-import Data.Traversable
+import Data.Traversable (traverse)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
-import Data.Word
+import Data.Word (Word, Word8, Word16, Word32, Word64)
 import GHC.Float (double2Float)
-import Prelude hiding (takeWhile)
+import Prelude hiding (lookup, takeWhile)
 
 import Data.Csv.Conversion.Internal
 import Data.Csv.Types
@@ -77,15 +82,14 @@ import qualified Data.IntMap as IM
 --
 -- here's an example type and instance:
 --
--- @data Person = Person { name :: Text, age :: Int }
---
--- instance FromRecord Person where
---     parseRecord v
---         | 'V.length' v == 2 = Person '<$>'
---                           v '.!' 0 '<*>'
---                           v '.!' 1
---         | otherwise     = mzero
--- @
+-- > data Person = Person { name :: Text, age :: Int }
+-- >
+-- > instance FromRecord Person where
+-- >     parseRecord v
+-- >         | length v == 2 = Person <$>
+-- >                           v .! 0 <*>
+-- >                           v .! 1
+-- >         | otherwise     = mzero
 class FromRecord a where
     parseRecord :: Record -> Parser a
   
@@ -105,12 +109,11 @@ newtype Only a = Only {
 --
 -- An example type and instance:
 --
--- @data Person = Person { name :: Text, age :: Int }
---
--- instance ToRecord Person where
---     toRecord (Person name age) = 'record' [
---        'toField' name, 'toField' age]
--- @
+-- > data Person = Person { name :: Text, age :: Int }
+-- >
+-- > instance ToRecord Person where
+-- >     toRecord (Person name age) = 'record' [
+-- >         'toField' name, 'toField' age]
 --
 -- Outputs data on this form:
 --
@@ -281,15 +284,14 @@ instance (ToField a, U.Unbox a) => ToRecord (U.Vector a) where
 --
 -- here's an example type and instance:
 --
--- @{-\# LANGUAGE OverloadedStrings \#-}
---
--- data Person = Person { name :: Text, age :: Int }
---
--- instance FromRecord Person where
---     parseNamedRecord m = Person '<$>'
---                          m '.:' \"name\" '<*>'
---                          m '.:' \"age\"
--- @
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > data Person = Person { name :: Text, age :: Int }
+-- >
+-- > instance FromRecord Person where
+-- >     parseNamedRecord m = Person <$>
+-- >                          m .: "name" <*>
+-- >                          m .: "age"
 --
 -- Note the use of the @OverloadedStrings@ language extension which
 -- enables 'B8.ByteString' values to be written as string literals.
@@ -305,12 +307,11 @@ class FromNamedRecord a where
 --
 -- An example type and instance:
 --
--- @data Person = Person { name :: Text, age :: Int }
---
--- instance ToRecord Person where
---     toNamedRecord (Person name age) = 'namedRecord' [
---        \"name\" '.=' name, \"age\" '.=' age]
--- @
+-- > data Person = Person { name :: Text, age :: Int }
+-- >
+-- > instance ToRecord Person where
+-- >     toNamedRecord (Person name age) = namedRecord [
+-- >         "name" .= name, "age" .= age]
 class ToNamedRecord a where
     toNamedRecord :: a -> NamedRecord
 
@@ -345,17 +346,16 @@ instance ToField a => ToNamedRecord (HM.HashMap B.ByteString a) where
 --
 -- Example type and instance:
 --
--- @{-\# LANGUAGE OverloadedStrings \#-}
---
--- data Color = Red | Green | Blue
---
--- instance FromField Color where
---     parseField s
---         | s == \"R\"  = pure Red
---         | s == \"G\"  = pure Green
---         | s == \"B\"  = pure Blue
---         | otherwise = mzero
--- @
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > data Color = Red | Green | Blue
+-- >
+-- > instance FromField Color where
+-- >     parseField s
+-- >         | s == "R"  = pure Red
+-- >         | s == "G"  = pure Green
+-- >         | s == "B"  = pure Blue
+-- >         | otherwise = mzero
 class FromField a where
     parseField :: Field -> Parser a
 
@@ -363,28 +363,30 @@ class FromField a where
 --
 -- Example type and instance:
 --
--- @{-\# LANGUAGE OverloadedStrings \#-}
---
--- data Color = Red | Green | Blue
---
--- instance ToField Color where
---     toField Red   = \"R\"
---     toField Green = \"G\"
---     toField Blue  = \"B\"
--- @
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > data Color = Red | Green | Blue
+-- >
+-- > instance ToField Color where
+-- >     toField Red   = "R"
+-- >     toField Green = "G"
+-- >     toField Blue  = "B"
 class ToField a where
     toField :: a -> Field
 
+-- | 'Nothing' if the 'Field' is 'B.empty', 'Just' otherwise.
 instance FromField a => FromField (Maybe a) where
     parseField s
         | B.null s  = pure Nothing
         | otherwise = Just <$> parseField s
     {-# INLINE parseField #-}
 
+-- | 'Nothing' is encoded as an 'B.empty' field.
 instance ToField a => ToField (Maybe a) where
     toField = maybe B.empty toField
     {-# INLINE toField #-}
 
+-- | Assumes UTF-8 encoding.
 instance FromField Char where
     parseField s
         | T.compareLength t 1 == EQ = pure (T.head t)
@@ -392,22 +394,29 @@ instance FromField Char where
       where t = T.decodeUtf8 s
     {-# INLINE parseField #-}
 
+-- | Uses UTF-8 encoding.
 instance ToField Char where
     toField = toField . T.encodeUtf8 . T.singleton
     {-# INLINE toField #-}
 
+-- | Accepts same syntax as 'rational'.
 instance FromField Double where
     parseField = parseDouble
     {-# INLINE parseField #-}
 
+-- | Uses decimal notation or scientific notation, depending on the
+-- number.
 instance ToField Double where
     toField = realFloat
     {-# INLINE toField #-}
 
+-- | Accepts same syntax as 'rational'.
 instance FromField Float where
     parseField s = double2Float <$> parseDouble s
     {-# INLINE parseField #-}
 
+-- | Uses decimal notation or scientific notation, depending on the
+-- number.
 instance ToField Float where
     toField = realFloat
     {-# INLINE toField #-}
@@ -418,117 +427,122 @@ parseDouble s = case parseOnly double s of
     Right n  -> pure n
 {-# INLINE parseDouble #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int where
-    parseField = parseIntegral "Int"
+    parseField = parseSigned "Int"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Integer where
-    parseField = parseIntegral "Integer"
+    parseField = parseSigned "Integer"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Integer where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int8 where
-    parseField = parseIntegral "Int8"
+    parseField = parseSigned "Int8"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int8 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int16 where
-    parseField = parseIntegral "Int16"
+    parseField = parseSigned "Int16"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int16 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int32 where
-    parseField = parseIntegral "Int32"
+    parseField = parseSigned "Int32"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int32 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts a signed decimal number.
 instance FromField Int64 where
-    parseField = parseIntegral "Int64"
+    parseField = parseSigned "Int64"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding with optional sign.
 instance ToField Int64 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word where
-    parseField = parseIntegral "Word"
+    parseField = parseUnsigned "Word"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word8 where
-    parseField = parseIntegral "Word8"
+    parseField = parseUnsigned "Word8"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word8 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word16 where
-    parseField = parseIntegral "Word16"
+    parseField = parseUnsigned "Word16"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word16 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word32 where
-    parseField = parseIntegral "Word32"
+    parseField = parseUnsigned "Word32"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word32 where
     toField = decimal
     {-# INLINE toField #-}
 
+-- | Accepts an unsigned decimal number.
 instance FromField Word64 where
-    parseField = parseIntegral "Word64"
+    parseField = parseUnsigned "Word64"
     {-# INLINE parseField #-}
 
+-- | Uses decimal encoding.
 instance ToField Word64 where
     toField = decimal
     {-# INLINE toField #-}
-
--- TODO: Optimize
-escape :: B.ByteString -> B.ByteString
-escape s
-    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
-                     b == sp) s == Nothing = s
-    | otherwise =
-        B.concat ["\"",
-                  B.concatMap
-                  (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
-                  "\""]
-  where
-    dquote = 34
-    comma  = 44
-    nl     = 10
-    cr     = 13
-    sp     = 32
 
 instance FromField B.ByteString where
     parseField = pure
     {-# INLINE parseField #-}
 
 instance ToField B.ByteString where
-    toField = escape
+    toField = id
     {-# INLINE toField #-}
 
 instance FromField L.ByteString where
@@ -569,11 +583,17 @@ instance ToField [Char] where
     toField = toField . T.pack
     {-# INLINE toField #-}
 
-parseIntegral :: Integral a => String -> B.ByteString -> Parser a
-parseIntegral typ s = case parseOnly number s of
+parseSigned :: (Integral a, Num a) => String -> B.ByteString -> Parser a
+parseSigned typ s = case parseOnly (A8.signed A8.decimal) s of
     Left err -> typeError typ s (Just err)
-    Right n  -> pure (floor n)
-{-# INLINE parseIntegral #-}
+    Right n  -> pure n
+{-# INLINE parseSigned #-}
+
+parseUnsigned :: Integral a => String -> B.ByteString -> Parser a
+parseUnsigned typ s = case parseOnly A8.decimal s of
+    Left err -> typeError typ s (Just err)
+    Right n  -> pure n
+{-# INLINE parseUnsigned #-}
 
 typeError :: String -> B.ByteString -> Maybe String -> Parser a
 typeError typ s mmsg =
@@ -589,22 +609,42 @@ typeError typ s mmsg =
 -- | Retrieve the /n/th field in the given record. The result is
 -- 'empty' if the value cannot be converted to the desired type.
 -- Raises an exception if the index is out of bounds.
+--
+-- 'index' is a simple convenience function that is equivalent to
+-- @'parseField' (v '!' idx)@. If you're certain that the index is not
+-- out of bounds, using @'parseField' (`V.unsafeIndex` v idx)@ is
+-- somewhat faster.
+index :: FromField a => Record -> Int -> Parser a
+index v idx = parseField (v ! idx)
+{-# INLINE index #-}
+
+-- | Alias for 'index'.
 (.!) :: FromField a => Record -> Int -> Parser a
-v .! idx = parseField (v ! idx)
+(.!) = index
 {-# INLINE (.!) #-}
 
 -- | Retrieve a field in the given record by name.  The result is
 -- 'empty' if the field is missing or if the value cannot be converted
 -- to the desired type.
-(.:) :: FromField a => NamedRecord -> B.ByteString -> Parser a
-m .: name = maybe (fail err) parseField $ HM.lookup name m
+lookup :: FromField a => NamedRecord -> B.ByteString -> Parser a
+lookup m name = maybe (fail err) parseField $ HM.lookup name m
   where err = "no field named " ++ show (B8.unpack name)
+{-# INLINE lookup #-}
+
+-- | Alias for 'lookup'.
+(.:) :: FromField a => NamedRecord -> B.ByteString -> Parser a
+(.:) = lookup
 {-# INLINE (.:) #-}
 
 -- | Construct a pair from a name and a value.  For use with
 -- 'namedRecord'.
+namedField :: ToField a => B.ByteString -> a -> (B.ByteString, B.ByteString)
+namedField name val = (name, toField val)
+{-# INLINE namedField #-}
+
+-- | Alias for 'namedField'.
 (.=) :: ToField a => B.ByteString -> a -> (B.ByteString, B.ByteString)
-name .= val = (name, toField val)
+(.=) = namedField
 {-# INLINE (.=) #-}
 
 -- | Construct a record from a list of 'B.ByteString's.  Use 'toField'
@@ -620,48 +660,6 @@ namedRecord = HM.fromList
 ------------------------------------------------------------------------
 -- Parser for converting records to data types
 
--- | The result of running a 'Parser'.
-data Result a = Error String
-              | Success a
-                deriving (Eq, Show)
-
-instance Functor Result where
-    fmap f (Success a) = Success (f a)
-    fmap _ (Error err) = Error err
-    {-# INLINE fmap #-}
-
-instance Monad Result where
-    return = Success
-    {-# INLINE return #-}
-    Success a >>= k = k a
-    Error err >>= _ = Error err
-    {-# INLINE (>>=) #-}
-
-instance Applicative Result where
-    pure  = return
-    {-# INLINE pure #-}
-    (<*>) = ap
-    {-# INLINE (<*>) #-}
-
-instance MonadPlus Result where
-    mzero = fail "mzero"
-    {-# INLINE mzero #-}
-    mplus a@(Success _) _ = a
-    mplus _ b             = b
-    {-# INLINE mplus #-}
-
-instance Alternative Result where
-    empty = mzero
-    {-# INLINE empty #-}
-    (<|>) = mplus
-    {-# INLINE (<|>) #-}
-
-instance Monoid (Result a) where
-    mempty  = fail "mempty"
-    {-# INLINE mempty #-}
-    mappend = mplus
-    {-# INLINE mappend #-}
-
 -- | Failure continuation.
 type Failure f r   = String -> f r
 -- | Success continuation.
@@ -672,15 +670,15 @@ type Success a f r = a -> f r
 -- lets you compose several field conversions together in such a way
 -- that if any of them fail, the whole record conversion fails.
 newtype Parser a = Parser {
-      runParser :: forall f r.
-                   Failure f r
-                -> Success a f r
-                -> f r
+      unParser :: forall f r.
+                  Failure f r
+               -> Success a f r
+               -> f r
     }
 
 instance Monad Parser where
-    m >>= g = Parser $ \kf ks -> let ks' a = runParser (g a) kf ks
-                                 in runParser m kf ks'
+    m >>= g = Parser $ \kf ks -> let ks' a = unParser (g a) kf ks
+                                 in unParser m kf ks'
     {-# INLINE (>>=) #-}
     return a = Parser $ \_kf ks -> ks a
     {-# INLINE return #-}
@@ -689,7 +687,7 @@ instance Monad Parser where
 
 instance Functor Parser where
     fmap f m = Parser $ \kf ks -> let ks' a = ks (f a)
-                                  in runParser m kf ks'
+                                  in unParser m kf ks'
     {-# INLINE fmap #-}
 
 instance Applicative Parser where
@@ -707,8 +705,8 @@ instance Alternative Parser where
 instance MonadPlus Parser where
     mzero = fail "mzero"
     {-# INLINE mzero #-}
-    mplus a b = Parser $ \kf ks -> let kf' _ = runParser b kf ks
-                                   in runParser a kf' ks
+    mplus a b = Parser $ \kf ks -> let kf' _ = unParser b kf ks
+                                   in unParser a kf' ks
     {-# INLINE mplus #-}
 
 instance Monoid (Parser a) where
@@ -724,12 +722,18 @@ apP d e = do
   return (b a)
 {-# INLINE apP #-}
 
--- | Run a 'Parser'.
-parse :: Parser a -> Result a
-parse p = runParser p Error Success
-{-# INLINE parse #-}
-
-
+-- | Run a 'Parser', returning either @'Left' errMsg@ or @'Right'
+-- result@. Forces the value in the 'Left' or 'Right' constructors to
+-- weak head normal form.
+--
+-- You most likely won't need to use this function directly, but it's
+-- included for completeness.
+runParser :: Parser a -> Either String a
+runParser p = unParser p left right
+  where
+    left !errMsg = Left errMsg
+    right !x = Right x
+{-# INLINE runParser #-}
 
 #ifdef GENERICS
 
