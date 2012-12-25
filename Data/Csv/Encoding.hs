@@ -191,7 +191,7 @@ encodeRecord delim = mconcat . intersperse (fromWord8 delim)
 escape :: B.ByteString -> B.ByteString
 escape s
     | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
-                     b == sp) s == Nothing = s
+                     b == sp     || b == tab) s == Nothing = s
     | otherwise =
         B.concat ["\"",
                   B.concatMap
@@ -203,6 +203,7 @@ escape s
     nl     = 10
     cr     = 13
     sp     = 32
+    tab    =  9
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
