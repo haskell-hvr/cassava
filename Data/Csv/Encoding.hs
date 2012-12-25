@@ -100,7 +100,8 @@ decodeWith :: FromRecord a
                              -- skipped
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
-decodeWith = decodeWithC (runParser . parseCsv)
+decodeWith !opt =
+  decodeWithC (header $ decDelimiter opt) (csv opt) (runParser . parseCsv)
 {-# INLINE [1] decodeWith #-}
 
 parseCsv :: FromRecord a => Csv -> Parser (Vector a)
@@ -124,14 +125,16 @@ mapM' f = go
 -- conversion is performed.
 idDecodeWith :: DecodeOptions -> Bool -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
-idDecodeWith = decodeWithC pure
+idDecodeWith !opt = decodeWithC (header $ decDelimiter opt) (csv opt) pure
 
-decodeWithC :: (Csv -> Either String a) -> DecodeOptions -> Bool -> L.ByteString
-            -> Either String a
-decodeWithC convert !opts skipHeader = decodeWithP parser convert
+decodeWithC :: AL.Parser Header -> AL.Parser Csv
+            -> (Csv -> Either String a)
+            -> Bool -> L.ByteString -> Either String a
+decodeWithC headerP body convert skipHeader
+  = decodeWithP parser convert
   where parser
-            | skipHeader = header (decDelimiter opts) *> csv opts
-            | otherwise  = csv opts
+            | skipHeader = headerP *> body
+            | otherwise  = body
 {-# INLINE decodeWithC #-}
 
 -- | Like 'decodeByName', but lets you customize how the CSV data is
@@ -254,5 +257,6 @@ decodeWithP p to s =
 ------------------------------------------------------------------------
 -- * Space-delimited files
 
-decodeTable :: FromRecord a => L.ByteString -> Either String (Vector a)
-decodeTable = decodeWithP table (parse . traverse parseRecord)
+decodeTable :: FromRecord a => Bool -> L.ByteString -> Either String (Vector a)
+decodeTable =
+  decodeWithC tableHeader table (runParser . parseCsv)

@@ -34,8 +34,8 @@ module Data.Csv.Parser
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
-import Control.Applicative (Alternative, (*>), (<$>), (<*), (<|>), optional,
-                            pure)
+import Control.Applicative (Alternative, (*>), (<$>), (<*), (<|>), (<$), optional,
+                            pure, liftA2, empty)
 import Data.Attoparsec.Char8 (char, endOfInput, endOfLine)
 import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
@@ -176,7 +176,7 @@ unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
 -- |
 table :: AL.Parser Csv
 table = do
-  vals <- recordTable `sepBy1` endOfLine
+  vals <- recordTable `AL.sepBy1` endOfLine
   _    <- optional endOfLine
   endOfInput
   return $ V.fromList $ removeBlankLines vals
@@ -186,7 +186,7 @@ tableWithHeader :: AL.Parser (Header, V.Vector NamedRecord)
 tableWithHeader = do
     hdr  <- tableHeader
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
-            recordTable `sepBy1` endOfLine
+            recordTable `AL.sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
     return (hdr, V.fromList vals)
@@ -198,7 +198,8 @@ tableName :: AL.Parser Field
 tableName = fieldTable
 
 -- | Parse record for space-separated files. It's more complicated
---   that CSV parser because we need to drop both
+--   that CSV parser because we need to drop both leading and trailing
+--   spaces.
 recordTable :: AL.Parser Record
 recordTable
   = V.fromList <$>
