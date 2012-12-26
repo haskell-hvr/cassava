@@ -8,8 +8,11 @@ module Data.Csv.Incremental
     (
     -- * Decoding headers
       HeaderParser(..)
+    -- ** CSV
     , decodeHeader
     , decodeHeaderWith
+    -- **
+    , decodeTableHeader
     -- ** Providing input
     -- $feed-header
     , feedChunkH
@@ -23,11 +26,13 @@ module Data.Csv.Incremental
     -- $indexbased
     , decode
     , decodeWith
+    , decodeTable
 
     -- ** Name-based record conversion
     -- $namebased
     , decodeByName
     , decodeByNameWith
+    , decodeTableByName
 
     -- ** Providing input
     -- $feed-records
@@ -132,16 +137,24 @@ decodeHeader = decodeHeaderWith defaultDecodeOptions
 -- | Like 'decodeHeader', but lets you customize how the CSV data is
 -- parsed.
 decodeHeaderWith :: DecodeOptions -> HeaderParser B.ByteString
-decodeHeaderWith !opts = PartialH (go . parser)
-  where
-    parser = A.parse (header $ decDelimiter opts)
+decodeHeaderWith !opts = parseWithH (header $ decDelimiter opts)
 
+-- | Parse header for space-delimited data. It have same semantic as
+-- 'decodeHeader'.
+decodeTableHeader :: HeaderParser B.ByteString
+decodeTableHeader = parseWithH tableHeader
+
+parseWithH :: A.Parser Header -> HeaderParser B.ByteString
+parseWithH parser = PartialH (go . A.parse parser)
+  where
     go (A.Fail rest _ msg) = FailH rest err
       where err = "parse error (" ++ msg ++ ")"
     -- TODO: Check empty and give attoparsec one last chance to return
     -- something:
     go (A.Partial k)       = PartialH $ \ s -> go (k s)
     go (A.Done rest r)     = DoneH r rest
+
+
 
 ------------------------------------------------------------------------
 -- * Decoding records
@@ -229,12 +242,27 @@ decodeWith :: FromRecord a
            -> Bool           -- ^ Data contains header that should be
                              -- skipped
            -> Parser a
-decodeWith !opts skipHeader
-    | skipHeader = Partial $ \ s -> go (decodeHeaderWith opts `feedChunkH` s)
-    | otherwise  = Partial (decodeWithP parseRecord opts)
+decodeWith !opts = parseSimple (header d) (record d)
+  where
+    d = decDelimiter opts
+
+-- | Efficiently deserialize space-delimited data.
+decodeTable :: FromRecord a
+            => Bool          -- ^ Data contains header that should be
+                             -- skipped
+            -> Parser a
+decodeTable = parseSimple tableHeader tableRecord
+
+parseSimple :: FromRecord a => A.Parser Header -> A.Parser Record -> Bool -> Parser a
+parseSimple headP body skipHeader
+    | skipHeader = Partial $ \ s -> go (parseWithH headP `feedChunkH` s)
+    | otherwise  = Partial (decodeWithP body parseRecord)
   where go (FailH rest msg) = Fail rest msg
         go (PartialH k)     = Partial $ \ s' -> go (k s')
-        go (DoneH _ rest)   = decodeWithP parseRecord opts rest
+        go (DoneH _ rest)   = decodeWithP body parseRecord rest
+
+
+
 
 ------------------------------------------------------------------------
 
@@ -251,13 +279,23 @@ decodeByName = decodeByNameWith defaultDecodeOptions
 decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> HeaderParser (Parser a)
-decodeByNameWith !opts =
-    PartialH (go . (decodeHeaderWith opts `feedChunkH`))
+decodeByNameWith !opts = parseNamed (header d) (record d)
+  where
+    d = decDelimiter opts
+
+decodeTableByName :: FromNamedRecord a
+                  => HeaderParser (Parser a)
+decodeTableByName = undefined
+
+parseNamed :: FromNamedRecord a
+           => A.Parser Header -> A.Parser Record -> HeaderParser (Parser a)
+parseNamed headP body =
+    PartialH (go . (parseWithH headP `feedChunkH`))
   where
     go (FailH rest msg) = FailH rest msg
     go (PartialH k)     = PartialH $ \ s -> go (k s)
     go (DoneH hdr rest) =
-        DoneH hdr (decodeWithP (parseNamedRecord . toNamedRecord hdr) opts rest)
+        DoneH hdr (decodeWithP body (parseNamedRecord . toNamedRecord hdr) rest)
 
 -- Copied from Data.Csv.Parser
 toNamedRecord :: Header -> Record -> NamedRecord
@@ -266,9 +304,11 @@ toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 ------------------------------------------------------------------------
 
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
-decodeWithP :: (Record -> Conversion.Parser a) -> DecodeOptions -> B.ByteString
+decodeWithP :: A.Parser Record
+            -> (Record -> Conversion.Parser a)
+            -> B.ByteString
             -> Parser a
-decodeWithP p !opts = go Incomplete [] . parser
+decodeWithP rowParser p = go Incomplete [] . parser
   where
     go !_ !acc (A.Fail rest _ msg)
         | null acc  = Fail rest err
@@ -295,7 +335,7 @@ decodeWithP p !opts = go Incomplete [] . parser
             acc' | blankLine r = acc
                  | otherwise   = convert r : acc
 
-    parser = A.parse (record (decDelimiter opts) <* (endOfLine <|> endOfInput))
+    parser = A.parse (rowParser <* (endOfLine <|> endOfInput))
     convert = runParser . p
 {-# INLINE decodeWithP #-}
 
