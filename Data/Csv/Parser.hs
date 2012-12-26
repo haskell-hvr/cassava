@@ -27,9 +27,9 @@ module Data.Csv.Parser
     , table
     , tableWithHeader
     , tableHeader
-    , recordTable
+    , tableRecord
     , tableName
-    , fieldTable
+    , tableField
     ) where
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
@@ -176,7 +176,7 @@ unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
 -- |
 table :: AL.Parser Csv
 table = do
-  vals <- recordTable `AL.sepBy1` endOfLine
+  vals <- tableRecord `AL.sepBy1` endOfLine
   _    <- optional endOfLine
   endOfInput
   return $ V.fromList $ removeBlankLines vals
@@ -186,25 +186,25 @@ tableWithHeader :: AL.Parser (Header, V.Vector NamedRecord)
 tableWithHeader = do
     hdr  <- tableHeader
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
-            recordTable `AL.sepBy1` endOfLine
+            tableRecord `AL.sepBy1` endOfLine
     _ <- optional endOfLine
     endOfInput
     return (hdr, V.fromList vals)
 
 tableHeader :: AL.Parser Record
-tableHeader = recordTable <* endOfLine
+tableHeader = tableRecord <* endOfLine
 
 tableName :: AL.Parser Field
-tableName = fieldTable
+tableName = tableField
 
 -- | Parse record for space-separated files. It's more complicated
 --   that CSV parser because we need to drop both leading and trailing
 --   spaces.
-recordTable :: AL.Parser Record
-recordTable
+tableRecord :: AL.Parser Record
+tableRecord
   = V.fromList <$>
     ((delimTable <|> pure ()) *>
-     (fieldTable `sepBy11` delimTable)
+     (tableField `sepBy11` delimTable)
     )
   where
     sepBy11 p s = liftA2 (:) p scan
@@ -216,10 +216,10 @@ recordTable
           case mb of
             Just b | b == newline || b == cr -> pure []
             _                                -> empty
-{-# INLINE recordTable #-}
+{-# INLINE tableRecord #-}
 
-fieldTable :: AL.Parser Field
-fieldTable = do
+tableField :: AL.Parser Field
+tableField = do
   mb <- A.peekWord8
   case mb of
     Just b | b == doubleQuote -> escapedField
