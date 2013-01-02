@@ -73,10 +73,10 @@ recordsToList (S.Cons (Right x) rs) = case recordsToList rs of
     l@(Left _) -> l
     (Right xs) -> Right (x : xs)
 
-decodesStreamingAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
-decodesStreamingAs input expected =
+-- decodesStreamingAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
+decodesStreamingAs dec input expected =
     assertResult input expected $ fmap (V.fromList . map V.fromList) $
-    recordsToList $ S.decode False input
+    recordsToList $ dec False input
 
 decodesWithStreamingAs :: DecodeOptions -> BL.ByteString -> [[B.ByteString]]
                        -> Assertion
@@ -131,15 +131,15 @@ positionalTests =
       , ("twoRecords",   [["abc"], ["def"]], "abc\r\ndef\r\n")
       , ("newline",      [["abc\ndef"]],     "\"abc\ndef\"\r\n")
       ]
-      -- Decode CSV
+      -- Decode CSV & space delimited data
     , testGroup "decode"     $ map decodeTest decodeTests
     , testGroup "decodeWith" $ map decodeWithTest decodeWithTests
-    , testGroup "streaming"
-      [ testGroup "decode"     $ map streamingDecodeTest decodeTests
-      , testGroup "decodeWith" $ map streamingDecodeWithTest decodeWithTests
-      ]
-      -- Decode space-delimited data
     , testGroup "decode table" $ map decodeTableTest decodeTableTests
+    , testGroup "streaming"
+      [ testGroup "decode"     $ map streamingDecodeTest      decodeTests
+      , testGroup "decodeWith" $ map streamingDecodeWithTest  decodeWithTests
+      , testGroup "table"      $ map streamingDecodeTableTest decodeTableTests
+      ]
     ]
   where
     rfc4180Input = BL8.pack $
@@ -175,18 +175,23 @@ positionalTests =
         , ("emptyField",    "a \"\"\n",     [["a", ""]])
         ]
 
+    -- Encode
     encodeTest (name, input, expected) =
         testCase name $ encodesAs encode input expected
     encodeTableTest (name, input, expected) =
         testCase name $ encodesAs encodeTable input expected
+    -- Decode
     decodeTest (name, input, expected) =
         testCase name $ decodesAs decode input expected
     decodeTableTest (name, input, expected) =
         testCase name $ decodesAs decodeTable input expected
     decodeWithTest (name, opts, input, expected) =
         testCase name $ decodesWithAs opts input expected
+    -- Streaming
     streamingDecodeTest (name, input, expected) =
-        testCase name $ input `decodesStreamingAs` expected
+        testCase name $ decodesStreamingAs S.decode input expected
+    streamingDecodeTableTest (name, input, expected) =
+        testCase name $ decodesStreamingAs S.decodeTable input expected
     streamingDecodeWithTest (name, opts, input, expected) =
         testCase name $ decodesWithStreamingAs opts input expected
     defEnc = defaultEncodeOptions
