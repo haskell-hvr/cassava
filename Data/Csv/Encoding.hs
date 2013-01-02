@@ -270,6 +270,17 @@ decodeTable :: FromRecord a
             -> Either String (Vector a)
 decodeTable =
     decodeWithC tableHeader table (runParser . parseCsv)
+{-# INLINE decodeTable #-}
+
+-- | Same as 'decodeWith', but more efficient as no type
+-- conversion is performed.
+idDecodeTable :: Bool -> L.ByteString -> Either String (Vector (Vector B.ByteString))
+idDecodeTable = decodeWithC tableHeader table pure
+
+{-# RULES
+    "idDecodeTable" decodeTable = idDecodeTable
+ #-}
+
 
 -- | Efficiently deserialize space-delimited records from a lazy
 -- ByteString. If this fails due to incomplete or invalid input,
@@ -279,6 +290,7 @@ decodeTableByName :: FromNamedRecord a => L.ByteString -> Either String (Header,
 decodeTableByName =
     decodeWithP tableWithHeader
     (\(hdr, vs) -> (,) <$> pure hdr <*> (runParser $ parseNamedCsv vs))
+{-# INLINE decodeTableByName #-}
 
 -- | Efficiently serialize space-delimited records as a lazy
 -- ByteString. Single tab is used as separator.
