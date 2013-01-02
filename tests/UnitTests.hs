@@ -26,8 +26,8 @@ import qualified Data.Csv.Streaming as S
 ------------------------------------------------------------------------
 -- Parse tests
 
-decodesAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
-decodesAs input expected = assertResult input expected $ decode False input
+decodesAs :: (Bool -> BL.ByteString -> Either String Csv) -> BL.ByteString -> [[B.ByteString]] -> Assertion
+decodesAs dec input expected = assertResult input expected $ dec False input
 
 decodesWithAs :: DecodeOptions -> BL.ByteString -> [[B.ByteString]] -> Assertion
 decodesWithAs opts input expected =
@@ -41,9 +41,9 @@ assertResult input expected res = case res of
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
                 "parse error: " ++ err
 
-encodesAs :: [[B.ByteString]] -> BL.ByteString -> Assertion
-encodesAs input expected =
-    encode (V.fromList (map V.fromList input)) @?= expected
+encodesAs :: (Csv -> BL.ByteString) -> [[B.ByteString]] -> BL.ByteString -> Assertion
+encodesAs enc input expected =
+    enc (V.fromList (map V.fromList input)) @?= expected
 
 encodesWithAs :: EncodeOptions -> [[B.ByteString]] -> BL.ByteString -> Assertion
 encodesWithAs opts input expected =
@@ -100,12 +100,14 @@ namedDecodesStreamingAs input ehdr expected = case S.decodeByName input of
 
 positionalTests :: [TF.Test]
 positionalTests =
+      -- Encode CSV
     [ testGroup "encode" $ map encodeTest
       [ ("simple",       [["abc"]],          "abc\r\n")
       , ("quoted",       [["\"abc\""]],      "\"\"\"abc\"\"\"\r\n")
       , ("quote",        [["a\"b"]],         "\"a\"\"b\"\r\n")
       , ("quotedQuote",  [["\"a\"b\""]],     "\"\"\"a\"\"b\"\"\"\r\n")
       , ("leadingSpace", [[" abc"]],         "\" abc\"\r\n")
+      , ("leadingTab",   [["\tabc"]],         "\"\tabc\"\r\n")
       , ("comma",        [["abc,def"]],      "\"abc,def\"\r\n")
       , ("twoFields",    [["abc","def"]],    "abc,def\r\n")
       , ("twoRecords",   [["abc"], ["def"]], "abc\r\ndef\r\n")
@@ -115,12 +117,29 @@ positionalTests =
       [ testCase "tab-delim" $ encodesWithAs (defEnc { encDelimiter = 9 })
         [["1", "2"]] "1\t2\r\n"
       ]
-    , testGroup "decode" $ map decodeTest decodeTests
+      -- Encode space-delimited data
+    , testGroup "encode table" $ map encodeTableTest
+      [ ("simple",       [["abc"]],          "abc\r\n")
+      , ("empty",        [[""]],             "\"\"\r\n")
+      , ("quoted",       [["\"abc\""]],      "\"\"\"abc\"\"\"\r\n")
+      , ("quote",        [["a\"b"]],         "\"a\"\"b\"\r\n")
+      , ("quotedQuote",  [["\"a\"b\""]],     "\"\"\"a\"\"b\"\"\"\r\n")
+      , ("leadingSpace", [[" abc"]],         "\" abc\"\r\n")
+      , ("leadingTab",   [["\tabc"]],         "\"\tabc\"\r\n")
+      , ("comma",        [["abc,def"]],      "\"abc,def\"\r\n")
+      , ("twoFields",    [["abc","def"]],    "abc\tdef\r\n")
+      , ("twoRecords",   [["abc"], ["def"]], "abc\r\ndef\r\n")
+      , ("newline",      [["abc\ndef"]],     "\"abc\ndef\"\r\n")
+      ]
+      -- Decode CSV
+    , testGroup "decode"     $ map decodeTest decodeTests
     , testGroup "decodeWith" $ map decodeWithTest decodeWithTests
     , testGroup "streaming"
-      [ testGroup "decode" $ map streamingDecodeTest decodeTests
+      [ testGroup "decode"     $ map streamingDecodeTest decodeTests
       , testGroup "decodeWith" $ map streamingDecodeWithTest decodeWithTests
       ]
+      -- Decode space-delimited data
+    , testGroup "decode table" $ map decodeTableTest decodeTableTests
     ]
   where
     rfc4180Input = BL8.pack $
@@ -145,11 +164,25 @@ positionalTests =
     decodeWithTests =
         [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
         ]
+    decodeTableTests =
+        [ ("simple",       "a b c\n",        [["a", "b", "c"]])
+        , ("crlf",         "a b\r\nc d\r\n", [["a", "b"], ["c", "d"]])
+        , ("noEol",        "a b c",          [["a", "b", "c"]])
+        , ("blankLine",    "a b c\n\nd e f\n\n",
+           [["a", "b", "c"], ["d", "e", "f"]])
+        , ("leadingSpace",  " a  b  c\n",   [["a", "b", "c"]])
+        , ("trailingSpace", "a  b  c  \n",  [["a", "b", "c"]])
+        , ("emptyField",    "a \"\"\n",     [["a", ""]])
+        ]
 
     encodeTest (name, input, expected) =
-        testCase name $ input `encodesAs` expected
+        testCase name $ encodesAs encode input expected
+    encodeTableTest (name, input, expected) =
+        testCase name $ encodesAs encodeTable input expected
     decodeTest (name, input, expected) =
-        testCase name $ input `decodesAs` expected
+        testCase name $ decodesAs decode input expected
+    decodeTableTest (name, input, expected) =
+        testCase name $ decodesAs decodeTable input expected
     decodeWithTest (name, opts, input, expected) =
         testCase name $ decodesWithAs opts input expected
     streamingDecodeTest (name, input, expected) =
@@ -209,7 +242,7 @@ instance Arbitrary LT.Text where
 -- empty line (which we will ignore.) We therefore encode at least two
 -- columns.
 roundTrip :: (Eq a, FromField a, ToField a) => a -> Bool
-roundTrip x = Right record == decode False (encode record) 
+roundTrip x = Right record == decode False (encode record)
   where record = V.singleton (x, dummy)
         dummy = 'a'
 
