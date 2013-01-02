@@ -143,7 +143,15 @@ import Data.Csv.Types
 -- >     Left err -> putStrLn err
 -- >     Right v  -> forM_ v $ \ (Hex val1, Hex val2) ->
 -- >         print (val1, val2)
-
+--
+-- In order to ignore column you can use unit type '()'. It always
+-- successfully decode. Note that it lacks corresponding 'ToField'
+-- instance. It serves as placeholder to indicate that there's
+-- something in the column you don't care what.
+--
+-- > case decode False "foo,1\r\nbar,22" of
+-- >     Left  err -> putStrLn err
+-- >     Right v   -> forM_ v $ \ ((), i) -> print (i :: Int)
 
 -- $encoding
 --
