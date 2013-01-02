@@ -283,6 +283,9 @@ decodeByNameWith !opts = parseNamed (header d) (record d)
   where
     d = decDelimiter opts
 
+-- | Efficiently deserialize space-delimited data in incremental
+-- fashion. The data is assumed to be preceeded by a header. Have same
+-- semantics as 'decodeByName'.
 decodeTableByName :: FromNamedRecord a
                   => HeaderParser (Parser a)
 decodeTableByName = undefined

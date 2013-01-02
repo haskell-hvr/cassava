@@ -1,5 +1,9 @@
--- | This module implements encoding and decoding of CSV data. The
--- implementation is RFC 4180 compliant, with the following
+-- | This module implements encoding and decoding of CSV and
+-- space-delimited data. APIs for both format are essentially the
+-- same. They only differ in function names and space-delimited data
+-- doesn't have encoding\/decoding options.
+--
+-- The CSV implementation is RFC 4180 compliant, with the following
 -- extensions:
 --
 --  * Empty lines are ignored.
@@ -9,6 +13,16 @@
 --
 --  * Escaped fields may contain any characters (but double-quotes
 --    need to be escaped).
+--
+-- Space-delimited data don't have specification so following format
+-- is assumed:
+--
+--  * Fields are delimited by one or more tabs and spaces at the
+--    beginning and end of line are ignored.
+--
+--  * Empty lines are ignored.
+--
+--  * Escaping rules are same as with CSV
 module Data.Csv
     (
     -- * Usage example
@@ -20,7 +34,7 @@ module Data.Csv
     -- * Custom type conversions
     -- $customtypeconversions
 
-    -- * Encoding and decoding
+    -- * Encoding and decoding CSV
     -- $encoding
       decode
     , decodeByName
@@ -38,8 +52,11 @@ module Data.Csv
     , encodeWith
     , encodeByNameWith
 
-    -- * Space-delimited files
+    -- * Space-delimited data
     , decodeTable
+    , decodeTableByName
+    , encodeTable
+    , encodeTableByName
 
     -- * Core CSV types
     , Csv

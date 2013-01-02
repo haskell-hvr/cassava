@@ -184,8 +184,9 @@ decodeByNameWith !opts =
   streamDataByName (I.decodeByNameWith opts)
 
 
--- | Like 'decodeByName', but lets you customize how the CSV data is
--- parsed.
+-- | Efficiently deserialize space-delimited in a streaming
+-- fashion. The data is assumed to be preceeded by a header. Returns
+-- @'Left' errMsg@ if parsing the header fails.
 decodeTableByName :: FromNamedRecord a
                   => BL.ByteString  -- ^ Space-delimited data
                   -> Either String (Header, Records a)

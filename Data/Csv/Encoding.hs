@@ -261,15 +261,27 @@ decodeWithP p to s =
 ------------------------------------------------------------------------
 -- * Space-delimited files
 
-decodeTable :: FromRecord a => Bool -> L.ByteString -> Either String (Vector a)
+-- | Efficiently deserialize space-delimited records from a lazy
+-- ByteString. If this fails due to incomplete or invalid input,
+-- @'Left' msg@ is returned.
+decodeTable :: FromRecord a
+            => Bool             -- ^ Data contains header that should be skipped
+            -> L.ByteString     -- ^ Raw data
+            -> Either String (Vector a)
 decodeTable =
     decodeWithC tableHeader table (runParser . parseCsv)
 
+-- | Efficiently deserialize space-delimited records from a lazy
+-- ByteString. If this fails due to incomplete or invalid input,
+-- @'Left' msg@ is returned. The data is assumed to be preceeded by a
+-- header.
 decodeTableByName :: FromNamedRecord a => L.ByteString -> Either String (Header, Vector a)
 decodeTableByName =
     decodeWithP tableWithHeader
     (\(hdr, vs) -> (,) <$> pure hdr <*> (runParser $ parseNamedCsv vs))
 
+-- | Efficiently serialize space-delimited records as a lazy
+-- ByteString. Single tab is used as separator.
 encodeTable :: ToRecord a => V.Vector a -> L.ByteString
 encodeTable = toLazyByteString
             . unlines
@@ -277,6 +289,9 @@ encodeTable = toLazyByteString
             . V.toList
 {-# INLINE encodeTable #-}
 
+-- | Efficiently serialize space-delimited records as a lazy
+-- ByteString. The header is written before any records and dictates
+-- the field order. Single tab is used as separator.
 encodeTableByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
 encodeTableByName hdr v =
     toLazyByteString (  encodeTableRow hdr

@@ -3,7 +3,7 @@ Version:             0.2.1.2
 Synopsis:            A CSV parsing and encoding library
 Description:
   A CSV parsing and encoding library optimized for ease of use and high
-  performance.
+  performance. It can encode/decode space-delimited data as well.
 Homepage:            https://github.com/tibbe/cassava
 License:             BSD3
 License-file:        LICENSE

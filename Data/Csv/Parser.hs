@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns, CPP #-}
 
--- | A CSV parser. The parser defined here is RFC 4180 compliant, with
--- the following extensions:
+-- | Parsers for CSV and space-delimited data. The CSV parser defined
+-- here is RFC 4180 compliant, with the following extensions:
 --
 --  * Empty lines are ignored.
 --
@@ -10,6 +10,16 @@
 --
 --  * Escaped fields may contain any characters (but double-quotes
 --    need to be escaped).
+--
+-- Space-delimited data don't have specification so following format
+-- is assumed:
+--
+--  * Fields are delimited by one or more tabs and spaces at the
+--    beginning and end of line are ignored.
+--
+--  * Empty lines are ignored.
+--
+--  * Escaping rules are same as with CSV
 --
 -- The functions in this module can be used to implement e.g. a
 -- resumable parser that is fed input incrementally.
@@ -23,7 +33,7 @@ module Data.Csv.Parser
     , record
     , name
     , field
-      -- * Tables
+      -- * Space-delimited data
     , table
     , tableWithHeader
     , tableHeader
@@ -51,7 +61,7 @@ import Data.Word (Word8)
 import Data.Csv.Types
 import Data.Csv.Util ((<$!>))
 
--- | Options that controls how data is decoded. These options can be
+-- | Options that controls how CSV data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
 -- data.
 --
@@ -173,7 +183,7 @@ unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
                                             c /= delim &&
                                             c /= cr)
 
--- |
+-- | Parse space-delimited data which doesn't include header.
 table :: AL.Parser Csv
 table = do
   vals <- tableRecord `AL.sepBy1` endOfLine
@@ -182,6 +192,7 @@ table = do
   return $ V.fromList $ removeBlankLines vals
 {-# INLINE table #-}
 
+-- | Parse space-delimited data with header.
 tableWithHeader :: AL.Parser (Header, V.Vector NamedRecord)
 tableWithHeader = do
     hdr  <- tableHeader
@@ -191,15 +202,17 @@ tableWithHeader = do
     endOfInput
     return (hdr, V.fromList vals)
 
+-- | Parse header name.
 tableHeader :: AL.Parser Record
 tableHeader = tableRecord <* endOfLine
 
+-- | Parse header name. They have same format as regular 'tableField's.
 tableName :: AL.Parser Field
 tableName = tableField
 
--- | Parse record for space-separated files. It's more complicated
---   that CSV parser because we need to drop both leading and trailing
---   spaces.
+-- | Parse row for space-delimited data not including terminating line
+-- separator. It's more complicated that CSV parser because we need
+-- to drop both leading and trailing spaces.
 tableRecord :: AL.Parser Record
 tableRecord
   = V.fromList <$>
@@ -218,6 +231,8 @@ tableRecord
             _                                -> empty
 {-# INLINE tableRecord #-}
 
+-- | Parse field. It could be escaped or not escaped. The return value
+--   is escaped.
 tableField :: AL.Parser Field
 tableField = do
   mb <- A.peekWord8
