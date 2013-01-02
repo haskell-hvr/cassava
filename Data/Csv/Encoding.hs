@@ -305,5 +305,12 @@ encodeTableByName hdr v =
 
 encodeTableRow :: Record -> Builder
 encodeTableRow = mconcat . intersperse (fromWord8 9)
-               . map fromByteString . map escape . V.toList
+               . map fromByteString . map escapeT . V.toList
+  where
+    -- We need to escape empty strings. Otherwise we'll get:
+    --  > encode ["a","","b"] = 'a  b'
+    -- instead of
+    --  > encode ["a","","b"] = 'a "" b'
+    escapeT b | B.null b  = "\"\""
+              | otherwise = escape b
 {-# INLINE encodeTableRow #-}
