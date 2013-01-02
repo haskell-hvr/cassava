@@ -74,6 +74,8 @@ recordsToList (S.Cons (Right x) rs) = case recordsToList rs of
     (Right xs) -> Right (x : xs)
 
 -- decodesStreamingAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
+decodesStreamingAs :: (Bool -> BL8.ByteString -> S.Records [B.ByteString])
+                   -> BL8.ByteString -> [[B.ByteString]] -> Assertion
 decodesStreamingAs dec input expected =
     assertResult input expected $ fmap (V.fromList . map V.fromList) $
     recordsToList $ dec False input
