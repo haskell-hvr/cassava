@@ -107,19 +107,6 @@ decodeWith !opt =
   decodeWithC (header $ decDelimiter opt) (csv opt) (runParser . parseCsv)
 {-# INLINE [1] decodeWith #-}
 
-parseCsv :: FromRecord a => Csv -> Parser (Vector a)
-parseCsv xs = V.fromList <$!> mapM' parseRecord (V.toList xs)
-
-mapM' :: Monad m => (a -> m b) -> [a] -> m [b]
-mapM' f = go
-  where
-    go [] = return []
-    go (x:xs) = do
-        !y <- f x
-        ys <- go xs
-        return (y : ys)
-{-# INLINE mapM' #-}
-
 {-# RULES
     "idDecodeWith" decodeWith = idDecodeWith
  #-}
@@ -149,9 +136,6 @@ decodeByNameWith :: FromNamedRecord a
 decodeByNameWith !opts =
     decodeWithP (csvWithHeader opts)
     (\ (hdr, vs) -> (,) <$> pure hdr <*> (runParser $ parseNamedCsv vs))
-
-parseNamedCsv :: FromNamedRecord a => Vector NamedRecord -> Parser (Vector a)
-parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
 
 -- | Options that controls how data is encoded. These options can be
 -- used to e.g. encode data in a tab-separated format instead of in a
@@ -189,24 +173,6 @@ encodeRecord delim = mconcat . intersperse (fromWord8 delim)
                      . map fromByteString . map escape . V.toList
 {-# INLINE encodeRecord #-}
 
--- TODO: Optimize
-escape :: B.ByteString -> B.ByteString
-escape s
-    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
-                     b == sp     || b == tab) s == Nothing = s
-    | otherwise =
-        B.concat ["\"",
-                  B.concatMap
-                  (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
-                  "\""]
-  where
-    dquote = 34
-    comma  = 44
-    nl     = 10
-    cr     = 13
-    sp     = 32
-    tab    =  9
-
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
 encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> V.Vector a
@@ -220,42 +186,6 @@ encodeByNameWith opts hdr v =
                      . namedRecordToRecord hdr . toNamedRecord)
               . V.toList $ v
 {-# INLINE encodeByNameWith #-}
-
-
-namedRecordToRecord :: Header -> NamedRecord -> Record
-namedRecordToRecord hdr nr = V.map find hdr
-  where
-    find n = case HM.lookup n nr of
-        Nothing -> moduleError "namedRecordToRecord" $
-                   "header contains name " ++ show (B8.unpack n) ++
-                   " which is not present in the named record"
-        Just v  -> v
-
-moduleError :: String -> String -> a
-moduleError func msg = error $ "Data.Csv.Encoding." ++ func ++ ": " ++ msg
-{-# NOINLINE moduleError #-}
-
-unlines :: [Builder] -> Builder
-unlines [] = mempty
-unlines (b:bs) = b <> fromString "\r\n" <> unlines bs
-
-intersperse :: Builder -> [Builder] -> [Builder]
-intersperse _   []      = []
-intersperse sep (x:xs)  = x : prependToAll sep xs
-
-prependToAll :: Builder -> [Builder] -> [Builder]
-prependToAll _   []     = []
-prependToAll sep (x:xs) = sep <> x : prependToAll sep xs
-
-decodeWithP :: AL.Parser a -> (a -> Either String b) -> L.ByteString -> Either String b
-decodeWithP p to s =
-    case AL.parse p s of
-      AL.Done _ v     -> case to v of
-          Right a  -> Right a
-          Left msg -> Left $ "conversion error: " ++ msg
-      AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
-                            show (BL8.unpack left)
-{-# INLINE decodeWithP #-}
 
 
 ------------------------------------------------------------------------
@@ -326,3 +256,77 @@ encodeTableRow = mconcat . intersperse (fromWord8 9)
     escapeT b | B.null b  = "\"\""
               | otherwise = escape b
 {-# INLINE encodeTableRow #-}
+
+
+------------------------------------------------------------------------
+-- * Common functionality and helpers
+
+parseCsv :: FromRecord a => Csv -> Parser (Vector a)
+parseCsv xs = V.fromList <$!> mapM' parseRecord (V.toList xs)
+
+parseNamedCsv :: FromNamedRecord a => Vector NamedRecord -> Parser (Vector a)
+parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
+
+-- TODO: Optimize
+escape :: B.ByteString -> B.ByteString
+escape s
+    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
+                     b == sp     || b == tab) s == Nothing = s
+    | otherwise =
+        B.concat ["\"",
+                  B.concatMap
+                  (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
+                  "\""]
+  where
+    dquote = 34
+    comma  = 44
+    nl     = 10
+    cr     = 13
+    sp     = 32
+    tab    =  9
+
+namedRecordToRecord :: Header -> NamedRecord -> Record
+namedRecordToRecord hdr nr = V.map find hdr
+  where
+    find n = case HM.lookup n nr of
+        Nothing -> moduleError "namedRecordToRecord" $
+                   "header contains name " ++ show (B8.unpack n) ++
+                   " which is not present in the named record"
+        Just v  -> v
+
+moduleError :: String -> String -> a
+moduleError func msg = error $ "Data.Csv.Encoding." ++ func ++ ": " ++ msg
+{-# NOINLINE moduleError #-}
+
+unlines :: [Builder] -> Builder
+unlines [] = mempty
+unlines (b:bs) = b <> fromString "\r\n" <> unlines bs
+
+intersperse :: Builder -> [Builder] -> [Builder]
+intersperse _   []      = []
+intersperse sep (x:xs)  = x : prependToAll sep xs
+
+prependToAll :: Builder -> [Builder] -> [Builder]
+prependToAll _   []     = []
+prependToAll sep (x:xs) = sep <> x : prependToAll sep xs
+
+decodeWithP :: AL.Parser a -> (a -> Either String b) -> L.ByteString -> Either String b
+decodeWithP p to s =
+    case AL.parse p s of
+      AL.Done _ v     -> case to v of
+          Right a  -> Right a
+          Left msg -> Left $ "conversion error: " ++ msg
+      AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
+                            show (BL8.unpack left)
+{-# INLINE decodeWithP #-}
+
+mapM' :: Monad m => (a -> m b) -> [a] -> m [b]
+mapM' f = go
+  where
+    go [] = return []
+    go (x:xs) = do
+        !y <- f x
+        ys <- go xs
+        return (y : ys)
+{-# INLINE mapM' #-}
+
