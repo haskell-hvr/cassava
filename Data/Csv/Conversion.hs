@@ -386,7 +386,7 @@ instance ToField a => ToField (Maybe a) where
     toField = maybe B.empty toField
     {-# INLINE toField #-}
 
--- | Could used to ignore column during decoding.
+-- | Ignores the 'Field'. Always succeeds.
 instance FromField () where
     parseField _ = pure ()
     {-# INLINE parseField #-}

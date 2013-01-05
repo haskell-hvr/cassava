@@ -144,10 +144,10 @@ import Data.Csv.Types
 -- >     Right v  -> forM_ v $ \ (Hex val1, Hex val2) ->
 -- >         print (val1, val2)
 --
--- In order to ignore column you can use unit type '()'. It always
--- successfully decode. Note that it lacks corresponding 'ToField'
+-- In order to ignore a column you can use unit type @()@. It always
+-- successfully decodes. Note that it lacks a corresponding 'ToField'
 -- instance. It serves as placeholder to indicate that there's
--- something in the column you don't care what.
+-- something in the column you don't care about.
 --
 -- > case decode False "foo,1\r\nbar,22" of
 -- >     Left  err -> putStrLn err
