@@ -10,7 +10,7 @@
 --
 -- Encoding and decoding of data types into CSV.
 module Data.Csv.Encoding
-    (     
+    (
     -- * Encoding and decoding
       decode
     , decodeByName
@@ -31,7 +31,8 @@ module Data.Csv.Encoding
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
                                  toLazyByteString)
 import Blaze.ByteString.Builder.Char8 (fromString)
-import Control.Applicative ((*>), (<$>), (<*>), pure)
+import Control.Applicative ((*>), (<|>), optional, pure)
+import Data.Attoparsec.Char8 (endOfInput, endOfLine)
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
@@ -45,10 +46,14 @@ import Data.Word (Word8)
 import Prelude hiding (unlines)
 
 import Data.Csv.Compat.Monoid ((<>))
-import Data.Csv.Conversion
-import Data.Csv.Parser
-import Data.Csv.Types
-import Data.Csv.Util ((<$!>))
+import Data.Csv.Conversion (FromNamedRecord, FromRecord, ToNamedRecord,
+                            ToRecord, parseNamedRecord, parseRecord, runParser,
+                            toNamedRecord, toRecord)
+import Data.Csv.Parser hiding (csv, csvWithHeader)
+import qualified Data.Csv.Parser as Parser
+import Data.Csv.Types hiding (toNamedRecord)
+import qualified Data.Csv.Types as Types
+import Data.Csv.Util (blankLine)
 
 -- TODO: 'encode' isn't as efficient as it could be.
 
@@ -97,21 +102,8 @@ decodeWith :: FromRecord a
                              -- skipped
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
-decodeWith = decodeWithC (runParser . parseCsv)
+decodeWith = decodeWithC csv
 {-# INLINE [1] decodeWith #-}
-
-parseCsv :: FromRecord a => Csv -> Parser (Vector a)
-parseCsv xs = V.fromList <$!> mapM' parseRecord (V.toList xs)
-
-mapM' :: Monad m => (a -> m b) -> [a] -> m [b]
-mapM' f = go
-  where
-    go [] = return []
-    go (x:xs) = do
-        !y <- f x
-        ys <- go xs
-        return (y : ys)
-{-# INLINE mapM' #-}
 
 {-# RULES
     "idDecodeWith" decodeWith = idDecodeWith
@@ -121,14 +113,17 @@ mapM' f = go
 -- conversion is performed.
 idDecodeWith :: DecodeOptions -> Bool -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
-idDecodeWith = decodeWithC pure
+idDecodeWith = decodeWithC Parser.csv
 
-decodeWithC :: (Csv -> Either String a) -> DecodeOptions -> Bool -> L.ByteString
-            -> Either String a
-decodeWithC convert !opts skipHeader = decodeWithP parser convert
+-- | Decode CSV data using the provided parser, skipping a leading
+-- header if 'skipHeader' is 'True'. Returns 'Left' @errMsg@ on
+-- failure.
+decodeWithC :: (DecodeOptions -> AL.Parser a) -> DecodeOptions -> Bool
+            -> BL8.ByteString -> Either String a
+decodeWithC p !opts skipHeader = decodeWithP parser
   where parser
-            | skipHeader = header (decDelimiter opts) *> csv opts
-            | otherwise  = csv opts
+            | skipHeader = header (decDelimiter opts) *> p opts
+            | otherwise  = p opts
 {-# INLINE decodeWithC #-}
 
 -- | Like 'decodeByName', but lets you customize how the CSV data is
@@ -137,12 +132,7 @@ decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> L.ByteString   -- ^ CSV data
                  -> Either String (Header, Vector a)
-decodeByNameWith !opts =
-    decodeWithP (csvWithHeader opts)
-    (\ (hdr, vs) -> (,) <$> pure hdr <*> (runParser $ parseNamedCsv vs))
-
-parseNamedCsv :: FromNamedRecord a => Vector NamedRecord -> Parser (Vector a)
-parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
+decodeByNameWith !opts = decodeWithP (csvWithHeader opts)
 
 -- | Options that controls how data is encoded. These options can be
 -- used to e.g. encode data in a tab-separated format instead of in a
@@ -237,12 +227,62 @@ prependToAll :: Builder -> [Builder] -> [Builder]
 prependToAll _   []     = []
 prependToAll sep (x:xs) = sep <> x : prependToAll sep xs
 
-decodeWithP :: AL.Parser a -> (a -> Either String b) -> L.ByteString -> Either String b
-decodeWithP p to s =
+decodeWithP :: AL.Parser a -> L.ByteString -> Either String a
+decodeWithP p s =
     case AL.parse p s of
-      AL.Done _ v     -> case to v of
-          Right a  -> Right a
-          Left msg -> Left $ "conversion error: " ++ msg
+      AL.Done _ v     -> Right v
       AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
                             show (BL8.unpack left)
 {-# INLINE decodeWithP #-}
+
+-- These alternative implementation of the 'csv' and 'csvWithHeader'
+-- parsers from the 'Parser' module performs the
+-- 'FromRecord'/'FromNamedRecord' conversions ont-the-fly, thereby
+-- avoiding the need to hold a big 'CSV' value in memory. The 'CSV'
+-- type has a quite large memory overhead due to high constant
+-- overheads of 'B.ByteString' and 'V.Vector'.
+
+-- TODO: Check that the error messages don't duplicate prefixes, as in
+-- "parse error: conversion error: ...".
+
+-- | Parse a CSV file that does not include a header.
+csv :: FromRecord a => DecodeOptions -> AL.Parser (V.Vector a)
+csv !opts = do
+    vals <- records
+    _ <- optional endOfLine
+    endOfInput
+    return $! V.fromList vals
+  where
+    records = do
+        !r <- record (decDelimiter opts)
+        if blankLine r
+            then (endOfLine *> records) <|> pure []
+            else case runParser (parseRecord r) of
+                Left msg  -> fail $ "conversion error: " ++ msg
+                Right val -> do
+                    !vals <- (endOfLine *> records) <|> pure []
+                    return (val : vals)
+{-# INLINE csv #-}
+
+-- | Parse a CSV file that includes a header.
+csvWithHeader :: FromNamedRecord a => DecodeOptions
+              -> AL.Parser (Header, V.Vector a)
+csvWithHeader !opts = do
+    !hdr <- header (decDelimiter opts)
+    vals <- records hdr
+    _ <- optional endOfLine
+    endOfInput
+    let !v = V.fromList vals
+    return (hdr, v)
+  where
+    records hdr = do
+        !r <- record (decDelimiter opts)
+        if blankLine r
+            then (endOfLine *> records hdr) <|> pure []
+            else case runParser (convert hdr r) of
+                Left msg  -> fail $ "conversion error: " ++ msg
+                Right val -> do
+                    !vals <- (endOfLine *> records hdr) <|> pure []
+                    return (val : vals)
+
+    convert hdr = parseNamedRecord . Types.toNamedRecord hdr

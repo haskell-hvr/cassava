@@ -35,13 +35,12 @@ import Data.Attoparsec.Types (Parser)
 import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Unsafe as S
-import qualified Data.HashMap.Strict as HM
 import Data.Monoid (mappend, mempty)
 import qualified Data.Vector as V
 import Data.Word (Word8)
 
 import Data.Csv.Types
-import Data.Csv.Util ((<$!>))
+import Data.Csv.Util ((<$!>), blankLine)
 
 -- | Options that controls how data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
@@ -103,9 +102,6 @@ csvWithHeader !opts = do
     let !v = V.fromList vals
     return (hdr, v)
 
-toNamedRecord :: Header -> Record -> NamedRecord
-toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
-
 -- | Parse a header, including the terminating line separator.
 header :: Word8  -- ^ Field delimiter
        -> AL.Parser Header
@@ -118,7 +114,6 @@ name !delim = field delim
 
 removeBlankLines :: [Record] -> [Record]
 removeBlankLines = filter (not . blankLine)
-  where blankLine v = V.length v == 1 && (S.null (V.head v))
 
 -- | Parse a record, not including the terminating line separator. The
 -- terminating line separate is not included as the last record in a
