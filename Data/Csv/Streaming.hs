@@ -20,11 +20,13 @@ module Data.Csv.Streaming
     -- $indexbased
     , decode
     , decodeWith
+    , decodeTable
 
     -- ** Name-based record conversion
     -- $namebased
     , decodeByName
     , decodeByNameWith
+    , decodeTableByName
     ) where
 
 import Control.Applicative ((<$>), (<*>), pure)
@@ -37,7 +39,7 @@ import Prelude hiding (foldr)
 
 import Data.Csv.Conversion
 import Data.Csv.Incremental hiding (decode, decodeByName, decodeByNameWith,
-                                    decodeWith)
+                                    decodeWith, decodeTable, decodeTableByName)
 import qualified Data.Csv.Incremental as I
 import Data.Csv.Parser
 import Data.Csv.Types
@@ -132,9 +134,24 @@ decodeWith :: FromRecord a
                              -- skipped
            -> BL.ByteString  -- ^ CSV data
            -> Records a
-decodeWith !opts skipHeader s0 = case BL.toChunks s0 of
-    []     -> go [] (feedEndOfInput $ I.decodeWith opts skipHeader)
-    (s:ss) -> go ss (I.decodeWith opts skipHeader `feedChunk` s)
+decodeWith !opts skipHeader =
+  streamData $ I.decodeWith opts skipHeader
+
+-- | Efficiently deserialize space-delimited records in a streaming
+-- fashion.
+decodeTable :: FromRecord a
+            => Bool           -- ^ Data contains header that should be
+                              --   skipped
+            -> BL.ByteString  -- ^ Space-delimited data
+            -> Records a
+decodeTable skipHeader =
+  streamData $ I.decodeTable skipHeader
+
+
+streamData :: I.Parser a -> BL.ByteString -> Records a
+streamData parse s0 = case BL.toChunks s0 of
+    []     -> go [] (feedEndOfInput parse)
+    (s:ss) -> go ss (parse `feedChunk` s )
   where
     go ss (Done xs)       = foldr Cons (Nil Nothing (BL.fromChunks ss)) xs
     go ss (Fail rest err) = Nil (Just err) (BL.fromChunks (rest:ss))
@@ -142,6 +159,9 @@ decodeWith !opts skipHeader s0 = case BL.toChunks s0 of
     go (s:ss) (Partial k) = go ss (k s)
     go [] (Some xs k)     = foldr Cons (go [] (k B.empty)) xs
     go (s:ss) (Some xs k) = foldr Cons (go ss (k s)) xs
+
+
+
 
 -- | Efficiently deserialize CSV in a streaming fashion. The data is
 -- assumed to be preceeded by a header. Returns @'Left' errMsg@ if
@@ -160,9 +180,25 @@ decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> BL.ByteString  -- ^ CSV data
                  -> Either String (Header, Records a)
-decodeByNameWith !opts s0 = case BL.toChunks s0 of
-    []     -> go [] (feedEndOfInputH $ I.decodeByNameWith opts)
-    (s:ss) -> go ss (I.decodeByNameWith opts `feedChunkH` s)
+decodeByNameWith !opts =
+  streamDataByName (I.decodeByNameWith opts)
+
+
+-- | Efficiently deserialize space-delimited in a streaming
+-- fashion. The data is assumed to be preceeded by a header. Returns
+-- @'Left' errMsg@ if parsing the header fails.
+decodeTableByName :: FromNamedRecord a
+                  => BL.ByteString  -- ^ Space-delimited data
+                  -> Either String (Header, Records a)
+decodeTableByName =
+  streamDataByName I.decodeTableByName
+
+
+streamDataByName :: HeaderParser (I.Parser a)
+                 -> BL.ByteString -> Either String (Header, Records a)
+streamDataByName parser s0 = case BL.toChunks s0 of
+    []     -> go [] (feedEndOfInputH parser)
+    (s:ss) -> go ss (parser `feedChunkH` s)
   where
     go ss (DoneH hdr p)    = Right (hdr, go2 ss p)
     go ss (FailH rest err) = Left $ err ++ " at " ++

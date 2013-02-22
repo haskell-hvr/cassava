@@ -26,6 +26,12 @@ module Data.Csv.Encoding
     , defaultEncodeOptions
     , encodeWith
     , encodeByNameWith
+
+    -- * Space-delimited files
+    , decodeTable
+    , decodeTableByName
+    , encodeTable
+    , encodeTableByName
     ) where
 
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
@@ -97,21 +103,9 @@ decodeWith :: FromRecord a
                              -- skipped
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
-decodeWith = decodeWithC (runParser . parseCsv)
+decodeWith !opt =
+  decodeWithC (header $ decDelimiter opt) (csv opt) (runParser . parseCsv)
 {-# INLINE [1] decodeWith #-}
-
-parseCsv :: FromRecord a => Csv -> Parser (Vector a)
-parseCsv xs = V.fromList <$!> mapM' parseRecord (V.toList xs)
-
-mapM' :: Monad m => (a -> m b) -> [a] -> m [b]
-mapM' f = go
-  where
-    go [] = return []
-    go (x:xs) = do
-        !y <- f x
-        ys <- go xs
-        return (y : ys)
-{-# INLINE mapM' #-}
 
 {-# RULES
     "idDecodeWith" decodeWith = idDecodeWith
@@ -121,14 +115,16 @@ mapM' f = go
 -- conversion is performed.
 idDecodeWith :: DecodeOptions -> Bool -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
-idDecodeWith = decodeWithC pure
+idDecodeWith !opt = decodeWithC (header $ decDelimiter opt) (csv opt) pure
 
-decodeWithC :: (Csv -> Either String a) -> DecodeOptions -> Bool -> L.ByteString
-            -> Either String a
-decodeWithC convert !opts skipHeader = decodeWithP parser convert
+decodeWithC :: AL.Parser Header -> AL.Parser Csv
+            -> (Csv -> Either String a)
+            -> Bool -> L.ByteString -> Either String a
+decodeWithC headerP body convert skipHeader
+  = decodeWithP parser convert
   where parser
-            | skipHeader = header (decDelimiter opts) *> csv opts
-            | otherwise  = csv opts
+            | skipHeader = headerP *> body
+            | otherwise  = body
 {-# INLINE decodeWithC #-}
 
 -- | Like 'decodeByName', but lets you customize how the CSV data is
@@ -140,9 +136,6 @@ decodeByNameWith :: FromNamedRecord a
 decodeByNameWith !opts =
     decodeWithP (csvWithHeader opts)
     (\ (hdr, vs) -> (,) <$> pure hdr <*> (runParser $ parseNamedCsv vs))
-
-parseNamedCsv :: FromNamedRecord a => Vector NamedRecord -> Parser (Vector a)
-parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
 
 -- | Options that controls how data is encoded. These options can be
 -- used to e.g. encode data in a tab-separated format instead of in a
@@ -180,23 +173,6 @@ encodeRecord delim = mconcat . intersperse (fromWord8 delim)
                      . map fromByteString . map escape . V.toList
 {-# INLINE encodeRecord #-}
 
--- TODO: Optimize
-escape :: B.ByteString -> B.ByteString
-escape s
-    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
-                     b == sp) s == Nothing = s
-    | otherwise =
-        B.concat ["\"",
-                  B.concatMap
-                  (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
-                  "\""]
-  where
-    dquote = 34
-    comma  = 44
-    nl     = 10
-    cr     = 13
-    sp     = 32
-
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
 encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> V.Vector a
@@ -211,6 +187,103 @@ encodeByNameWith opts hdr v =
               . V.toList $ v
 {-# INLINE encodeByNameWith #-}
 
+
+------------------------------------------------------------------------
+-- * Space-delimited files
+
+-- | Efficiently deserialize space-delimited records from a lazy
+-- ByteString. If this fails due to incomplete or invalid input,
+-- @'Left' msg@ is returned.
+decodeTable :: FromRecord a
+            => Bool             -- ^ Data contains header that should be skipped
+            -> L.ByteString     -- ^ Raw data
+            -> Either String (Vector a)
+decodeTable =
+    decodeWithC tableHeader table (runParser . parseCsv)
+{-# INLINE decodeTable #-}
+
+-- | Same as 'decodeWith', but more efficient as no type
+-- conversion is performed.
+idDecodeTable :: Bool -> L.ByteString -> Either String (Vector (Vector B.ByteString))
+idDecodeTable = decodeWithC tableHeader table pure
+
+{-# RULES
+    "idDecodeTable" decodeTable = idDecodeTable
+ #-}
+
+
+-- | Efficiently deserialize space-delimited records from a lazy
+-- ByteString. If this fails due to incomplete or invalid input,
+-- @'Left' msg@ is returned. The data is assumed to be preceeded by a
+-- header.
+decodeTableByName :: FromNamedRecord a => L.ByteString -> Either String (Header, Vector a)
+decodeTableByName =
+    decodeWithP tableWithHeader
+    (\(hdr, vs) -> (,) <$> pure hdr <*> (runParser $ parseNamedCsv vs))
+{-# INLINE decodeTableByName #-}
+
+-- | Efficiently serialize space-delimited records as a lazy
+-- ByteString. Single tab is used as separator.
+encodeTable :: ToRecord a => V.Vector a -> L.ByteString
+encodeTable = toLazyByteString
+            . unlines
+            . map (encodeTableRow . toRecord)
+            . V.toList
+{-# INLINE encodeTable #-}
+
+-- | Efficiently serialize space-delimited records as a lazy
+-- ByteString. The header is written before any records and dictates
+-- the field order. Single tab is used as separator.
+encodeTableByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
+encodeTableByName hdr v =
+    toLazyByteString (  encodeTableRow hdr
+                     <> fromByteString "\r\n"
+                     <> records )
+  where
+    records = unlines
+            . map (encodeTableRow . namedRecordToRecord hdr . toNamedRecord)
+            . V.toList $ v
+{-# INLINE encodeTableByName #-}
+
+encodeTableRow :: Record -> Builder
+encodeTableRow = mconcat . intersperse (fromWord8 9)
+               . map fromByteString . map escapeT . V.toList
+  where
+    -- We need to escape empty strings. Otherwise we'll get:
+    --  > encode ["a","","b"] = 'a  b'
+    -- instead of
+    --  > encode ["a","","b"] = 'a "" b'
+    escapeT b | B.null b  = "\"\""
+              | otherwise = escape b
+{-# INLINE encodeTableRow #-}
+
+
+------------------------------------------------------------------------
+-- * Common functionality and helpers
+
+parseCsv :: FromRecord a => Csv -> Parser (Vector a)
+parseCsv xs = V.fromList <$!> mapM' parseRecord (V.toList xs)
+
+parseNamedCsv :: FromNamedRecord a => Vector NamedRecord -> Parser (Vector a)
+parseNamedCsv xs = V.fromList <$!> mapM' parseNamedRecord (V.toList xs)
+
+-- TODO: Optimize
+escape :: B.ByteString -> B.ByteString
+escape s
+    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
+                     b == sp     || b == tab) s == Nothing = s
+    | otherwise =
+        B.concat ["\"",
+                  B.concatMap
+                  (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
+                  "\""]
+  where
+    dquote = 34
+    comma  = 44
+    nl     = 10
+    cr     = 13
+    sp     = 32
+    tab    =  9
 
 namedRecordToRecord :: Header -> NamedRecord -> Record
 namedRecordToRecord hdr nr = V.map find hdr
@@ -246,3 +319,14 @@ decodeWithP p to s =
       AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
                             show (BL8.unpack left)
 {-# INLINE decodeWithP #-}
+
+mapM' :: Monad m => (a -> m b) -> [a] -> m [b]
+mapM' f = go
+  where
+    go [] = return []
+    go (x:xs) = do
+        !y <- f x
+        ys <- go xs
+        return (y : ys)
+{-# INLINE mapM' #-}
+
