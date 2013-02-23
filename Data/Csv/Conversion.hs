@@ -82,7 +82,7 @@ import qualified Data.IntMap as IM
 --
 -- here's an example type and instance:
 --
--- > data Person = Person { name :: Text, age :: Int }
+-- > data Person = Person { name :: !Text, age :: !Int }
 -- >
 -- > instance FromRecord Person where
 -- >     parseRecord v
@@ -109,7 +109,7 @@ newtype Only a = Only {
 --
 -- An example type and instance:
 --
--- > data Person = Person { name :: Text, age :: Int }
+-- > data Person = Person { name :: !Text, age :: !Int }
 -- >
 -- > instance ToRecord Person where
 -- >     toRecord (Person name age) = 'record' [
@@ -286,7 +286,7 @@ instance (ToField a, U.Unbox a) => ToRecord (U.Vector a) where
 --
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- >
--- > data Person = Person { name :: Text, age :: Int }
+-- > data Person = Person { name :: !Text, age :: !Int }
 -- >
 -- > instance FromRecord Person where
 -- >     parseNamedRecord m = Person <$>
@@ -307,7 +307,7 @@ class FromNamedRecord a where
 --
 -- An example type and instance:
 --
--- > data Person = Person { name :: Text, age :: Int }
+-- > data Person = Person { name :: !Text, age :: !Int }
 -- >
 -- > instance ToRecord Person where
 -- >     toNamedRecord (Person name age) = namedRecord [
