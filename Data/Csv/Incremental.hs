@@ -290,7 +290,7 @@ decodeWithP p !opts = go Incomplete [] . parser
             acc' | blankLine r = acc
                  | otherwise   = let !r' = convert r in r' : acc
 
-    parser = A.parse (record (decDelimiter opts) <* (endOfLine <|> endOfInput))
+    parser = A.parse (record opts <* (endOfLine <|> endOfInput))
     convert = runParser . p
 {-# INLINE decodeWithP #-}
 

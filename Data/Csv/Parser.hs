@@ -16,6 +16,7 @@
 module Data.Csv.Parser
     ( DecodeOptions(..)
     , defaultDecodeOptions
+    , spaceDecodeOptions
     , csv
     , csvWithHeader
     , header
@@ -26,9 +27,10 @@ module Data.Csv.Parser
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
-import Control.Applicative (Alternative, (*>), (<$>), (<*), (<|>), optional,
-                            pure)
-import Data.Attoparsec.Char8 (char, endOfInput, endOfLine)
+import Control.Applicative (Alternative, (*>), (<$>), (<*), (<|>), many,
+                            optional, pure)
+import Control.Monad (when)
+import Data.Attoparsec.Char8 (char, endOfInput, endOfLine, space)
 import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
 import Data.Attoparsec.Types (Parser)
@@ -56,18 +58,40 @@ import Data.Csv.Util ((<$!>), blankLine)
 data DecodeOptions = DecodeOptions
     { -- | Field delimiter.
       decDelimiter  :: {-# UNPACK #-} !Word8
+
+      -- | Runs of consecutive delimiters are regarded as a single
+      -- delimiter. This is useful e.g. when parsing white space
+      -- separated data.
+    , decMergeDelimiters :: !Bool
+
+      -- | Trim leading and trailing whitespace at the begining and
+      -- end of each record (but not at the begining and end of each
+      -- field).
+    , decTrimRecordSpace :: !Bool
     } deriving (Eq, Show)
+
+-- TODO: Document default values in defaultDecodeOptions
 
 -- | Decoding options for parsing CSV files.
 defaultDecodeOptions :: DecodeOptions
 defaultDecodeOptions = DecodeOptions
     { decDelimiter = 44  -- comma
+    , decMergeDelimiters = False
+    , decTrimRecordSpace = False
+    }
+
+-- | Decoding options for parsing space-delimited files.
+spaceDecodeOptions :: DecodeOptions
+spaceDecodeOptions = DecodeOptions
+    { decDelimiter = 32  -- space
+    , decMergeDelimiters = True
+    , decTrimRecordSpace = True
     }
 
 -- | Parse a CSV file that does not include a header.
 csv :: DecodeOptions -> AL.Parser Csv
 csv !opts = do
-    vals <- record (decDelimiter opts) `sepBy1'` endOfLine
+    vals <- record opts `sepBy1'` endOfLine
     _ <- optional endOfLine
     endOfInput
     let nonEmpty = removeBlankLines vals
@@ -96,7 +120,7 @@ csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader !opts = do
     !hdr <- header (decDelimiter opts)
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
-            (record (decDelimiter opts)) `sepBy1'` endOfLine
+            (record opts) `sepBy1'` endOfLine
     _ <- optional endOfLine
     endOfInput
     let !v = V.fromList vals
@@ -120,12 +144,22 @@ removeBlankLines = filter (not . blankLine)
 -- CSV file is allowed to not have a terminating line separator. You
 -- most likely want to use the 'endOfLine' parser in combination with
 -- this parser.
-record :: Word8  -- ^ Field delimiter
-       -> AL.Parser Record
-record !delim = do
-    fs <- field delim `sepBy1'` (A.word8 delim)
+record :: DecodeOptions -> AL.Parser Record
+record !opts = do
+    when trim skipSpaces
+    fs <- field delim `sepBy1'` delimiter
+    when trim skipSpaces
     return $! V.fromList fs
+  where
+    trim = decTrimRecordSpace opts
+    delim = decDelimiter opts
+    delimiter | decMergeDelimiters opts = A.skipMany1 (A.word8 delim) *> pure delim
+              | otherwise               = A.word8 delim
 {-# INLINE record #-}
+
+skipSpaces :: AL.Parser ()
+skipSpaces = scan
+  where scan = (space *> scan) <|> pure ()
 
 -- | Parse a field. The field may be in either the escaped or
 -- non-escaped format. The return value is unescaped.
