@@ -144,6 +144,7 @@ positionalTests =
         ]
     decodeWithTests =
         [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
+        , ("mixed-space", spaceDec, "  88 c \t  0.4  ", [["88", "c", "0.4"]])
         ]
 
     encodeTest (name, input, expected) =
@@ -158,6 +159,11 @@ positionalTests =
         testCase name $ decodesWithStreamingAs opts input expected
     defEnc = defaultEncodeOptions
     defDec = defaultDecodeOptions
+    spaceDec = defaultDecodeOptions  -- TODO: Use spaceDecodeOptions
+        { decDelimiter       = 32  -- space
+        , decMergeDelimiters = True
+        , decTrimRecordSpace = True
+        }
 
 nameBasedTests :: [TF.Test]
 nameBasedTests =
