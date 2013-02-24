@@ -1,5 +1,7 @@
 {-# LANGUAGE BangPatterns, FlexibleInstances, OverloadedStrings,
-             TypeSynonymInstances #-}
+             RecordWildCards, TypeSynonymInstances #-}
+{-# OPTIONS_GHC -funbox-strict-fields #-}
+
 module Main ( main ) where
 
 import Control.Applicative
@@ -8,15 +10,49 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HM
+import Control.Monad (mzero)
 import Data.Text (Text)
 import Data.Vector (Vector)
+import qualified Data.Vector as V
 
 import Data.Csv
 
-type President = (Int, Text, ByteString, ByteString, ByteString, Text, Text)
+data President = President
+                 { presidency     :: !Int
+                 , president      :: !Text
+                 , wikipediaEntry :: !ByteString
+                 , tookOffice     :: !ByteString
+                 , leftOffice     :: !ByteString
+                 , party          :: !Text
+                 , homeState      :: !Text
+                 }
+
+instance FromRecord President where
+    parseRecord v
+        | V.length v == 7 = President <$>
+                            v .!! 0 <*>
+                            v .!! 1 <*>
+                            v .!! 2 <*>
+                            v .!! 3 <*>
+                            v .!! 4 <*>
+                            v .!! 5 <*>
+                            v .!! 6
+        | otherwise       = mzero
+
+-- | Unchecked version of '(.!)'.
+(.!!) :: FromField a => Record -> Int -> Parser a
+v .!! idx = parseField (V.unsafeIndex v idx)
+{-# INLINE (.!!) #-}
+infixl 9 .!!
+
+instance ToRecord President where
+    toRecord (President {..}) =
+        record [toField presidency, toField president, toField wikipediaEntry,
+                toField tookOffice, toField leftOffice, toField party,
+                toField homeState]
 
 instance FromNamedRecord President where
-    parseNamedRecord m = (,,,,,,) <$>
+    parseNamedRecord m = President <$>
                          m .: "Presidency" <*>
                          m .: "President" <*>
                          m .: "Wikipedia Entry" <*>
@@ -26,8 +62,7 @@ instance FromNamedRecord President where
                          m .: "Home State"
 
 instance ToNamedRecord President where
-    toNamedRecord (presidency, president, wikipediaEntry, tookOffice,
-                   leftOffice, party, homeState) = namedRecord
+    toNamedRecord (President {..}) = namedRecord
         [ "Presidency"      .= presidency
         , "President"       .= president
         , "Wikipedia Entry" .= wikipediaEntry
