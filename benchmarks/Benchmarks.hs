@@ -61,7 +61,7 @@ main = do
           ]
         , bgroup "named"
           [ bgroup "decode"
-            [  bench "presidents/without conversion" $ whnf idDecodeN csvDataN
+            [ bench "presidents/without conversion" $ whnf idDecodeN csvDataN
             , bench "presidents/with conversion" $ whnf decodePresidentsN csvDataN
             ]
           , bgroup "encode"
