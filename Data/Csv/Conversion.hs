@@ -393,10 +393,12 @@ instance FromField () where
 
 -- | Assumes UTF-8 encoding.
 instance FromField Char where
-    parseField s
-        | T.compareLength t 1 == EQ = pure (T.head t)
-        | otherwise = typeError "Char" s Nothing
-      where t = T.decodeUtf8 s
+    parseField s =
+        case T.decodeUtf8' s of
+          Left e -> fail $ show e
+          Right t
+            | T.compareLength t 1 == EQ -> pure (T.head t)
+            | otherwise -> typeError "Char" s Nothing
     {-# INLINE parseField #-}
 
 -- | Uses UTF-8 encoding.
@@ -560,7 +562,7 @@ instance ToField L.ByteString where
 
 -- | Assumes UTF-8 encoding.
 instance FromField T.Text where
-    parseField = pure . T.decodeUtf8
+    parseField = either (fail . show) pure . T.decodeUtf8'
     {-# INLINE parseField #-}
 
 -- | Uses UTF-8 encoding.
@@ -570,7 +572,7 @@ instance ToField T.Text where
 
 -- | Assumes UTF-8 encoding.
 instance FromField LT.Text where
-    parseField s = pure (LT.fromChunks [T.decodeUtf8 s])
+    parseField = either (fail . show) (pure . LT.fromChunks . (:[])) . T.decodeUtf8'
     {-# INLINE parseField #-}
 
 -- | Uses UTF-8 encoding.
