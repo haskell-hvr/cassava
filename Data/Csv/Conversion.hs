@@ -575,6 +575,7 @@ instance ToField L.ByteString where
     toField = toStrict
     {-# INLINE toField #-}
 
+-- TODO: Add comment about failure on invalid UTF-8 data.
 -- | Assumes UTF-8 encoding.
 instance FromField T.Text where
     parseField = either (fail . show) pure . T.decodeUtf8'
