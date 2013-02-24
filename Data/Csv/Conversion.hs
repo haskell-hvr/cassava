@@ -644,6 +644,7 @@ index v idx = parseField (v ! idx)
 (.!) :: FromField a => Record -> Int -> Parser a
 (.!) = index
 {-# INLINE (.!) #-}
+infixl 9 .!
 
 -- | Retrieve a field in the given record by name.  The result is
 -- 'empty' if the field is missing or if the value cannot be converted
