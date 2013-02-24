@@ -63,6 +63,21 @@ import qualified Data.IntMap as IM
 #endif
 
 ------------------------------------------------------------------------
+-- bytestring compatibility
+
+toStrict   :: L.ByteString -> B.ByteString
+fromStrict :: B.ByteString -> L.ByteString
+#if MIN_VERSION_bytestring(0,10,0)
+toStrict   = L.toStrict
+fromStrict = L.fromStrict
+#else
+toStrict   = B.concat . L.toChunks
+fromStrict = L.fromChunks . (:[])
+#endif
+{-# INLINE toStrict #-}
+{-# INLINE fromStrict #-}
+
+------------------------------------------------------------------------
 -- Type conversion
 
 ------------------------------------------------------------------------
@@ -553,11 +568,11 @@ instance ToField B.ByteString where
     {-# INLINE toField #-}
 
 instance FromField L.ByteString where
-    parseField s = pure (L.fromChunks [s])
+    parseField = pure . fromStrict
     {-# INLINE parseField #-}
 
 instance ToField L.ByteString where
-    toField = toField . B.concat . L.toChunks
+    toField = toStrict
     {-# INLINE toField #-}
 
 -- | Assumes UTF-8 encoding.
@@ -572,12 +587,12 @@ instance ToField T.Text where
 
 -- | Assumes UTF-8 encoding.
 instance FromField LT.Text where
-    parseField = either (fail . show) (pure . LT.fromChunks . (:[])) . T.decodeUtf8'
+    parseField = either (fail . show) (pure . LT.fromStrict) . T.decodeUtf8'
     {-# INLINE parseField #-}
 
 -- | Uses UTF-8 encoding.
 instance ToField LT.Text where
-    toField = toField . B.concat . L.toChunks . LT.encodeUtf8
+    toField = toField . toStrict . LT.encodeUtf8
     {-# INLINE toField #-}
 
 -- | Assumes UTF-8 encoding.
