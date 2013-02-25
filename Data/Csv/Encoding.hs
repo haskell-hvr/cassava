@@ -237,7 +237,7 @@ decodeWithP p s =
 
 -- These alternative implementation of the 'csv' and 'csvWithHeader'
 -- parsers from the 'Parser' module performs the
--- 'FromRecord'/'FromNamedRecord' conversions ont-the-fly, thereby
+-- 'FromRecord'/'FromNamedRecord' conversions on-the-fly, thereby
 -- avoiding the need to hold a big 'CSV' value in memory. The 'CSV'
 -- type has a quite large memory overhead due to high constant
 -- overheads of 'B.ByteString' and 'V.Vector'.
