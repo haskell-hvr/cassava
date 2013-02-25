@@ -27,10 +27,9 @@ module Data.Csv.Parser
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
-import Control.Applicative (Alternative, (*>), (<$>), (<*), (<|>), many,
+import Control.Applicative (Alternative, (*>), (<$), (<$>), (<*), (<|>),
                             optional, pure)
-import Control.Monad (when)
-import Data.Attoparsec.Char8 (char, endOfInput, endOfLine, space)
+import Data.Attoparsec.Char8 (char, endOfInput, endOfLine)
 import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
 import Data.Attoparsec.Types (Parser)
@@ -145,21 +144,30 @@ removeBlankLines = filter (not . blankLine)
 -- most likely want to use the 'endOfLine' parser in combination with
 -- this parser.
 record :: DecodeOptions -> AL.Parser Record
-record !opts = do
-    when trim skipSpaces
-    fs <- field delim `sepBy1'` delimiter
-    when trim skipSpaces
-    return $! V.fromList fs
+record !opts
+    -- If we need to trim spaces from line only robust way to do so is
+    -- to read whole line, remove spaces and run record parser on
+    -- trimmed line. For example:
+    --
+    -- + "a,b,c " will be parsed as ["a","b","c "] since spaces are
+    --   allowed in field
+    -- + "a b c " will be parsed as ["a","b","c",""] if we use space
+    --   as separator.
+    | decTrimRecordSpace opts = do
+        AL.skipMany $ AL.satisfy isSpace
+        line <- AL.takeWhile $ \c -> c /= newline && c /= cr
+        let (dat,_) = S.spanEnd isSpace line
+        case AL.parseOnly parser dat of
+          Left  e -> fail e
+          Right x -> return x
+    | otherwise              = parser
   where
-    trim = decTrimRecordSpace opts
     delim = decDelimiter opts
-    delimiter | decMergeDelimiters opts = A.skipMany1 (A.word8 delim) *> pure delim
-              | otherwise               = A.word8 delim
+    delimiter | decMergeDelimiters opts = A.skipMany1 (A.word8 delim)
+              | otherwise               = () <$ A.word8 delim
+    parser = do fs <- field delim `sepBy1'` delimiter
+                return $! V.fromList fs
 {-# INLINE record #-}
-
-skipSpaces :: AL.Parser ()
-skipSpaces = scan
-  where scan = (space *> scan) <|> pure ()
 
 -- | Parse a field. The field may be in either the escaped or
 -- non-escaped format. The return value is unescaped.
@@ -212,7 +220,13 @@ unescape = toByteString <$!> go mempty where
       then return (acc `mappend` fromByteString h)
       else rest
 
-doubleQuote, newline, cr :: Word8
+doubleQuote, newline, cr, space, tab :: Word8
 doubleQuote = 34
-newline = 10
-cr = 13
+newline     = 10
+cr          = 13
+space       = 32
+tab         = 9
+
+isSpace :: Word8 -> Bool
+isSpace c = c == space || c == tab
+{-# INLINE isSpace #-}
