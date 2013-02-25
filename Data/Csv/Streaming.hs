@@ -28,6 +28,7 @@ module Data.Csv.Streaming
     ) where
 
 import Control.Applicative ((<$>), (<*>), pure)
+import Control.DeepSeq (NFData(rnf))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
@@ -115,6 +116,10 @@ instance Traversable Records where
       where
         traverseElem (Left err) = pure $ Left err
         traverseElem (Right y)  = Right <$> f y
+
+instance NFData a => NFData (Records a) where
+    rnf (Cons r rs) = rnf r `seq` rnf rs
+    rnf (Nil errMsg rest) = rnf errMsg `seq` rnf rest
 
 -- | Efficiently deserialize CSV records in a streaming fashion.
 -- Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
