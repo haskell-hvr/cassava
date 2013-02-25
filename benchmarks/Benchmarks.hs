@@ -119,6 +119,7 @@ main = do
           ]
         , bgroup "comparison"
           [ bench "cassava" $ nf idDecode csvData
+          , bench "cassava/streaming" $ nf idDecodeS csvData
           , bench "lazy-csv" $ nf LazyCsv.parseCSV csvData
           ]
         ]
@@ -134,3 +135,6 @@ main = do
 
     idDecodeN :: BL.ByteString -> Either String (Header, Vector (BSHashMap B.ByteString))
     idDecodeN = decodeByName
+
+    idDecodeS :: BL.ByteString -> Streaming.Records (Vector B.ByteString)
+    idDecodeS = Streaming.decode False
