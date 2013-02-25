@@ -133,8 +133,8 @@ header = record
 
 -- | Parse a header name. Header names have the same format as regular
 -- 'field's.
-name :: Word8 -> AL.Parser Name
-name !delim = field delim
+name :: DecodeOptions -> AL.Parser Name
+name = field
 
 removeBlankLines :: [Record] -> [Record]
 removeBlankLines = filter (not . blankLine)
@@ -166,20 +166,20 @@ record !opts
     delim = decDelimiter opts
     delimiter | decMergeDelimiters opts = A.skipMany1 (A.word8 delim)
               | otherwise               = () <$ A.word8 delim
-    parser = do fs <- field delim `sepBy1'` delimiter
+    parser = do fs <- field opts `sepBy1'` delimiter
                 return $! V.fromList fs
 {-# INLINE record #-}
 
 -- | Parse a field. The field may be in either the escaped or
 -- non-escaped format. The return value is unescaped.
-field :: Word8 -> AL.Parser Field
-field !delim = do
+field :: DecodeOptions -> AL.Parser Field
+field !opt = do
     mb <- A.peekWord8
     -- We purposely don't use <|> as we want to commit to the first
     -- choice if we see a double quote.
     case mb of
         Just b | b == doubleQuote -> escapedField
-        _                         -> unescapedField delim
+        _                         -> unescapedField opt
 {-# INLINE field #-}
 
 escapedField :: AL.Parser S.ByteString
@@ -197,11 +197,13 @@ escapedField = do
             Left err -> fail err
         else return s
 
-unescapedField :: Word8 -> AL.Parser S.ByteString
-unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
-                                            c /= newline &&
-                                            c /= delim &&
-                                            c /= cr)
+unescapedField :: DecodeOptions -> AL.Parser S.ByteString
+unescapedField !opt = A.takeWhile (\ c -> c /= doubleQuote &&
+                                          c /= newline &&
+                                          c /= delim &&
+                                          c /= cr)
+  where
+    delim = decDelimiter opt
 
 dquote :: AL.Parser Char
 dquote = char '"'
