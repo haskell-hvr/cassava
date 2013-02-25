@@ -30,6 +30,9 @@ data President = President
                  , homeState      :: !Text
                  }
 
+instance NFData President where
+    rnf (President {}) = ()
+
 instance FromRecord President where
     parseRecord v
         | V.length v == 7 = President <$>
@@ -103,6 +106,10 @@ main = do
           [ bgroup "decode"
             [ bench "presidents/without conversion" $ whnf idDecode csvData
             , bench "presidents/with conversion" $ whnf decodePresidents csvData
+            , bgroup "streaming"
+              [ bench "presidents/without conversion" $ nf idDecodeS csvData
+              , bench "presidents/with conversion" $ nf decodePresidentsS csvData
+              ]
             ]
           , bgroup "encode"
             [ bench "presidents/with conversion" $ whnf encode presidents
@@ -118,9 +125,7 @@ main = do
             ]
           ]
         , bgroup "comparison"
-          [ bench "cassava" $ nf idDecode csvData
-          , bench "cassava/streaming" $ nf idDecodeS csvData
-          , bench "lazy-csv" $ nf LazyCsv.parseCSV csvData
+          [ bench "lazy-csv" $ nf LazyCsv.parseCSV csvData
           ]
         ]
   where
@@ -129,6 +134,9 @@ main = do
 
     decodePresidentsN :: BL.ByteString -> Either String (Header, Vector President)
     decodePresidentsN = decodeByName
+
+    decodePresidentsS :: BL.ByteString -> Streaming.Records President
+    decodePresidentsS = Streaming.decode False
 
     idDecode :: BL.ByteString -> Either String (Vector (Vector B.ByteString))
     idDecode = decode False
