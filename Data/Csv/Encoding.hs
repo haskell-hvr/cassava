@@ -254,7 +254,7 @@ csv !opts = do
     return $! V.fromList vals
   where
     records = do
-        !r <- record (decDelimiter opts)
+        !r <- record opts
         if blankLine r
             then (endOfLine *> records) <|> pure []
             else case runParser (parseRecord r) of
@@ -276,7 +276,7 @@ csvWithHeader !opts = do
     return (hdr, v)
   where
     records hdr = do
-        !r <- record (decDelimiter opts)
+        !r <- record opts
         if blankLine r
             then (endOfLine *> records hdr) <|> pure []
             else case runParser (convert hdr r) of
