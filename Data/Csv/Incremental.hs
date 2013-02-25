@@ -39,13 +39,12 @@ import Control.Applicative ((<*), (<|>))
 import qualified Data.Attoparsec as A
 import Data.Attoparsec.Char8 (endOfInput, endOfLine)
 import qualified Data.ByteString as B
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
 
 import Data.Csv.Conversion hiding (Parser, record, toNamedRecord)
 import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Parser
-import Data.Csv.Types hiding (toNamedRecord)
+import Data.Csv.Types
 
 -- $feed-header
 --
@@ -258,10 +257,6 @@ decodeByNameWith !opts =
     go (PartialH k)     = PartialH $ \ s -> go (k s)
     go (DoneH hdr rest) =
         DoneH hdr (decodeWithP (parseNamedRecord . toNamedRecord hdr) opts rest)
-
--- Copied from Data.Csv.Parser
-toNamedRecord :: Header -> Record -> NamedRecord
-toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 
 ------------------------------------------------------------------------
 
