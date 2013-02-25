@@ -133,7 +133,7 @@ decodeHeader = decodeHeaderWith defaultDecodeOptions
 decodeHeaderWith :: DecodeOptions -> HeaderParser B.ByteString
 decodeHeaderWith !opts = PartialH (go . parser)
   where
-    parser = A.parse (header $ decDelimiter opts)
+    parser = A.parse (header opts)
 
     go (A.Fail rest _ msg) = FailH rest err
       where err = "parse error (" ++ msg ++ ")"

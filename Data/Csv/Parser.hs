@@ -117,7 +117,7 @@ sepBy1' p s = go
 -- | Parse a CSV file that includes a header.
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader !opts = do
-    !hdr <- header (decDelimiter opts)
+    !hdr <- header opts
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
             (record opts) `sepBy1'` endOfLine
     _ <- optional endOfLine
@@ -126,9 +126,10 @@ csvWithHeader !opts = do
     return (hdr, v)
 
 -- | Parse a header, including the terminating line separator.
-header :: Word8  -- ^ Field delimiter
+header :: DecodeOptions  -- ^ Field delimiter
        -> AL.Parser Header
-header !delim = V.fromList <$!> name delim `sepBy1'` (A.word8 delim) <* endOfLine
+header = record
+{-# INLINE header #-}
 
 -- | Parse a header name. Header names have the same format as regular
 -- 'field's.

@@ -122,7 +122,7 @@ decodeWithC :: (DecodeOptions -> AL.Parser a) -> DecodeOptions -> Bool
             -> BL8.ByteString -> Either String a
 decodeWithC p !opts skipHeader = decodeWithP parser
   where parser
-            | skipHeader = header (decDelimiter opts) *> p opts
+            | skipHeader = header opts *> p opts
             | otherwise  = p opts
 {-# INLINE decodeWithC #-}
 
@@ -268,7 +268,7 @@ csv !opts = do
 csvWithHeader :: FromNamedRecord a => DecodeOptions
               -> AL.Parser (Header, V.Vector a)
 csvWithHeader !opts = do
-    !hdr <- header (decDelimiter opts)
+    !hdr <- header  opts
     vals <- records hdr
     _ <- optional endOfLine
     endOfInput
