@@ -145,6 +145,8 @@ positionalTests =
     decodeWithTests =
         [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
         , ("mixed-space", spaceDec, "  88 c \t  0.4  ", [["88", "c", "0.4"]])
+        , ("multiline-space", spaceDec, " 11 22 \n 11 22", [ ["11","22"]
+                                                           , ["11","22"]])
         ]
 
     encodeTest (name, input, expected) =
