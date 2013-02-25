@@ -80,6 +80,8 @@ Benchmark benchmarks
     bytestring,
     cassava,
     criterion,
+    deepseq,
+    lazy-csv,
     text,
     unordered-containers,
     vector

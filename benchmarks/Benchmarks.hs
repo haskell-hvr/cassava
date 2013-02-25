@@ -5,6 +5,7 @@
 module Main ( main ) where
 
 import Control.Applicative
+import Control.DeepSeq
 import Criterion.Main
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -12,10 +13,12 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as HM
 import Control.Monad (mzero)
 import Data.Text (Text)
+import qualified Text.CSV.Lazy.ByteString as LazyCsv
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
 import Data.Csv
+import qualified Data.Csv.Streaming as Streaming
 
 data President = President
                  { presidency     :: !Int
@@ -77,6 +80,17 @@ fromStrict s = BL.fromChunks [s]
 
 type BSHashMap a = HM.HashMap B.ByteString a
 
+instance NFData LazyCsv.CSVField where
+    rnf LazyCsv.CSVField {} = ()
+    rnf LazyCsv.CSVFieldError {} = ()
+
+instance NFData LazyCsv.CSVError where
+    rnf (LazyCsv.IncorrectRow !_ !_ !_ xs) = rnf xs
+    rnf (LazyCsv.BlankLine _ _ _ field)    = rnf field
+    rnf (LazyCsv.FieldError field)         = rnf field
+    rnf (LazyCsv.DuplicateHeader _ s)      = rnf s
+    rnf LazyCsv.NoData                     = ()
+
 main :: IO ()
 main = do
     !csvData <- fromStrict `fmap` B.readFile "benchmarks/presidents.csv"
@@ -102,6 +116,10 @@ main = do
           , bgroup "encode"
             [ bench "presidents/with conversion" $ whnf (encodeByName hdr) presidentsN
             ]
+          ]
+        , bgroup "comparison"
+          [ bench "cassava" $ nf idDecode csvData
+          , bench "lazy-csv" $ nf LazyCsv.parseCSV csvData
           ]
         ]
   where
