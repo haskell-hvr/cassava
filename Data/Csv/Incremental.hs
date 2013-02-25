@@ -293,7 +293,7 @@ decodeWithP p !opts = go Incomplete [] . parser
                 | B.null s  = Done (reverse acc'')
                 | otherwise = go Incomplete acc'' (parser s)
             acc' | blankLine r = acc
-                 | otherwise   = convert r : acc
+                 | otherwise   = let !r' = convert r in r' : acc
 
     parser = A.parse (record (decDelimiter opts) <* (endOfLine <|> endOfInput))
     convert = runParser . p
