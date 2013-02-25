@@ -20,63 +20,68 @@ Extra-source-files:  examples/*.hs
 
 
 Library
-  Exposed-modules:     Data.Csv
-                       Data.Csv.Incremental
-                       Data.Csv.Parser
-                       Data.Csv.Streaming
+  Exposed-modules:
+    Data.Csv
+    Data.Csv.Incremental
+    Data.Csv.Parser
+    Data.Csv.Streaming
 
-  Other-modules:       Data.Csv.Compat.Monoid
-                       Data.Csv.Conversion
-                       Data.Csv.Conversion.Internal
-                       Data.Csv.Encoding
-                       Data.Csv.Types
-                       Data.Csv.Util
+  Other-modules:
+    Data.Csv.Compat.Monoid
+    Data.Csv.Conversion
+    Data.Csv.Conversion.Internal
+    Data.Csv.Encoding
+    Data.Csv.Types
+    Data.Csv.Util
 
-  Build-depends:       array < 0.5,
-                       attoparsec >= 0.10.2 && < 0.11,
-                       base < 5,
-                       blaze-builder < 0.4,
-                       bytestring < 0.11,
-                       containers < 0.6,
-                       text < 0.12,
-                       unordered-containers < 0.3,
-                       vector < 0.11
+  Build-depends:
+    array < 0.5,
+    attoparsec >= 0.10.2 && < 0.11,
+    base < 5,
+    blaze-builder < 0.4,
+    bytestring < 0.11,
+    containers < 0.6,
+    text < 0.12,
+    unordered-containers < 0.3,
+    vector < 0.11
 
-  ghc-options:         -Wall -O2
+  ghc-options: -Wall -O2
 
   if impl(ghc >= 7.2.1)
-    cpp-options:       -DGENERICS
-    build-depends:     ghc-prim >= 0.2 && < 0.4
+    cpp-options: -DGENERICS
+    build-depends: ghc-prim >= 0.2 && < 0.4
   
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Main-is: UnitTests.hs
-  Build-depends:       attoparsec,
-                       base,
-                       bytestring,
-                       cassava,
-                       HUnit,
-                       QuickCheck >= 2.0,
-                       test-framework,
-                       test-framework-hunit,
-                       test-framework-quickcheck2,
-                       text,
-                       unordered-containers,
-                       vector
+  Build-depends:
+    attoparsec,
+    base,
+    bytestring,
+    cassava,
+    HUnit,
+    QuickCheck >= 2.0,
+    test-framework,
+    test-framework-hunit,
+    test-framework-quickcheck2,
+    text,
+    unordered-containers,
+    vector
 
   hs-source-dirs: tests
-  ghc-options:         -Wall
+  ghc-options: -Wall
 
 Benchmark benchmarks
   Type: exitcode-stdio-1.0
   Main-is: Benchmarks.hs
-  Build-depends:       base,
-                       bytestring,
-                       cassava,
-                       criterion,
-                       text,
-                       unordered-containers,
-                       vector
+  Build-depends:
+    base,
+    bytestring,
+    cassava,
+    criterion,
+    text,
+    unordered-containers,
+    vector
   hs-source-dirs: benchmarks
 
 source-repository head
