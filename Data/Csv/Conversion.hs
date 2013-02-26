@@ -575,8 +575,7 @@ instance ToField L.ByteString where
     toField = toStrict
     {-# INLINE toField #-}
 
--- TODO: Add comment about failure on invalid UTF-8 data.
--- | Assumes UTF-8 encoding.
+-- | Assumes UTF-8 encoding. Fails on invalid byte sequences.
 instance FromField T.Text where
     parseField = either (fail . show) pure . T.decodeUtf8'
     {-# INLINE parseField #-}
@@ -586,7 +585,7 @@ instance ToField T.Text where
     toField = toField . T.encodeUtf8
     {-# INLINE toField #-}
 
--- | Assumes UTF-8 encoding.
+-- | Assumes UTF-8 encoding. Fails on invalid byte sequences.
 instance FromField LT.Text where
     parseField = either (fail . show) (pure . LT.fromStrict) . T.decodeUtf8'
     {-# INLINE parseField #-}
@@ -596,7 +595,7 @@ instance ToField LT.Text where
     toField = toField . toStrict . LT.encodeUtf8
     {-# INLINE toField #-}
 
--- | Assumes UTF-8 encoding.
+-- | Assumes UTF-8 encoding. Fails on invalid byte sequences.
 instance FromField [Char] where
     parseField = fmap T.unpack . parseField
     {-# INLINE parseField #-}
