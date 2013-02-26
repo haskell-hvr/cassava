@@ -22,6 +22,7 @@ module Data.Csv.Conversion
     -- * Accessors
     , index
     , (.!)
+    , unsafeIndex
     , lookup
     , (.:)
     , namedField
@@ -144,7 +145,7 @@ class ToRecord a where
 
 instance FromField a => FromRecord (Only a) where
     parseRecord v
-        | n == 1    = Only <$> parseField (V.unsafeIndex v 0)
+        | n == 1    = Only <$> unsafeIndex v 0
         | otherwise = lengthMismatch 1 v
           where
             n = V.length v
@@ -156,8 +157,8 @@ instance ToField a => ToRecord (Only a) where
 
 instance (FromField a, FromField b) => FromRecord (a, b) where
     parseRecord v
-        | n == 2    = (,) <$> parseField (V.unsafeIndex v 0)
-                          <*> parseField (V.unsafeIndex v 1)
+        | n == 2    = (,) <$> unsafeIndex v 0
+                          <*> unsafeIndex v 1
         | otherwise = lengthMismatch 2 v
           where
             n = V.length v
@@ -167,9 +168,9 @@ instance (ToField a, ToField b) => ToRecord (a, b) where
 
 instance (FromField a, FromField b, FromField c) => FromRecord (a, b, c) where
     parseRecord v
-        | n == 3    = (,,) <$> parseField (V.unsafeIndex v 0)
-                           <*> parseField (V.unsafeIndex v 1)
-                           <*> parseField (V.unsafeIndex v 2)
+        | n == 3    = (,,) <$> unsafeIndex v 0
+                           <*> unsafeIndex v 1
+                           <*> unsafeIndex v 2
         | otherwise = lengthMismatch 3 v
           where
             n = V.length v
@@ -181,10 +182,10 @@ instance (ToField a, ToField b, ToField c) =>
 instance (FromField a, FromField b, FromField c, FromField d) =>
          FromRecord (a, b, c, d) where
     parseRecord v
-        | n == 4    = (,,,) <$> parseField (V.unsafeIndex v 0)
-                            <*> parseField (V.unsafeIndex v 1)
-                            <*> parseField (V.unsafeIndex v 2)
-                            <*> parseField (V.unsafeIndex v 3)
+        | n == 4    = (,,,) <$> unsafeIndex v 0
+                            <*> unsafeIndex v 1
+                            <*> unsafeIndex v 2
+                            <*> unsafeIndex v 3
         | otherwise = lengthMismatch 4 v
           where
             n = V.length v
@@ -197,11 +198,11 @@ instance (ToField a, ToField b, ToField c, ToField d) =>
 instance (FromField a, FromField b, FromField c, FromField d, FromField e) =>
          FromRecord (a, b, c, d, e) where
     parseRecord v
-        | n == 5    = (,,,,) <$> parseField (V.unsafeIndex v 0)
-                             <*> parseField (V.unsafeIndex v 1)
-                             <*> parseField (V.unsafeIndex v 2)
-                             <*> parseField (V.unsafeIndex v 3)
-                             <*> parseField (V.unsafeIndex v 4)
+        | n == 5    = (,,,,) <$> unsafeIndex v 0
+                             <*> unsafeIndex v 1
+                             <*> unsafeIndex v 2
+                             <*> unsafeIndex v 3
+                             <*> unsafeIndex v 4
         | otherwise = lengthMismatch 5 v
           where
             n = V.length v
@@ -215,12 +216,12 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f) =>
          FromRecord (a, b, c, d, e, f) where
     parseRecord v
-        | n == 6    = (,,,,,) <$> parseField (V.unsafeIndex v 0)
-                              <*> parseField (V.unsafeIndex v 1)
-                              <*> parseField (V.unsafeIndex v 2)
-                              <*> parseField (V.unsafeIndex v 3)
-                              <*> parseField (V.unsafeIndex v 4)
-                              <*> parseField (V.unsafeIndex v 5)
+        | n == 6    = (,,,,,) <$> unsafeIndex v 0
+                              <*> unsafeIndex v 1
+                              <*> unsafeIndex v 2
+                              <*> unsafeIndex v 3
+                              <*> unsafeIndex v 4
+                              <*> unsafeIndex v 5
         | otherwise = lengthMismatch 6 v
           where
             n = V.length v
@@ -234,13 +235,13 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g) =>
          FromRecord (a, b, c, d, e, f, g) where
     parseRecord v
-        | n == 7    = (,,,,,,) <$> parseField (V.unsafeIndex v 0)
-                               <*> parseField (V.unsafeIndex v 1)
-                               <*> parseField (V.unsafeIndex v 2)
-                               <*> parseField (V.unsafeIndex v 3)
-                               <*> parseField (V.unsafeIndex v 4)
-                               <*> parseField (V.unsafeIndex v 5)
-                               <*> parseField (V.unsafeIndex v 6)
+        | n == 7    = (,,,,,,) <$> unsafeIndex v 0
+                               <*> unsafeIndex v 1
+                               <*> unsafeIndex v 2
+                               <*> unsafeIndex v 3
+                               <*> unsafeIndex v 4
+                               <*> unsafeIndex v 5
+                               <*> unsafeIndex v 6
         | otherwise = lengthMismatch 7 v
           where
             n = V.length v
@@ -634,8 +635,7 @@ typeError typ s mmsg =
 --
 -- 'index' is a simple convenience function that is equivalent to
 -- @'parseField' (v '!' idx)@. If you're certain that the index is not
--- out of bounds, using @'parseField' (`V.unsafeIndex` v idx)@ is
--- somewhat faster.
+-- out of bounds, using 'unsafeIndex' is somewhat faster.
 index :: FromField a => Record -> Int -> Parser a
 index v idx = parseField (v ! idx)
 {-# INLINE index #-}
@@ -645,6 +645,11 @@ index v idx = parseField (v ! idx)
 (.!) = index
 {-# INLINE (.!) #-}
 infixl 9 .!
+
+-- | Like 'index' but without bounds checking.
+unsafeIndex :: FromField a => Record -> Int -> Parser a
+unsafeIndex v idx = parseField (V.unsafeIndex v idx)
+{-# INLINE unsafeIndex #-}
 
 -- | Retrieve a field in the given record by name.  The result is
 -- 'empty' if the field is missing or if the value cannot be converted
