@@ -778,7 +778,6 @@ instance GFromRecordSum f NamedRecord => GFromNamedRecord (M1 i n f) where
     gparseNamedRecord v = 
         foldr (\f p -> p <|> M1 <$> f v) empty (IM.elems gparseRecordSum)
 
-
 class GFromRecordSum f r where
     gparseRecordSum :: IM.IntMap (r -> Parser (f p))
 
