@@ -204,6 +204,7 @@ unescapedField !opt = A.takeWhile (\ c -> c /= doubleQuote &&
                                           not (delim c))
   where
     delim = decDelimiter opt
+{-# INLINE unescapedField #-}
 
 dquote :: AL.Parser Char
 dquote = char '"'
