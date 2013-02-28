@@ -22,6 +22,8 @@ import Test.Framework.Providers.QuickCheck2 as TF
 
 import Data.Csv hiding (record)
 import qualified Data.Csv.Streaming as S
+import Data.Csv.Parser (spaceDecodeOptions)
+
 
 ------------------------------------------------------------------------
 -- Parse tests
@@ -143,10 +145,12 @@ positionalTests =
         , ("rfc4180", rfc4180Input, rfc4180Output)
         ]
     decodeWithTests =
-        [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
+        [ ("tab-delim", defDec { decDelimiter = (==9) }, "1\t2", [["1", "2"]])
         , ("mixed-space", spaceDec, "  88 c \t  0.4  ", [["88", "c", "0.4"]])
         , ("multiline-space", spaceDec, " 11 22 \n 11 22", [ ["11","22"]
                                                            , ["11","22"]])
+        , ("blankLine-space", spaceDec, "1 2\n\n3 4\n", [ ["1","2"]
+                                                        , ["3","4"]])
         ]
 
     encodeTest (name, input, expected) =
@@ -159,13 +163,9 @@ positionalTests =
         testCase name $ input `decodesStreamingAs` expected
     streamingDecodeWithTest (name, opts, input, expected) =
         testCase name $ decodesWithStreamingAs opts input expected
-    defEnc = defaultEncodeOptions
-    defDec = defaultDecodeOptions
-    spaceDec = defaultDecodeOptions  -- TODO: Use spaceDecodeOptions
-        { decDelimiter       = 32  -- space
-        , decMergeDelimiters = True
-        , decTrimRecordSpace = True
-        }
+    defEnc   = defaultEncodeOptions
+    defDec   = defaultDecodeOptions
+    spaceDec = spaceDecodeOptions
 
 nameBasedTests :: [TF.Test]
 nameBasedTests =

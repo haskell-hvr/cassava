@@ -56,7 +56,7 @@ import Data.Csv.Util ((<$!>), blankLine)
 -- >     }
 data DecodeOptions = DecodeOptions
     { -- | Field delimiter.
-      decDelimiter  :: {-# UNPACK #-} !Word8
+      decDelimiter  :: Word8 -> Bool
 
       -- | Runs of consecutive delimiters are regarded as a single
       -- delimiter. This is useful e.g. when parsing white space
@@ -67,14 +67,14 @@ data DecodeOptions = DecodeOptions
       -- end of each record (but not at the begining and end of each
       -- field).
     , decTrimRecordSpace :: !Bool
-    } deriving (Eq, Show)
+    }
 
 -- TODO: Document default values in defaultDecodeOptions
 
 -- | Decoding options for parsing CSV files.
 defaultDecodeOptions :: DecodeOptions
 defaultDecodeOptions = DecodeOptions
-    { decDelimiter = 44  -- comma
+    { decDelimiter = (==44)  -- comma
     , decMergeDelimiters = False
     , decTrimRecordSpace = False
     }
@@ -82,7 +82,7 @@ defaultDecodeOptions = DecodeOptions
 -- | Decoding options for parsing space-delimited files.
 spaceDecodeOptions :: DecodeOptions
 spaceDecodeOptions = DecodeOptions
-    { decDelimiter = 32  -- space
+    { decDelimiter = \c -> c == space || c == tab
     , decMergeDelimiters = True
     , decTrimRecordSpace = True
     }
@@ -164,8 +164,8 @@ record !opts
     | otherwise              = parser
   where
     delim = decDelimiter opts
-    delimiter | decMergeDelimiters opts = A.skipMany1 (A.word8 delim)
-              | otherwise               = () <$ A.word8 delim
+    delimiter | decMergeDelimiters opts = A.skipMany1 (A.satisfy delim)
+              | otherwise               = () <$ A.satisfy delim
     parser = do fs <- field opts `sepBy1'` delimiter
                 return $! V.fromList fs
 {-# INLINE record #-}
@@ -199,9 +199,9 @@ escapedField = do
 
 unescapedField :: DecodeOptions -> AL.Parser S.ByteString
 unescapedField !opt = A.takeWhile (\ c -> c /= doubleQuote &&
-                                          c /= newline &&
-                                          c /= delim &&
-                                          c /= cr)
+                                          c /= newline     &&
+                                          c /= cr          &&
+                                          not (delim c))
   where
     delim = decDelimiter opt
 
