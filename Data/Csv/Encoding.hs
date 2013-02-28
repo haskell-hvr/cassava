@@ -25,6 +25,7 @@ module Data.Csv.Encoding
     , decodeByNameWith
     , EncodeOptions(..)
     , defaultEncodeOptions
+    , spaceEncodeOptions
     , encodeWith
     , encodeByNameWith
     ) where
@@ -151,10 +152,16 @@ data EncodeOptions = EncodeOptions
       encDelimiter  :: {-# UNPACK #-} !Word8
     } deriving (Eq, Show)
 
--- | Encoding options for CSV files.
+-- | Encoding options for CSV files. Comma is used as separator.
 defaultEncodeOptions :: EncodeOptions
 defaultEncodeOptions = EncodeOptions
-    { encDelimiter = 44  -- comma
+    { encDelimiter   = 44  -- comma
+    }
+
+-- | Encode options for space-delimited files. Tab is used as separator.
+spaceEncodeOptions :: EncodeOptions
+spaceEncodeOptions = EncodeOptions
+    { encDelimiter   = 9       -- tab
     }
 
 -- | Like 'encode', but lets you customize how the CSV data is
@@ -168,13 +175,13 @@ encodeWith opts = toLazyByteString
 
 encodeRecord :: Word8 -> Record -> Builder
 encodeRecord delim = mconcat . intersperse (fromWord8 delim)
-                     . map fromByteString . map escape . V.toList
+                     . map fromByteString . map (escape delim) . V.toList
 {-# INLINE encodeRecord #-}
 
 -- TODO: Optimize
-escape :: B.ByteString -> B.ByteString
-escape s
-    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
+escape :: Word8 -> B.ByteString -> B.ByteString
+escape delim s
+    | B.find (\ b -> b == dquote || b == delim || b == nl || b == cr ||
                      b == sp) s == Nothing = s
     | otherwise =
         B.concat ["\"",
@@ -182,11 +189,11 @@ escape s
                   (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
                   "\""]
   where
+    sp     = 32
     dquote = 34
-    comma  = 44
     nl     = 10
     cr     = 13
-    sp     = 32
+
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
