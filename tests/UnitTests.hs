@@ -22,7 +22,6 @@ import Test.Framework.Providers.QuickCheck2 as TF
 
 import Data.Csv hiding (record)
 import qualified Data.Csv.Streaming as S
-import Data.Csv.Parser (spaceDecodeOptions)
 
 
 ------------------------------------------------------------------------

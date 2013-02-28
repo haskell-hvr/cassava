@@ -20,6 +20,7 @@ module Data.Csv.Encoding
     -- ** Encoding and decoding options
     , DecodeOptions(..)
     , defaultDecodeOptions
+    , spaceDecodeOptions
     , decodeWith
     , decodeByNameWith
     , EncodeOptions(..)
