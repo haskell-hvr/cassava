@@ -116,6 +116,14 @@ positionalTests =
       [ testCase "tab-delim" $ encodesWithAs (defEnc { encDelimiter = 9 })
         [["1", "2"]] "1\t2\r\n"
       ]
+    , testGroup "encodeSpace" $ map (\(n,a,b) -> testCase n $ encodesWithAs spaceEncodeOptions a b)
+      [ ("simple",       [["abc"]],          "abc\r\n")
+      , ("leadingSpace", [[" abc"]],         "\" abc\"\r\n")
+      , ("comma",        [["abc,def"]],      "abc,def\r\n")
+      , ("space",        [["abc def"]],      "\"abc def\"\r\n")
+      , ("tab",          [["abc\tdef"]],     "\"abc\tdef\"\r\n")
+      , ("twoFields",    [["abc","def"]],    "abc\tdef\r\n")
+      ]
     , testGroup "decode" $ map decodeTest decodeTests
     , testGroup "decodeWith" $ map decodeWithTest decodeWithTests
     , testGroup "streaming"
