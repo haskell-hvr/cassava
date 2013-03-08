@@ -69,20 +69,30 @@ data DecodeOptions = DecodeOptions
     , decTrimRecordSpace :: !Bool
     }
 
--- TODO: Document default values in defaultDecodeOptions
-
--- | Decoding options for parsing CSV files.
+-- | Decoding options for parsing CSV files. Fields' values are set to:
+--
+-- [@'decDelimiter'@] comma
+--
+-- [@'decMergeDelimiters'@] false
+--
+-- [@'decTrimRecordSpace'@] false
 defaultDecodeOptions :: DecodeOptions
 defaultDecodeOptions = DecodeOptions
-    { decDelimiter = (==44)  -- comma
+    { decDelimiter       = (==44)  -- comma
     , decMergeDelimiters = False
     , decTrimRecordSpace = False
     }
 
--- | Decoding options for parsing space-delimited files.
+-- | Decoding options for parsing space-delimited files. Fields' values are set to:
+--
+-- [@'decDelimiter'@] space or tab character.
+--
+-- [@'decMergeDelimiters'@] true
+--
+-- [@'decTrimRecordSpace'@] true
 spaceDecodeOptions :: DecodeOptions
 spaceDecodeOptions = DecodeOptions
-    { decDelimiter = \c -> c == space || c == tab
+    { decDelimiter       = \c -> c == space || c == tab
     , decMergeDelimiters = True
     , decTrimRecordSpace = True
     }
