@@ -36,6 +36,7 @@ module Data.Csv
     , decodeByNameWith
     , EncodeOptions(..)
     , defaultEncodeOptions
+    , spaceEncodeOptions
     , encodeWith
     , encodeByNameWith
 
