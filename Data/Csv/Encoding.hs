@@ -60,6 +60,8 @@ import Data.Csv.Util (blankLine)
 ------------------------------------------------------------------------
 -- * Encoding and decoding
 
+-- TODO: Change Bool to data HasHeader = HasHeader | NoHeader
+
 -- | Efficiently deserialize CSV records from a lazy 'L.ByteString'.
 -- If this fails due to incomplete or invalid input, @'Left' msg@ is
 -- returned. Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
