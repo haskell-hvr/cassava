@@ -29,7 +29,7 @@ module Data.Csv.Encoding
     ) where
 
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
-                                 toLazyByteString)
+                                 toLazyByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromString)
 import Control.Applicative ((*>), (<|>), optional, pure)
 import Data.Attoparsec.Char8 (endOfInput, endOfLine)
@@ -175,13 +175,17 @@ encodeRecord delim = mconcat . intersperse (fromWord8 delim)
 -- TODO: Optimize
 escape :: B.ByteString -> B.ByteString
 escape s
-    | B.find (\ b -> b == dquote || b == comma || b == nl || b == cr ||
-                     b == sp) s == Nothing = s
-    | otherwise =
-        B.concat ["\"",
-                  B.concatMap
-                  (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
-                  "\""]
+    | B.any (\ b -> b == dquote || b == comma || b == nl || b == cr || b == sp)
+        s = toByteString $
+            fromWord8 dquote
+            <> B.foldl
+                (\ acc b -> acc <> if b == dquote
+                    then fromByteString "\"\""
+                    else fromWord8 b)
+                mempty
+                s
+            <> fromWord8 dquote
+    | otherwise = s
   where
     dquote = 34
     comma  = 44
