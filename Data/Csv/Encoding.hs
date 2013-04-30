@@ -172,10 +172,9 @@ encodeRecord delim = mconcat . intersperse (fromWord8 delim)
 
 -- TODO: Optimize
 escape :: B.ByteString -> B.ByteString
-escape s =
-    if B.any (\ b -> b == dquote || b == comma || b == nl || b == cr || b == sp)
-        s
-        then toByteString $
+escape s
+    | B.any (\ b -> b == dquote || b == comma || b == nl || b == cr || b == sp)
+        s = toByteString $
             fromWord8 dquote
             <> B.foldl
                 (\ acc b -> acc <> if b == dquote
@@ -184,7 +183,7 @@ escape s =
                 mempty
                 s
             <> fromWord8 dquote
-        else s
+    | otherwise = s
   where
     dquote = 34
     comma  = 44
