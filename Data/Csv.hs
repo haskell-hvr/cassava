@@ -87,7 +87,7 @@ import Data.Csv.Types
 --
 -- A short encoding usage example:
 --
--- > >>> encode $ fromList [("John" :: Text, 27), ("Jane", 28)]
+-- > >>> encode [("John" :: Text, 27), ("Jane", 28)]
 -- > Chunk "John,27\r\nJane,28\r\n" Empty
 --
 -- Since string literals are overloaded we have to supply a type

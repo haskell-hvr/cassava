@@ -5,6 +5,7 @@
 module Main ( main ) where
 
 import Control.Applicative
+import Control.Exception (evaluate)
 import Control.DeepSeq
 import Criterion.Main
 import Data.ByteString (ByteString)
@@ -99,8 +100,10 @@ main = do
     !csvData <- fromStrict `fmap` B.readFile "benchmarks/presidents.csv"
     !csvDataN <- fromStrict `fmap` B.readFile
                  "benchmarks/presidents_with_header.csv"
-    let (Right !presidents) = decodePresidents csvData
-        (Right (!hdr, !presidentsN)) = decodePresidentsN csvDataN
+    let (Right !presidents) = V.toList <$> decodePresidents csvData
+        (Right (!hdr, !presidentsNV)) = decodePresidentsN csvDataN
+        !presidentsN = V.toList presidentsNV
+    evaluate (rnf [presidents, presidentsN])
     defaultMain [
           bgroup "positional"
           [ bgroup "decode"

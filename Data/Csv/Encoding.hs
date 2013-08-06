@@ -83,13 +83,13 @@ decodeByName = decodeByNameWith defaultDecodeOptions
 {-# INLINE decodeByName #-}
 
 -- | Efficiently serialize CSV records as a lazy 'L.ByteString'.
-encode :: ToRecord a => V.Vector a -> L.ByteString
+encode :: ToRecord a => [a] -> L.ByteString
 encode = encodeWith defaultEncodeOptions
 {-# INLINE encode #-}
 
 -- | Efficiently serialize CSV records as a lazy 'L.ByteString'. The
 -- header is written before any records and dictates the field order.
-encodeByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
+encodeByName :: ToNamedRecord a => Header -> [a] -> L.ByteString
 encodeByName = encodeByNameWith defaultEncodeOptions
 {-# INLINE encodeByName #-}
 
@@ -159,11 +159,10 @@ defaultEncodeOptions = EncodeOptions
 
 -- | Like 'encode', but lets you customize how the CSV data is
 -- encoded.
-encodeWith :: ToRecord a => EncodeOptions -> V.Vector a -> L.ByteString
+encodeWith :: ToRecord a => EncodeOptions -> [a] -> L.ByteString
 encodeWith opts = toLazyByteString
                   . unlines
                   . map (encodeRecord (encDelimiter opts) . toRecord)
-                  . V.toList
 {-# INLINE encodeWith #-}
 
 encodeRecord :: Word8 -> Record -> Builder
@@ -194,7 +193,7 @@ escape s
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
-encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> V.Vector a
+encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> [a]
                  -> L.ByteString
 encodeByNameWith opts hdr v =
     toLazyByteString ((encodeRecord (encDelimiter opts) hdr) <>
@@ -203,7 +202,7 @@ encodeByNameWith opts hdr v =
     records = unlines
               . map (encodeRecord (encDelimiter opts)
                      . namedRecordToRecord hdr . toNamedRecord)
-              . V.toList $ v
+              $ v
 {-# INLINE encodeByNameWith #-}
 
 
