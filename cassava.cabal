@@ -81,7 +81,7 @@ Benchmark benchmarks
     cassava,
     criterion,
     deepseq,
-    lazy-csv,
+    lazy-csv >= 0.5,
     text,
     unordered-containers,
     vector

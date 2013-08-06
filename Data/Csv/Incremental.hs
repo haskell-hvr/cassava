@@ -217,7 +217,7 @@ data More = Incomplete | Complete
 -- | Efficiently deserialize CSV in an incremental fashion. Equivalent
 -- to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
-       => Bool          -- ^ Data contains header that should be
+       => HasHeader     -- ^ Data contains header that should be
                         -- skipped
        -> Parser a
 decode = decodeWith defaultDecodeOptions
@@ -225,12 +225,12 @@ decode = decodeWith defaultDecodeOptions
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
 decodeWith :: FromRecord a
            => DecodeOptions  -- ^ Decoding options
-           -> Bool           -- ^ Data contains header that should be
+           -> HasHeader      -- ^ Data contains header that should be
                              -- skipped
            -> Parser a
-decodeWith !opts skipHeader
-    | skipHeader = Partial $ \ s -> go (decodeHeaderWith opts `feedChunkH` s)
-    | otherwise  = Partial (decodeWithP parseRecord opts)
+decodeWith !opts hasHeader = case hasHeader of
+    HasHeader -> Partial $ \ s -> go (decodeHeaderWith opts `feedChunkH` s)
+    NoHeader  -> Partial (decodeWithP parseRecord opts)
   where go (FailH rest msg) = Fail rest msg
         go (PartialH k)     = Partial $ \ s' -> go (k s')
         go (DoneH _ rest)   = decodeWithP parseRecord opts rest

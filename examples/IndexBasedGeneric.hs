@@ -17,7 +17,7 @@ main :: IO ()
 main = do
     BL.writeFile "salaries.csv" $ encode (V.fromList persons)
     csvData <- BL.readFile "salaries.csv"
-    case decode False csvData of
+    case decode NoHeader csvData of
         Left err -> putStrLn err
         Right v -> V.forM_ v $ \ (Person name salary) ->
             putStrLn $ name ++ " earns " ++ show salary ++ " dollars"

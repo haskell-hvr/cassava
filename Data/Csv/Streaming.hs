@@ -51,7 +51,7 @@ import qualified Data.ByteString.Lazy.Internal as BL  -- for constructors
 --
 -- A short usage example:
 --
--- > for_ (decode False "John,27\r\nJane,28\r\n") $ \ (name, age :: Int) ->
+-- > for_ (decode NoHeader "John,27\r\nJane,28\r\n") $ \ (name, age :: Int) ->
 -- >     putStrLn $ name ++ " is " ++ show age ++ " years old"
 --
 -- N.B. The 'Foldable' instance, which is used above, skips records
@@ -136,7 +136,7 @@ rnfLazyByteString (BL.Chunk _ b) = rnfLazyByteString b
 -- | Efficiently deserialize CSV records in a streaming fashion.
 -- Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
-       => Bool           -- ^ Data contains header that should be
+       => HasHeader      -- ^ Data contains header that should be
                          -- skipped
        -> BL.ByteString  -- ^ CSV data
        -> Records a
@@ -145,13 +145,13 @@ decode = decodeWith defaultDecodeOptions
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
 decodeWith :: FromRecord a
            => DecodeOptions  -- ^ Decoding options
-           -> Bool           -- ^ Data contains header that should be
+           -> HasHeader      -- ^ Data contains header that should be
                              -- skipped
            -> BL.ByteString  -- ^ CSV data
            -> Records a
-decodeWith !opts skipHeader s0 = case BL.toChunks s0 of
-    []     -> go [] (feedEndOfInput $ I.decodeWith opts skipHeader)
-    (s:ss) -> go ss (I.decodeWith opts skipHeader `feedChunk` s)
+decodeWith !opts hasHeader s0 = case BL.toChunks s0 of
+    []     -> go [] (feedEndOfInput $ I.decodeWith opts hasHeader)
+    (s:ss) -> go ss (I.decodeWith opts hasHeader `feedChunk` s)
   where
     go ss (Done xs)       = foldr Cons (Nil Nothing (BL.fromChunks ss)) xs
     go ss (Fail rest err) = Nil (Just err) (BL.fromChunks (rest:ss))

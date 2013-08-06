@@ -91,7 +91,7 @@ instance NFData LazyCsv.CSVError where
     rnf (LazyCsv.IncorrectRow !_ !_ !_ xs) = rnf xs
     rnf (LazyCsv.BlankLine _ _ _ field)    = rnf field
     rnf (LazyCsv.FieldError field)         = rnf field
-    rnf (LazyCsv.DuplicateHeader _ s)      = rnf s
+    rnf (LazyCsv.DuplicateHeader _ _ s)    = rnf s
     rnf LazyCsv.NoData                     = ()
 
 main :: IO ()
@@ -130,19 +130,19 @@ main = do
         ]
   where
     decodePresidents :: BL.ByteString -> Either String (Vector President)
-    decodePresidents = decode False
+    decodePresidents = decode NoHeader
 
     decodePresidentsN :: BL.ByteString -> Either String (Header, Vector President)
     decodePresidentsN = decodeByName
 
     decodePresidentsS :: BL.ByteString -> Streaming.Records President
-    decodePresidentsS = Streaming.decode False
+    decodePresidentsS = Streaming.decode NoHeader
 
     idDecode :: BL.ByteString -> Either String (Vector (Vector B.ByteString))
-    idDecode = decode False
+    idDecode = decode NoHeader
 
     idDecodeN :: BL.ByteString -> Either String (Header, Vector (BSHashMap B.ByteString))
     idDecodeN = decodeByName
 
     idDecodeS :: BL.ByteString -> Streaming.Records (Vector B.ByteString)
-    idDecodeS = Streaming.decode False
+    idDecodeS = Streaming.decode NoHeader

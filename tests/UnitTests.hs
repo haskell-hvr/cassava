@@ -27,11 +27,11 @@ import qualified Data.Csv.Streaming as S
 -- Parse tests
 
 decodesAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
-decodesAs input expected = assertResult input expected $ decode False input
+decodesAs input expected = assertResult input expected $ decode NoHeader input
 
 decodesWithAs :: DecodeOptions -> BL.ByteString -> [[B.ByteString]] -> Assertion
 decodesWithAs opts input expected =
-    assertResult input expected $ decodeWith opts False input
+    assertResult input expected $ decodeWith opts NoHeader input
 
 assertResult :: BL.ByteString -> [[B.ByteString]]
              -> Either String (V.Vector (V.Vector B.ByteString)) -> Assertion
@@ -76,13 +76,13 @@ recordsToList (S.Cons (Right x) rs) = case recordsToList rs of
 decodesStreamingAs :: BL.ByteString -> [[B.ByteString]] -> Assertion
 decodesStreamingAs input expected =
     assertResult input expected $ fmap (V.fromList . map V.fromList) $
-    recordsToList $ S.decode False input
+    recordsToList $ S.decode NoHeader input
 
 decodesWithStreamingAs :: DecodeOptions -> BL.ByteString -> [[B.ByteString]]
                        -> Assertion
 decodesWithStreamingAs opts input expected =
     assertResult input expected $ fmap (V.fromList . map V.fromList) $
-    recordsToList $ S.decodeWith opts False input
+    recordsToList $ S.decodeWith opts NoHeader input
 
 namedDecodesStreamingAs :: BL.ByteString -> [B.ByteString]
                         -> [[(B.ByteString, B.ByteString)]] -> Assertion
@@ -209,12 +209,12 @@ instance Arbitrary LT.Text where
 -- empty line (which we will ignore.) We therefore encode at least two
 -- columns.
 roundTrip :: (Eq a, FromField a, ToField a) => a -> Bool
-roundTrip x = Right record == decode False (encode record) 
+roundTrip x = Right record == decode NoHeader (encode record) 
   where record = V.singleton (x, dummy)
         dummy = 'a'
 
 roundTripUnicode :: T.Text -> Assertion
-roundTripUnicode x = Right record @=? decode False (encode record)
+roundTripUnicode x = Right record @=? decode NoHeader (encode record)
   where record = V.singleton (x, dummy)
         dummy = 'a'
 

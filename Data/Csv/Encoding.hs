@@ -12,7 +12,8 @@
 module Data.Csv.Encoding
     (
     -- * Encoding and decoding
-      decode
+      HasHeader(..)
+    , decode
     , decodeByName
     , encode
     , encodeByName
@@ -60,13 +61,11 @@ import Data.Csv.Util (blankLine)
 ------------------------------------------------------------------------
 -- * Encoding and decoding
 
--- TODO: Change Bool to data HasHeader = HasHeader | NoHeader
-
 -- | Efficiently deserialize CSV records from a lazy 'L.ByteString'.
 -- If this fails due to incomplete or invalid input, @'Left' msg@ is
 -- returned. Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
-       => Bool          -- ^ Data contains header that should be
+       => HasHeader     -- ^ Data contains header that should be
                         -- skipped
        -> L.ByteString  -- ^ CSV data
        -> Either String (Vector a)
@@ -100,7 +99,7 @@ encodeByName = encodeByNameWith defaultEncodeOptions
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
 decodeWith :: FromRecord a
            => DecodeOptions  -- ^ Decoding options
-           -> Bool           -- ^ Data contains header that should be
+           -> HasHeader      -- ^ Data contains header that should be
                              -- skipped
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
@@ -113,19 +112,19 @@ decodeWith = decodeWithC csv
 
 -- | Same as 'decodeWith', but more efficient as no type
 -- conversion is performed.
-idDecodeWith :: DecodeOptions -> Bool -> L.ByteString
+idDecodeWith :: DecodeOptions -> HasHeader -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
 idDecodeWith = decodeWithC Parser.csv
 
 -- | Decode CSV data using the provided parser, skipping a leading
--- header if 'skipHeader' is 'True'. Returns 'Left' @errMsg@ on
+-- header if 'hasHeader' is 'HasHeader'. Returns 'Left' @errMsg@ on
 -- failure.
-decodeWithC :: (DecodeOptions -> AL.Parser a) -> DecodeOptions -> Bool
+decodeWithC :: (DecodeOptions -> AL.Parser a) -> DecodeOptions -> HasHeader
             -> BL8.ByteString -> Either String a
-decodeWithC p !opts skipHeader = decodeWithP parser
-  where parser
-            | skipHeader = header (decDelimiter opts) *> p opts
-            | otherwise  = p opts
+decodeWithC p !opts hasHeader = decodeWithP parser
+  where parser = case hasHeader of
+            HasHeader -> header (decDelimiter opts) *> p opts
+            NoHeader  -> p opts
 {-# INLINE decodeWithC #-}
 
 -- | Like 'decodeByName', but lets you customize how the CSV data is
