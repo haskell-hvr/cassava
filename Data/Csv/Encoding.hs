@@ -16,6 +16,7 @@ module Data.Csv.Encoding
     , decodeByName
     , encode
     , encodeByName
+    , encodeByNameSansHeader
 
     -- ** Encoding and decoding options
     , DecodeOptions(..)
@@ -26,6 +27,7 @@ module Data.Csv.Encoding
     , defaultEncodeOptions
     , encodeWith
     , encodeByNameWith
+    , encodeByNameSansHeaderWith
     ) where
 
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
@@ -93,6 +95,13 @@ encode = encodeWith defaultEncodeOptions
 encodeByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
 encodeByName = encodeByNameWith defaultEncodeOptions
 {-# INLINE encodeByName #-}
+
+-- | Efficiently serialize CSV records as a lazy 'L.ByteString'. The
+-- header is not written, but does dictate the field order.
+encodeByNameSansHeader :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
+encodeByNameSansHeader hdr v = toLazyByteString $
+    encodeByNameSansHeaderWith defaultEncodeOptions hdr v
+{-# INLINE encodeByNameSansHeader #-}
 
 ------------------------------------------------------------------------
 -- ** Encoding and decoding options
@@ -199,14 +208,19 @@ encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> V.Vector a
                  -> L.ByteString
 encodeByNameWith opts hdr v =
     toLazyByteString ((encodeRecord (encDelimiter opts) hdr) <>
-                      fromByteString "\r\n" <> records)
-  where
-    records = unlines
+                      fromByteString "\r\n" <>
+                      encodeByNameSansHeaderWith opts hdr v)
+{-# INLINE encodeByNameWith #-}
+
+-- | Like 'encodeByNameSansHeader', but lets you customize how the CSV data is
+-- encoded.
+encodeByNameSansHeaderWith :: ToNamedRecord a => EncodeOptions -> Header
+                           -> V.Vector a -> Builder
+encodeByNameSansHeaderWith opts hdr v = unlines
               . map (encodeRecord (encDelimiter opts)
                      . namedRecordToRecord hdr . toNamedRecord)
               . V.toList $ v
-{-# INLINE encodeByNameWith #-}
-
+{-# INLINE encodeByNameSansHeaderWith #-}
 
 namedRecordToRecord :: Header -> NamedRecord -> Record
 namedRecordToRecord hdr nr = V.map find hdr
