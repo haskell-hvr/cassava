@@ -236,7 +236,7 @@ decodeWithP p s =
     case AL.parse p s of
       AL.Done _ v     -> Right v
       AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
-                            show (BL8.unpack left)
+                            show (take 100 $ BL8.unpack left)
 {-# INLINE decodeWithP #-}
 
 -- These alternative implementation of the 'csv' and 'csvWithHeader'
