@@ -235,8 +235,12 @@ decodeWithP :: AL.Parser a -> L.ByteString -> Either String a
 decodeWithP p s =
     case AL.parse p s of
       AL.Done _ v     -> Right v
-      AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
-                            show (take 100 $ BL8.unpack left)
+      AL.Fail left _ msg -> Left errMsg
+        where
+          errMsg = "parse error (" ++ msg ++ ") at " ++
+                   (if BL8.length left > 100
+                    then (take 100 $ BL8.unpack left) ++ " (truncated)"
+                    else show (BL8.unpack left))
 {-# INLINE decodeWithP #-}
 
 -- These alternative implementation of the 'csv' and 'csvWithHeader'
