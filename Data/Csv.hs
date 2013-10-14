@@ -32,10 +32,12 @@ module Data.Csv
     -- $options
     , DecodeOptions(..)
     , defaultDecodeOptions
+    , spaceDecodeOptions
     , decodeWith
     , decodeByNameWith
     , EncodeOptions(..)
     , defaultEncodeOptions
+    , spaceEncodeOptions
     , encodeWith
     , encodeByNameWith
 

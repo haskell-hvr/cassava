@@ -16,6 +16,7 @@
 module Data.Csv.Parser
     ( DecodeOptions(..)
     , defaultDecodeOptions
+    , spaceDecodeOptions
     , csv
     , csvWithHeader
     , header
@@ -26,8 +27,8 @@ module Data.Csv.Parser
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
-import Control.Applicative (Alternative, (*>), (<$>), (<*), (<|>), optional,
-                            pure)
+import Control.Applicative (Alternative, (*>), (<$), (<$>), (<*), (<|>),
+                            optional, pure)
 import Data.Attoparsec.Char8 (char, endOfInput, endOfLine)
 import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
@@ -55,19 +56,51 @@ import Data.Csv.Util ((<$!>), blankLine)
 -- >     }
 data DecodeOptions = DecodeOptions
     { -- | Field delimiter.
-      decDelimiter  :: {-# UNPACK #-} !Word8
-    } deriving (Eq, Show)
+      decDelimiter  :: Word8 -> Bool
 
--- | Decoding options for parsing CSV files.
+      -- | Runs of consecutive delimiters are regarded as a single
+      -- delimiter. This is useful e.g. when parsing white space
+      -- separated data.
+    , decMergeDelimiters :: !Bool
+
+      -- | Trim leading and trailing whitespace at the begining and
+      -- end of each record (but not at the begining and end of each
+      -- field).
+    , decTrimRecordSpace :: !Bool
+    }
+
+-- | Decoding options for parsing CSV files. Fields' values are set to:
+--
+-- [@'decDelimiter'@] comma
+--
+-- [@'decMergeDelimiters'@] false
+--
+-- [@'decTrimRecordSpace'@] false
 defaultDecodeOptions :: DecodeOptions
 defaultDecodeOptions = DecodeOptions
-    { decDelimiter = 44  -- comma
+    { decDelimiter       = (==44)  -- comma
+    , decMergeDelimiters = False
+    , decTrimRecordSpace = False
+    }
+
+-- | Decoding options for parsing space-delimited files. Fields' values are set to:
+--
+-- [@'decDelimiter'@] space or tab character.
+--
+-- [@'decMergeDelimiters'@] true
+--
+-- [@'decTrimRecordSpace'@] true
+spaceDecodeOptions :: DecodeOptions
+spaceDecodeOptions = DecodeOptions
+    { decDelimiter       = \c -> c == space || c == tab
+    , decMergeDelimiters = True
+    , decTrimRecordSpace = True
     }
 
 -- | Parse a CSV file that does not include a header.
 csv :: DecodeOptions -> AL.Parser Csv
 csv !opts = do
-    vals <- record (decDelimiter opts) `sepBy1'` endOfLine
+    vals <- record opts `sepBy1'` endOfLine
     _ <- optional endOfLine
     endOfInput
     let nonEmpty = removeBlankLines vals
@@ -94,23 +127,24 @@ sepBy1' p s = go
 -- | Parse a CSV file that includes a header.
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader !opts = do
-    !hdr <- header (decDelimiter opts)
+    !hdr <- header opts
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
-            (record (decDelimiter opts)) `sepBy1'` endOfLine
+            (record opts) `sepBy1'` endOfLine
     _ <- optional endOfLine
     endOfInput
     let !v = V.fromList vals
     return (hdr, v)
 
 -- | Parse a header, including the terminating line separator.
-header :: Word8  -- ^ Field delimiter
+header :: DecodeOptions  -- ^ Field delimiter
        -> AL.Parser Header
-header !delim = V.fromList <$!> name delim `sepBy1'` (A.word8 delim) <* endOfLine
+header = record
+{-# INLINE header #-}
 
 -- | Parse a header name. Header names have the same format as regular
 -- 'field's.
-name :: Word8 -> AL.Parser Name
-name !delim = field delim
+name :: DecodeOptions -> AL.Parser Name
+name = field
 
 removeBlankLines :: [Record] -> [Record]
 removeBlankLines = filter (not . blankLine)
@@ -120,23 +154,42 @@ removeBlankLines = filter (not . blankLine)
 -- CSV file is allowed to not have a terminating line separator. You
 -- most likely want to use the 'endOfLine' parser in combination with
 -- this parser.
-record :: Word8  -- ^ Field delimiter
-       -> AL.Parser Record
-record !delim = do
-    fs <- field delim `sepBy1'` (A.word8 delim)
-    return $! V.fromList fs
+record :: DecodeOptions -> AL.Parser Record
+record !opts
+    -- If we need to trim spaces from line only robust way to do so is
+    -- to read whole line, remove spaces and run record parser on
+    -- trimmed line. For example:
+    --
+    -- + "a,b,c " will be parsed as ["a","b","c "] since spaces are
+    --   allowed in field
+    -- + "a b c " will be parsed as ["a","b","c",""] if we use space
+    --   as separator.
+    | decTrimRecordSpace opts = do
+        AL.skipMany $ AL.satisfy isSpace
+        line <- AL.takeWhile $ \c -> c /= newline && c /= cr
+        let (dat,_) = S.spanEnd isSpace line
+        case AL.parseOnly parser dat of
+          Left  e -> fail e
+          Right x -> return x
+    | otherwise              = parser
+  where
+    delim = decDelimiter opts
+    delimiter | decMergeDelimiters opts = A.skipMany1 (A.satisfy delim)
+              | otherwise               = () <$ A.satisfy delim
+    parser = do fs <- field opts `sepBy1'` delimiter
+                return $! V.fromList fs
 {-# INLINE record #-}
 
 -- | Parse a field. The field may be in either the escaped or
 -- non-escaped format. The return value is unescaped.
-field :: Word8 -> AL.Parser Field
-field !delim = do
+field :: DecodeOptions -> AL.Parser Field
+field !opt = do
     mb <- A.peekWord8
     -- We purposely don't use <|> as we want to commit to the first
     -- choice if we see a double quote.
     case mb of
         Just b | b == doubleQuote -> escapedField
-        _                         -> unescapedField delim
+        _                         -> unescapedField opt
 {-# INLINE field #-}
 
 escapedField :: AL.Parser S.ByteString
@@ -154,11 +207,14 @@ escapedField = do
             Left err -> fail err
         else return s
 
-unescapedField :: Word8 -> AL.Parser S.ByteString
-unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
-                                            c /= newline &&
-                                            c /= delim &&
-                                            c /= cr)
+unescapedField :: DecodeOptions -> AL.Parser S.ByteString
+unescapedField !opt = A.takeWhile (\ c -> c /= doubleQuote &&
+                                          c /= newline     &&
+                                          c /= cr          &&
+                                          not (delim c))
+  where
+    delim = decDelimiter opt
+{-# INLINE unescapedField #-}
 
 dquote :: AL.Parser Char
 dquote = char '"'
@@ -178,7 +234,13 @@ unescape = toByteString <$!> go mempty where
       then return (acc `mappend` fromByteString h)
       else rest
 
-doubleQuote, newline, cr :: Word8
+doubleQuote, newline, cr, space, tab :: Word8
 doubleQuote = 34
-newline = 10
-cr = 13
+newline     = 10
+cr          = 13
+space       = 32
+tab         = 9
+
+isSpace :: Word8 -> Bool
+isSpace c = c == space || c == tab
+{-# INLINE isSpace #-}

@@ -21,10 +21,12 @@ module Data.Csv.Encoding
     -- ** Encoding and decoding options
     , DecodeOptions(..)
     , defaultDecodeOptions
+    , spaceDecodeOptions
     , decodeWith
     , decodeByNameWith
     , EncodeOptions(..)
     , defaultEncodeOptions
+    , spaceEncodeOptions
     , encodeWith
     , encodeByNameWith
     ) where
@@ -123,7 +125,7 @@ decodeWithC :: (DecodeOptions -> AL.Parser a) -> DecodeOptions -> HasHeader
             -> BL8.ByteString -> Either String a
 decodeWithC p !opts hasHeader = decodeWithP parser
   where parser = case hasHeader of
-            HasHeader -> header (decDelimiter opts) *> p opts
+            HasHeader -> header opts *> p opts
             NoHeader  -> p opts
 {-# INLINE decodeWithC #-}
 
@@ -151,10 +153,16 @@ data EncodeOptions = EncodeOptions
       encDelimiter  :: {-# UNPACK #-} !Word8
     } deriving (Eq, Show)
 
--- | Encoding options for CSV files.
+-- | Encoding options for CSV files. Comma is used as separator.
 defaultEncodeOptions :: EncodeOptions
 defaultEncodeOptions = EncodeOptions
-    { encDelimiter = 44  -- comma
+    { encDelimiter   = 44  -- comma
+    }
+
+-- | Encode options for space-delimited files. Tab is used as separator.
+spaceEncodeOptions :: EncodeOptions
+spaceEncodeOptions = EncodeOptions
+    { encDelimiter   = 9       -- tab
     }
 
 -- | Like 'encode', but lets you customize how the CSV data is
@@ -167,13 +175,13 @@ encodeWith opts = toLazyByteString
 
 encodeRecord :: Word8 -> Record -> Builder
 encodeRecord delim = mconcat . intersperse (fromWord8 delim)
-                     . map fromByteString . map escape . V.toList
+                     . map fromByteString . map (escape delim) . V.toList
 {-# INLINE encodeRecord #-}
 
 -- TODO: Optimize
-escape :: B.ByteString -> B.ByteString
-escape s
-    | B.any (\ b -> b == dquote || b == comma || b == nl || b == cr || b == sp)
+escape :: Word8 -> B.ByteString -> B.ByteString
+escape delim s
+    | B.any (\ b -> b == dquote || b == delim || b == nl || b == cr || b == sp)
         s = toByteString $
             fromWord8 dquote
             <> B.foldl
@@ -185,11 +193,11 @@ escape s
             <> fromWord8 dquote
     | otherwise = s
   where
+    sp     = 32
     dquote = 34
-    comma  = 44
     nl     = 10
     cr     = 13
-    sp     = 32
+
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
@@ -262,7 +270,7 @@ csv !opts = do
     return $! V.fromList vals
   where
     records = do
-        !r <- record (decDelimiter opts)
+        !r <- record opts
         if blankLine r
             then (endOfLine *> records) <|> pure []
             else case runParser (parseRecord r) of
@@ -276,7 +284,7 @@ csv !opts = do
 csvWithHeader :: FromNamedRecord a => DecodeOptions
               -> AL.Parser (Header, V.Vector a)
 csvWithHeader !opts = do
-    !hdr <- header (decDelimiter opts)
+    !hdr <- header  opts
     vals <- records hdr
     _ <- optional endOfLine
     endOfInput
@@ -284,7 +292,7 @@ csvWithHeader !opts = do
     return (hdr, v)
   where
     records hdr = do
-        !r <- record (decDelimiter opts)
+        !r <- record opts
         if blankLine r
             then (endOfLine *> records hdr) <|> pure []
             else case runParser (convert hdr r) of
