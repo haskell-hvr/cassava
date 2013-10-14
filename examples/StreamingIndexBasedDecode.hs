@@ -9,5 +9,5 @@ main = do
     csvData <- BL.readFile "salaries.csv"
     -- N.B. The Foldable instance skips records that failed to
     -- convert.
-    for_ (decode False csvData) $ \ (name, salary :: Int) ->
+    for_ (decode NoHeader csvData) $ \ (name, salary :: Int) ->
         putStrLn $ name ++ " earns " ++ show salary ++ " dollars"

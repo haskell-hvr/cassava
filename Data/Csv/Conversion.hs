@@ -304,7 +304,7 @@ instance (ToField a, U.Unbox a) => ToRecord (U.Vector a) where
 -- >
 -- > data Person = Person { name :: !Text, age :: !Int }
 -- >
--- > instance FromRecord Person where
+-- > instance FromNamedRecord Person where
 -- >     parseNamedRecord m = Person <$>
 -- >                          m .: "name" <*>
 -- >                          m .: "age"
@@ -325,7 +325,7 @@ class FromNamedRecord a where
 --
 -- > data Person = Person { name :: !Text, age :: !Int }
 -- >
--- > instance ToRecord Person where
+-- > instance ToNamedRecord Person where
 -- >     toNamedRecord (Person name age) = namedRecord [
 -- >         "name" .= name, "age" .= age]
 class ToNamedRecord a where

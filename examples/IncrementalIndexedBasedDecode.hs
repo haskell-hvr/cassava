@@ -19,6 +19,6 @@ main = withFile "salaries.csv" ReadMode $ \ csvFile -> do
             if isEof
                 then return $ k B.empty
                 else k `fmap` B.hGetSome csvFile 4096
-    loop 0 (decode False)
+    loop 0 (decode NoHeader)
   where
     sumSalaries rs = sum [salary | Right (_ :: String, salary :: Int) <- rs]

@@ -8,6 +8,9 @@ module Data.Csv.Types
     , NamedRecord
     , Field
     , toNamedRecord
+
+    -- * Header handling
+    , HasHeader(..)
     ) where
 
 import qualified Data.ByteString as S
@@ -41,3 +44,6 @@ type Field = S.ByteString
 -- The 'Header' and 'Record' must be of the same length.
 toNamedRecord :: Header -> Record -> NamedRecord
 toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
+
+-- | Is the CSV data preceded by a header?
+data HasHeader = HasHeader | NoHeader

@@ -12,7 +12,8 @@
 module Data.Csv.Encoding
     (
     -- * Encoding and decoding
-      decode
+      HasHeader(..)
+    , decode
     , decodeByName
     , encode
     , encodeByName
@@ -31,7 +32,7 @@ module Data.Csv.Encoding
     ) where
 
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
-                                 toLazyByteString)
+                                 toLazyByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromString)
 import Control.Applicative ((*>), (<|>), optional, pure)
 import Data.Attoparsec.Char8 (endOfInput, endOfLine)
@@ -66,7 +67,7 @@ import Data.Csv.Util (blankLine)
 -- If this fails due to incomplete or invalid input, @'Left' msg@ is
 -- returned. Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
-       => Bool          -- ^ Data contains header that should be
+       => HasHeader     -- ^ Data contains header that should be
                         -- skipped
        -> L.ByteString  -- ^ CSV data
        -> Either String (Vector a)
@@ -84,13 +85,13 @@ decodeByName = decodeByNameWith defaultDecodeOptions
 {-# INLINE decodeByName #-}
 
 -- | Efficiently serialize CSV records as a lazy 'L.ByteString'.
-encode :: ToRecord a => V.Vector a -> L.ByteString
+encode :: ToRecord a => [a] -> L.ByteString
 encode = encodeWith defaultEncodeOptions
 {-# INLINE encode #-}
 
 -- | Efficiently serialize CSV records as a lazy 'L.ByteString'. The
 -- header is written before any records and dictates the field order.
-encodeByName :: ToNamedRecord a => Header -> V.Vector a -> L.ByteString
+encodeByName :: ToNamedRecord a => Header -> [a] -> L.ByteString
 encodeByName = encodeByNameWith defaultEncodeOptions
 {-# INLINE encodeByName #-}
 
@@ -100,7 +101,7 @@ encodeByName = encodeByNameWith defaultEncodeOptions
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
 decodeWith :: FromRecord a
            => DecodeOptions  -- ^ Decoding options
-           -> Bool           -- ^ Data contains header that should be
+           -> HasHeader      -- ^ Data contains header that should be
                              -- skipped
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
@@ -113,19 +114,19 @@ decodeWith = decodeWithC csv
 
 -- | Same as 'decodeWith', but more efficient as no type
 -- conversion is performed.
-idDecodeWith :: DecodeOptions -> Bool -> L.ByteString
+idDecodeWith :: DecodeOptions -> HasHeader -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
 idDecodeWith = decodeWithC Parser.csv
 
 -- | Decode CSV data using the provided parser, skipping a leading
--- header if 'skipHeader' is 'True'. Returns 'Left' @errMsg@ on
+-- header if 'hasHeader' is 'HasHeader'. Returns 'Left' @errMsg@ on
 -- failure.
-decodeWithC :: (DecodeOptions -> AL.Parser a) -> DecodeOptions -> Bool
+decodeWithC :: (DecodeOptions -> AL.Parser a) -> DecodeOptions -> HasHeader
             -> BL8.ByteString -> Either String a
-decodeWithC p !opts skipHeader = decodeWithP parser
-  where parser
-            | skipHeader = header opts *> p opts
-            | otherwise  = p opts
+decodeWithC p !opts hasHeader = decodeWithP parser
+  where parser = case hasHeader of
+            HasHeader -> header opts *> p opts
+            NoHeader  -> p opts
 {-# INLINE decodeWithC #-}
 
 -- | Like 'decodeByName', but lets you customize how the CSV data is
@@ -166,11 +167,10 @@ spaceEncodeOptions = EncodeOptions
 
 -- | Like 'encode', but lets you customize how the CSV data is
 -- encoded.
-encodeWith :: ToRecord a => EncodeOptions -> V.Vector a -> L.ByteString
+encodeWith :: ToRecord a => EncodeOptions -> [a] -> L.ByteString
 encodeWith opts = toLazyByteString
                   . unlines
                   . map (encodeRecord (encDelimiter opts) . toRecord)
-                  . V.toList
 {-# INLINE encodeWith #-}
 
 encodeRecord :: Word8 -> Record -> Builder
@@ -181,13 +181,17 @@ encodeRecord delim = mconcat . intersperse (fromWord8 delim)
 -- TODO: Optimize
 escape :: Word8 -> B.ByteString -> B.ByteString
 escape delim s
-    | B.find (\ b -> b == dquote || b == delim || b == nl || b == cr ||
-                     b == sp) s == Nothing = s
-    | otherwise =
-        B.concat ["\"",
-                  B.concatMap
-                  (\ b -> if b == dquote then "\"\"" else B.singleton b) s,
-                  "\""]
+    | B.any (\ b -> b == dquote || b == delim || b == nl || b == cr || b == sp)
+        s = toByteString $
+            fromWord8 dquote
+            <> B.foldl
+                (\ acc b -> acc <> if b == dquote
+                    then fromByteString "\"\""
+                    else fromWord8 b)
+                mempty
+                s
+            <> fromWord8 dquote
+    | otherwise = s
   where
     sp     = 32
     dquote = 34
@@ -197,7 +201,7 @@ escape delim s
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
-encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> V.Vector a
+encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> [a]
                  -> L.ByteString
 encodeByNameWith opts hdr v =
     toLazyByteString ((encodeRecord (encDelimiter opts) hdr) <>
@@ -206,7 +210,7 @@ encodeByNameWith opts hdr v =
     records = unlines
               . map (encodeRecord (encDelimiter opts)
                      . namedRecordToRecord hdr . toNamedRecord)
-              . V.toList $ v
+              $ v
 {-# INLINE encodeByNameWith #-}
 
 
@@ -239,8 +243,12 @@ decodeWithP :: AL.Parser a -> L.ByteString -> Either String a
 decodeWithP p s =
     case AL.parse p s of
       AL.Done _ v     -> Right v
-      AL.Fail left _ msg -> Left $ "parse error (" ++ msg ++ ") at " ++
-                            show (BL8.unpack left)
+      AL.Fail left _ msg -> Left errMsg
+        where
+          errMsg = "parse error (" ++ msg ++ ") at " ++
+                   (if BL8.length left > 100
+                    then (take 100 $ BL8.unpack left) ++ " (truncated)"
+                    else show (BL8.unpack left))
 {-# INLINE decodeWithP #-}
 
 -- These alternative implementation of the 'csv' and 'csvWithHeader'

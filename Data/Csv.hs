@@ -22,7 +22,8 @@ module Data.Csv
 
     -- * Encoding and decoding
     -- $encoding
-      decode
+      HasHeader(..)
+    , decode
     , decodeByName
     , encode
     , encodeByName
@@ -88,7 +89,7 @@ import Data.Csv.Types
 --
 -- A short encoding usage example:
 --
--- > >>> encode $ fromList [("John" :: Text, 27), ("Jane", 28)]
+-- > >>> encode [("John" :: Text, 27), ("Jane", 28)]
 -- > Chunk "John,27\r\nJane,28\r\n" Empty
 --
 -- Since string literals are overloaded we have to supply a type
@@ -99,10 +100,10 @@ import Data.Csv.Types
 --
 -- A short decoding usage example:
 --
--- > >>> decode False "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
+-- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
 -- > Right (fromList [("John",27),("Jane",28)])
 --
--- We pass 'False' as the first argument to indicate that the CSV
+-- We pass 'NoHeader' as the first argument to indicate that the CSV
 -- input data isn't preceded by a header.
 --
 -- In practice, the return type of 'decode' rarely needs to be given,
@@ -116,7 +117,7 @@ import Data.Csv.Types
 -- parse a CSV file to a generic representation, just convert each
 -- record to a @'Vector' 'ByteString'@ value, like so:
 --
--- > decode False "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
+-- > decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
 -- > Right (fromList [fromList ["John","27"],fromList ["Jane","28"]])
 --
 -- As the example output above shows, all the fields are returned as
@@ -141,7 +142,7 @@ import Data.Csv.Types
 -- on the @newtype@ constructor to indicate which type conversion you
 -- want to have the library use:
 --
--- > case decode False "0xff,0xaa\r\n0x11,0x22\r\n" of
+-- > case decode NoHeader "0xff,0xaa\r\n0x11,0x22\r\n" of
 -- >     Left err -> putStrLn err
 -- >     Right v  -> forM_ v $ \ (Hex val1, Hex val2) ->
 -- >         print (val1, val2)
@@ -151,7 +152,7 @@ import Data.Csv.Types
 -- always decodes successfully. Note that it lacks a corresponding
 -- 'ToField' instance. Example:
 --
--- > case decode False "foo,1\r\nbar,22" of
+-- > case decode NoHeader "foo,1\r\nbar,22" of
 -- >     Left  err -> putStrLn err
 -- >     Right v   -> forM_ v $ \ ((), i) -> print (i :: Int)
 
