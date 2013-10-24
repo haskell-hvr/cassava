@@ -9,8 +9,7 @@ import System.IO
 main :: IO ()
 main = withFile "salaries.csv" ReadMode $ \ csvFile -> do
     let loop !_ (Fail _ errMsg) = putStrLn errMsg >> exitFailure
-        loop acc (Partial k)    = loop acc =<< feed k
-        loop acc (Some rs k)    = loop (acc + sumSalaries rs) =<< feed k
+        loop acc (Many rs k)    = loop (acc + sumSalaries rs) =<< feed k
         loop acc (Done rs)      = putStrLn $ "Total salaries: " ++
                                   show (sumSalaries rs + acc)
 
