@@ -149,14 +149,11 @@ decodeWith :: FromRecord a
                              -- skipped
            -> BL.ByteString  -- ^ CSV data
            -> Records a
-decodeWith !opts hasHeader s0 = case BL.toChunks s0 of
-    []     -> go [] (feedEndOfInput $ I.decodeWith opts hasHeader)
-    (s:ss) -> go ss (I.decodeWith opts hasHeader `feedChunk` s)
+decodeWith !opts hasHeader s0 =
+    go (BL.toChunks s0) (I.decodeWith opts hasHeader)
   where
     go ss (Done xs)       = foldr Cons (Nil Nothing (BL.fromChunks ss)) xs
     go ss (Fail rest err) = Nil (Just err) (BL.fromChunks (rest:ss))
-    go [] (Partial k)     = go [] (k B.empty)
-    go (s:ss) (Partial k) = go ss (k s)
     go [] (Some xs k)     = foldr Cons (go [] (k B.empty)) xs
     go (s:ss) (Some xs k) = foldr Cons (go ss (k s)) xs
 
@@ -177,9 +174,7 @@ decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> BL.ByteString  -- ^ CSV data
                  -> Either String (Header, Records a)
-decodeByNameWith !opts s0 = case BL.toChunks s0 of
-    []     -> go [] (feedEndOfInputH $ I.decodeByNameWith opts)
-    (s:ss) -> go ss (I.decodeByNameWith opts `feedChunkH` s)
+decodeByNameWith !opts s0 = go (BL.toChunks s0) (I.decodeByNameWith opts)
   where
     go ss (DoneH hdr p)    = Right (hdr, go2 ss p)
     go ss (FailH rest err) = Left $ err ++ " at " ++
@@ -189,7 +184,5 @@ decodeByNameWith !opts s0 = case BL.toChunks s0 of
 
     go2 ss (Done xs)       = foldr Cons (Nil Nothing (BL.fromChunks ss)) xs
     go2 ss (Fail rest err) = Nil (Just err) (BL.fromChunks (rest:ss))
-    go2 [] (Partial k)     = go2 [] (k B.empty)
-    go2 (s:ss) (Partial k) = go2 ss (k s)
     go2 [] (Some xs k)     = foldr Cons (go2 [] (k B.empty)) xs
     go2 (s:ss) (Some xs k) = foldr Cons (go2 ss (k s)) xs

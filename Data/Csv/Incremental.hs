@@ -10,10 +10,6 @@ module Data.Csv.Incremental
       HeaderParser(..)
     , decodeHeader
     , decodeHeaderWith
-    -- ** Providing input
-    -- $feed-header
-    , feedChunkH
-    , feedEndOfInputH
 
     -- * Decoding records
     -- $typeconversion
@@ -28,11 +24,6 @@ module Data.Csv.Incremental
     -- $namebased
     , decodeByName
     , decodeByNameWith
-
-    -- ** Providing input
-    -- $feed-records
-    , feedChunk
-    , feedEndOfInput
     ) where
 
 import Control.Applicative ((<*), (<|>))
@@ -106,22 +97,6 @@ instance Show a => Show (HeaderParser a) where
 appPrec :: Int
 appPrec = 10
 
--- | Feed a 'HeaderParser' with more input. If the 'HeaderParser' is
--- 'FailH' it will add the input to 'B.ByteString' of unconsumed
--- input. If the 'HeaderParser' is 'DoneH' it will drop the extra
--- input on the floor.
-feedChunkH :: HeaderParser a -> B.ByteString -> HeaderParser a
-feedChunkH (FailH rest err) s = FailH (B.append rest s) err
-feedChunkH (PartialH k) s     = k s
-feedChunkH d@(DoneH _ _) _s   = d
-
--- | Tell a 'HeaderParser' that there is no more input. This passes
--- 'B.empty' to a 'PartialH' parser, otherwise returns the parser
--- unchanged.
-feedEndOfInputH :: HeaderParser a -> HeaderParser a
-feedEndOfInputH (PartialH k) = k B.empty
-feedEndOfInputH p            = p
-
 -- | Parse a CSV header in an incremental fashion. When done, the
 -- 'HeaderParser' returns any unconsumed input in the second field of
 -- the 'DoneH' constructor.
@@ -160,19 +135,13 @@ data Parser a =
       -- the parse error.
       Fail !B.ByteString String
 
-      -- | The parser needs more input data before it can produce a
-      -- result. Use an 'B.empty' string to indicate that no more
-      -- input data is available. If fed an 'B.empty' string, the
-      -- continuation is guaranteed to return either 'Fail' or 'Done'.
-    | Partial (B.ByteString -> Parser a)
-
-      -- | The parser parsed and converted some records. Any records
-      -- that failed type conversion are returned as @'Left' errMsg@
-      -- and the rest as @'Right' val@. Feed a 'B.ByteString' to the
-      -- continuation to continue parsing. Use an 'B.empty' string to
-      -- indicate that no more input data is available. If fed an
-      -- 'B.empty' string, the continuation is guaranteed to return
-      -- either 'Fail' or 'Done'.
+      -- | The parser parsed and converted zero or more records. Any
+      -- records that failed type conversion are returned as @'Left'
+      -- errMsg@ and the rest as @'Right' val@. Feed a 'B.ByteString'
+      -- to the continuation to continue parsing. Use an 'B.empty'
+      -- string to indicate that no more input data is available. If
+      -- fed an 'B.empty' string, the continuation is guaranteed to
+      -- return either 'Fail' or 'Done'.
     | Some [Either String a] (B.ByteString -> Parser a)
 
       -- | The parser parsed and converted some records. Any records
@@ -186,7 +155,6 @@ instance Show a => Show (Parser a) where
       where
         showStr = showString "Fail " . showsPrec (appPrec+1) rest .
                   showString " " . showsPrec (appPrec+1) msg
-    showsPrec _ (Partial _) = showString "Partial <function>"
     showsPrec d (Some rs _) = showParen (d > appPrec) showStr
       where
         showStr = showString "Some " . showsPrec (appPrec+1) rs .
@@ -194,21 +162,6 @@ instance Show a => Show (Parser a) where
     showsPrec d (Done rs) = showParen (d > appPrec) showStr
       where
         showStr = showString "Done " . showsPrec (appPrec+1) rs
-
--- | Feed a 'Parser' with more input. If the 'Parser' is 'Fail' it
--- will add the input to 'B.ByteString' of unconsumed input. If the
--- 'Parser' is 'Done' it will drop the extra input on the floor.
-feedChunk :: Parser a -> B.ByteString -> Parser a
-feedChunk (Fail rest err) s = Fail (B.append rest s) err
-feedChunk (Partial k) s     = k s
-feedChunk (Some xs k) s     = Some xs (\ s' -> k s `feedChunk` s')
-feedChunk (Done xs) _s      = Done xs
-
--- | Tell a 'Parser' that there is no more input. This passes 'empty'
--- to a 'Partial' parser, otherwise returns the parser unchanged.
-feedEndOfInput :: Parser a -> Parser a
-feedEndOfInput (Partial k)     = k B.empty
-feedEndOfInput p               = p
 
 -- | Have we read all available input?
 data More = Incomplete | Complete
@@ -229,10 +182,10 @@ decodeWith :: FromRecord a
                              -- skipped
            -> Parser a
 decodeWith !opts hasHeader = case hasHeader of
-    HasHeader -> Partial $ \ s -> go (decodeHeaderWith opts `feedChunkH` s)
-    NoHeader  -> Partial (decodeWithP parseRecord opts)
+    HasHeader -> go (decodeHeaderWith opts)
+    NoHeader  -> Some [] $ \ s -> decodeWithP parseRecord opts s
   where go (FailH rest msg) = Fail rest msg
-        go (PartialH k)     = Partial $ \ s' -> go (k s')
+        go (PartialH k)     = Some [] $ \ s' -> go (k s')
         go (DoneH _ rest)   = decodeWithP parseRecord opts rest
 
 ------------------------------------------------------------------------
@@ -250,8 +203,7 @@ decodeByName = decodeByNameWith defaultDecodeOptions
 decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> HeaderParser (Parser a)
-decodeByNameWith !opts =
-    PartialH (go . (decodeHeaderWith opts `feedChunkH`))
+decodeByNameWith !opts = go (decodeHeaderWith opts)
   where
     go (FailH rest msg) = FailH rest msg
     go (PartialH k)     = PartialH $ \ s -> go (k s)
@@ -259,6 +211,9 @@ decodeByNameWith !opts =
         DoneH hdr (decodeWithP (parseNamedRecord . toNamedRecord hdr) opts rest)
 
 ------------------------------------------------------------------------
+
+-- TODO: 'decodeWithP' should probably not take an initial
+-- 'B.ByteString' input.
 
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
 decodeWithP :: (Record -> Conversion.Parser a) -> DecodeOptions -> B.ByteString
@@ -269,9 +224,7 @@ decodeWithP p !opts = go Incomplete [] . parser
         | null acc  = Fail rest err
         | otherwise = Some (reverse acc) (\ s -> Fail (rest `B.append` s) err)
       where err = "parse error (" ++ msg ++ ")"
-    go Incomplete acc (A.Partial k)
-        | null acc  = Partial cont
-        | otherwise = Some (reverse acc) cont
+    go Incomplete acc (A.Partial k) = Some (reverse acc) cont
       where cont s = go m [] (k s)
               where m | B.null s  = Complete
                       | otherwise = Incomplete
@@ -280,9 +233,7 @@ decodeWithP p !opts = go Incomplete [] . parser
     go m acc (A.Done rest r)
         | B.null rest = case m of
             Complete   -> Done (reverse acc')
-            Incomplete
-                | null acc' -> Partial (cont acc')
-                | otherwise -> Some (reverse acc') (cont [])
+            Incomplete -> Some (reverse acc') (cont [])
         | otherwise   = go m acc' (parser rest)
       where cont acc'' s
                 | B.null s  = Done (reverse acc'')
