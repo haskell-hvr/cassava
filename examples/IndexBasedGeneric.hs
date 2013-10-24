@@ -15,7 +15,7 @@ persons = [Person "John" 50000, Person "Jane" 60000]
 
 main :: IO ()
 main = do
-    BL.writeFile "salaries.csv" $ encode (V.fromList persons)
+    BL.writeFile "salaries.csv" $ encode persons
     csvData <- BL.readFile "salaries.csv"
     case decode NoHeader csvData of
         Left err -> putStrLn err
