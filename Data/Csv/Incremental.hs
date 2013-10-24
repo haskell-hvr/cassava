@@ -17,6 +17,7 @@ module Data.Csv.Incremental
 
     -- ** Index-based record conversion
     -- $indexbased
+    , HasHeader(..)
     , decode
     , decodeWith
 

@@ -18,6 +18,7 @@ module Data.Csv.Streaming
 
     -- ** Index-based record conversion
     -- $indexbased
+    , HasHeader(..)
     , decode
     , decodeWith
 
