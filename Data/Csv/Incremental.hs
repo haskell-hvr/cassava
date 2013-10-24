@@ -142,7 +142,7 @@ data Parser a =
       -- string to indicate that no more input data is available. If
       -- fed an 'B.empty' string, the continuation is guaranteed to
       -- return either 'Fail' or 'Done'.
-    | Some [Either String a] (B.ByteString -> Parser a)
+    | Many [Either String a] (B.ByteString -> Parser a)
 
       -- | The parser parsed and converted some records. Any records
       -- that failed type conversion are returned as @'Left' errMsg@
@@ -155,9 +155,9 @@ instance Show a => Show (Parser a) where
       where
         showStr = showString "Fail " . showsPrec (appPrec+1) rest .
                   showString " " . showsPrec (appPrec+1) msg
-    showsPrec d (Some rs _) = showParen (d > appPrec) showStr
+    showsPrec d (Many rs _) = showParen (d > appPrec) showStr
       where
-        showStr = showString "Some " . showsPrec (appPrec+1) rs .
+        showStr = showString "Many " . showsPrec (appPrec+1) rs .
                   showString " <function>"
     showsPrec d (Done rs) = showParen (d > appPrec) showStr
       where
@@ -183,9 +183,9 @@ decodeWith :: FromRecord a
            -> Parser a
 decodeWith !opts hasHeader = case hasHeader of
     HasHeader -> go (decodeHeaderWith opts)
-    NoHeader  -> Some [] $ \ s -> decodeWithP parseRecord opts s
+    NoHeader  -> Many [] $ \ s -> decodeWithP parseRecord opts s
   where go (FailH rest msg) = Fail rest msg
-        go (PartialH k)     = Some [] $ \ s' -> go (k s')
+        go (PartialH k)     = Many [] $ \ s' -> go (k s')
         go (DoneH _ rest)   = decodeWithP parseRecord opts rest
 
 ------------------------------------------------------------------------
@@ -222,9 +222,9 @@ decodeWithP p !opts = go Incomplete [] . parser
   where
     go !_ !acc (A.Fail rest _ msg)
         | null acc  = Fail rest err
-        | otherwise = Some (reverse acc) (\ s -> Fail (rest `B.append` s) err)
+        | otherwise = Many (reverse acc) (\ s -> Fail (rest `B.append` s) err)
       where err = "parse error (" ++ msg ++ ")"
-    go Incomplete acc (A.Partial k) = Some (reverse acc) cont
+    go Incomplete acc (A.Partial k) = Many (reverse acc) cont
       where cont s = go m [] (k s)
               where m | B.null s  = Complete
                       | otherwise = Incomplete
@@ -233,7 +233,7 @@ decodeWithP p !opts = go Incomplete [] . parser
     go m acc (A.Done rest r)
         | B.null rest = case m of
             Complete   -> Done (reverse acc')
-            Incomplete -> Some (reverse acc') (cont [])
+            Incomplete -> Many (reverse acc') (cont [])
         | otherwise   = go m acc' (parser rest)
       where cont acc'' s
                 | B.null s  = Done (reverse acc'')

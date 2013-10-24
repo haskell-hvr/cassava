@@ -154,8 +154,8 @@ decodeWith !opts hasHeader s0 =
   where
     go ss (Done xs)       = foldr Cons (Nil Nothing (BL.fromChunks ss)) xs
     go ss (Fail rest err) = Nil (Just err) (BL.fromChunks (rest:ss))
-    go [] (Some xs k)     = foldr Cons (go [] (k B.empty)) xs
-    go (s:ss) (Some xs k) = foldr Cons (go ss (k s)) xs
+    go [] (Many xs k)     = foldr Cons (go [] (k B.empty)) xs
+    go (s:ss) (Many xs k) = foldr Cons (go ss (k s)) xs
 
 -- | Efficiently deserialize CSV in a streaming fashion. The data is
 -- assumed to be preceeded by a header. Returns @'Left' errMsg@ if
@@ -184,5 +184,5 @@ decodeByNameWith !opts s0 = go (BL.toChunks s0) (I.decodeByNameWith opts)
 
     go2 ss (Done xs)       = foldr Cons (Nil Nothing (BL.fromChunks ss)) xs
     go2 ss (Fail rest err) = Nil (Just err) (BL.fromChunks (rest:ss))
-    go2 [] (Some xs k)     = foldr Cons (go2 [] (k B.empty)) xs
-    go2 (s:ss) (Some xs k) = foldr Cons (go2 ss (k s)) xs
+    go2 [] (Many xs k)     = foldr Cons (go2 [] (k B.empty)) xs
+    go2 (s:ss) (Many xs k) = foldr Cons (go2 ss (k s)) xs
