@@ -3,5 +3,8 @@
 *.p_hi
 *.prof
 *.tix
+.cabal-sandbox/
 .hpc/
 /dist/*
+/examples/dist/*
+cabal.sandbox.config
