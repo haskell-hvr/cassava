@@ -1,0 +1,60 @@
+name:                cassava-examples
+version:             0.1.0.0
+author:              Johan Tibell
+maintainer:          johan.tibell@gmail.com
+category:            Example
+build-type:          Simple
+cabal-version:       >=1.10
+
+executable IncrementalIndexedBasedDecode
+  main-is: IncrementalIndexedBasedDecode.hs
+  build-depends:
+    base,
+    bytestring,
+    cassava,
+    vector
+  default-language:    Haskell2010
+
+executable IndexBasedDecode
+  main-is: IndexBasedDecode.hs
+  build-depends:
+    base,
+    bytestring,
+    cassava,
+    vector
+  default-language:    Haskell2010
+
+executable IndexBasedGeneric
+  main-is: IndexBasedGeneric.hs
+  build-depends:
+    base,
+    bytestring,
+    cassava,
+    vector
+  default-language:    Haskell2010
+
+executable NamedBasedDecode
+  main-is: NamedBasedDecode.hs
+  build-depends:
+    base,
+    bytestring,
+    cassava,
+    vector
+  default-language:    Haskell2010
+
+executable NamedBasedGeneric
+  main-is: NamedBasedGeneric.hs
+  build-depends:
+    base,
+    bytestring,
+    cassava,
+    vector
+  default-language:    Haskell2010
+
+executable StreamingIndexBasedDecode
+  main-is: StreamingIndexBasedDecode.hs
+  build-depends:
+    base,
+    bytestring,
+    cassava
+  default-language:    Haskell2010
