@@ -91,6 +91,20 @@ sepBy1' p s = go
                        -> Parser S.ByteString [a] #-}
 #endif
 
+-- | Specialized version of 'sepBy1'' which is faster due to not
+-- accepting an arbitrary separator.
+sepByDelim1' :: AL.Parser a
+             -> Word8  -- ^ Field delimiter
+             -> AL.Parser [a]
+sepByDelim1' p !delim = liftM2' (:) p loop
+  where
+    loop = do
+        mb <- A.peekWord8
+        case mb of
+            Just b | b == delim -> liftM2' (:) (A.anyWord8 *> p) loop
+            _                   -> pure []
+{-# INLINe sepByDelim1' #-}
+
 -- | Parse a CSV file that includes a header.
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader !opts = do
@@ -122,9 +136,7 @@ removeBlankLines = filter (not . blankLine)
 -- this parser.
 record :: Word8  -- ^ Field delimiter
        -> AL.Parser Record
-record !delim = do
-    fs <- field delim `sepBy1'` (A.word8 delim)
-    return $! V.fromList fs
+record !delim = V.fromList <$!> field delim `sepByDelim1'` delim
 {-# INLINE record #-}
 
 -- | Parse a field. The field may be in either the escaped or
@@ -182,3 +194,15 @@ doubleQuote, newline, cr :: Word8
 doubleQuote = 34
 newline = 10
 cr = 13
+
+------------------------------------------------------------------------
+-- Utilities
+
+-- | A version of 'liftM2' that is strict in the result of its first
+-- action.
+liftM2' :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
+liftM2' f a b = do
+    !x <- a
+    y <- b
+    return (f x y)
+{-# INLINE liftM2' #-}
