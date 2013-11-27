@@ -119,7 +119,7 @@ csvWithHeader !opts = do
 -- | Parse a header, including the terminating line separator.
 header :: Word8  -- ^ Field delimiter
        -> AL.Parser Header
-header !delim = V.fromList <$!> name delim `sepBy1'` (A.word8 delim) <* endOfLine
+header !delim = V.fromList <$!> name delim `sepByDelim1'` delim <* endOfLine
 
 -- | Parse a header name. Header names have the same format as regular
 -- 'field's.
