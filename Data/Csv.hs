@@ -57,6 +57,7 @@ module Data.Csv
     , runParser
     , index
     , (.!)
+    , unsafeIndex
     , ToRecord(..)
     , record
     , Only(..)
