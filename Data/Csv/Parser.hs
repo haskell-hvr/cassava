@@ -26,12 +26,10 @@ module Data.Csv.Parser
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
-import Control.Applicative (Alternative, (*>), (<$>), (<*), (<|>), optional,
-                            pure)
+import Control.Applicative ((*>), (<$>), (<*), optional, pure)
 import Data.Attoparsec.Char8 (char, endOfInput, endOfLine)
 import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
-import Data.Attoparsec.Types (Parser)
 import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Unsafe as S
@@ -67,29 +65,12 @@ defaultDecodeOptions = DecodeOptions
 -- | Parse a CSV file that does not include a header.
 csv :: DecodeOptions -> AL.Parser Csv
 csv !opts = do
-    vals <- record (decDelimiter opts) `sepBy1'` endOfLine
+    vals <- sepByEndOfLine1' (record (decDelimiter opts))
     _ <- optional endOfLine
     endOfInput
     let nonEmpty = removeBlankLines vals
     return $! V.fromList nonEmpty
 {-# INLINE csv #-}
-
--- | @sepBy1' p sep@ applies /one/ or more occurrences of @p@,
--- separated by @sep@. Returns a list of the values returned by @p@.
--- The value returned by @p@ is forced to WHNF.
---
--- > commaSep p  = p `sepBy1'` (symbol ",")
-sepBy1' :: (Alternative f, Monad f) => f a -> f s -> f [a]
-sepBy1' p s = go
-  where
-    go = do
-        !a <- p
-        as <- (s *> go) <|> pure []
-        return (a : as)
-#if __GLASGOW_HASKELL__ >= 700
-{-# SPECIALIZE sepBy1' :: Parser S.ByteString a -> Parser S.ByteString s
-                       -> Parser S.ByteString [a] #-}
-#endif
 
 -- | Specialized version of 'sepBy1'' which is faster due to not
 -- accepting an arbitrary separator.
@@ -105,12 +86,28 @@ sepByDelim1' p !delim = liftM2' (:) p loop
             _                   -> pure []
 {-# INLINe sepByDelim1' #-}
 
+-- | Specialized version of 'sepBy1'' which is faster due to not
+-- accepting an arbitrary separator.
+sepByEndOfLine1' :: AL.Parser a
+                 -> AL.Parser [a]
+sepByEndOfLine1' p = liftM2' (:) p loop
+  where
+    loop = do
+        mb <- A.peekWord8
+        case mb of
+            Just b | b == cr ->
+                liftM2' (:) (A.anyWord8 *> A.word8 newline *> p) loop
+                   | b == newline ->
+                liftM2' (:) (A.anyWord8 *> p) loop
+            _ -> pure []
+{-# INLINe sepByEndOfLine1' #-}
+
 -- | Parse a CSV file that includes a header.
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
 csvWithHeader !opts = do
     !hdr <- header (decDelimiter opts)
     vals <- map (toNamedRecord hdr) . removeBlankLines <$>
-            (record (decDelimiter opts)) `sepBy1'` endOfLine
+            sepByEndOfLine1' (record (decDelimiter opts))
     _ <- optional endOfLine
     endOfInput
     let !v = V.fromList vals
