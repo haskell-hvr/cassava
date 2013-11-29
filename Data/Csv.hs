@@ -20,6 +20,9 @@ module Data.Csv
     -- * Custom type conversions
     -- $customtypeconversions
 
+    -- ** Dealing with bad data
+    -- $baddata
+
     -- * Encoding and decoding
     -- $encoding
       HasHeader(..)
@@ -146,6 +149,16 @@ import Data.Csv.Types
 -- >     Right v  -> forM_ v $ \ (Hex val1, Hex val2) ->
 -- >         print (val1, val2)
 --
+-- If a field might be in one several different formats, you can use a
+-- newtype to normalize the result:
+--
+-- > newtype HexOrDecimal = HexOrDecimal Int
+-- >
+-- > instance FromField DefaultToZero where
+-- >     parseField s = case runParser (parseField s :: Parser Hex) of
+-- >         Left err -> HexOrDecimal <$> parseField s  -- Uses Int instance
+-- >         Right n  -> pure $ HexOrDecimal n
+--
 -- You can use the unit type, @()@, to ignore a column. The
 -- 'parseField' method for @()@ doesn't look at the 'Field' and thus
 -- always decodes successfully. Note that it lacks a corresponding
@@ -154,6 +167,18 @@ import Data.Csv.Types
 -- > case decode NoHeader "foo,1\r\nbar,22" of
 -- >     Left  err -> putStrLn err
 -- >     Right v   -> forM_ v $ \ ((), i) -> print (i :: Int)
+
+-- $baddata
+--
+-- If your input might contain invalid fields, you can write a custom
+-- 'FromField' instance to deal with them. Example:
+--
+-- > newtype DefaultToZero = DefaultToZero Int
+-- >
+-- > instance FromField DefaultToZero where
+-- >     parseField s = case runParser (parseField s) of
+-- >         Left err -> pure $ DefaultToZero 0
+-- >         Right n  -> pure $ DefaultToZero n
 
 -- $encoding
 --
