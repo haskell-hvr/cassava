@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, FlexibleInstances, OverloadedStrings,
+{-# LANGUAGE BangPatterns, CPP, FlexibleInstances, OverloadedStrings,
              RecordWildCards, TypeSynonymInstances #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 
@@ -20,6 +20,11 @@ import qualified Data.Vector as V
 
 import Data.Csv
 import qualified Data.Csv.Streaming as Streaming
+
+#if !MIN_VERSION_bytestring(0,10,0)
+instance NFData (B.ByteString) where
+    rnf s = ()
+#endif
 
 data President = President
                  { presidency     :: !Int
