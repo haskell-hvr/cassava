@@ -402,6 +402,13 @@ instance ToField a => ToField (Maybe a) where
     toField = maybe B.empty toField
     {-# INLINE toField #-}
 
+-- | @'Left' field@ if conversion failed, 'Right' otherwise.
+instance FromField a => FromField (Either Field a) where
+    parseField s = case runParser (parseField s) of
+        Left _  -> pure $ Left s
+        Right a -> pure $ Right a
+    {-# INLINE parseField #-}
+
 -- | Ignores the 'Field'. Always succeeds.
 instance FromField () where
     parseField _ = pure ()
@@ -762,6 +769,9 @@ runParser p = unParser p left right
     left !errMsg = Left errMsg
     right !x = Right x
 {-# INLINE runParser #-}
+
+------------------------------------------------------------------------
+-- Generics
 
 #ifdef GENERICS
 
