@@ -38,7 +38,7 @@ import qualified Data.Vector as V
 import Data.Word (Word8)
 
 import Data.Csv.Types
-import Data.Csv.Util ((<$!>), blankLine)
+import Data.Csv.Util ((<$!>), blankLine, liftM2')
 
 -- | Options that controls how data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
@@ -191,15 +191,3 @@ doubleQuote, newline, cr :: Word8
 doubleQuote = 34
 newline = 10
 cr = 13
-
-------------------------------------------------------------------------
--- Utilities
-
--- | A version of 'liftM2' that is strict in the result of its first
--- action.
-liftM2' :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
-liftM2' f a b = do
-    !x <- a
-    y <- b
-    return (f x y)
-{-# INLINE liftM2' #-}
