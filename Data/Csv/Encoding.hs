@@ -186,7 +186,7 @@ validDelim delim = delim `notElem` [cr, nl, dquote]
 -- Keep this message consistent with the documentation of
 -- 'EncodeOptions'.
 encodeOptionsError :: a
-encodeOptionsError = error $
+encodeOptionsError = error $ "Data.Csv: " ++
         "The 'encDelimiter' must /not/ be the quote character (i.e. " ++
         "\") or one of the record separator characters (i.e. \\n or " ++
         "\\r)"
