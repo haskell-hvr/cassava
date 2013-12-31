@@ -50,8 +50,8 @@ import Data.Csv
 import qualified Data.Vector as V
 
 data Person = Person
-    { name   :: String
-    , salary :: Int
+    { name   :: !String
+    , salary :: !Int
     }
 
 instance FromNamedRecord Person where
