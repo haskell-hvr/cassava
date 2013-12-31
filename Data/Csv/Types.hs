@@ -46,4 +46,5 @@ toNamedRecord :: Header -> Record -> NamedRecord
 toNamedRecord hdr v = HM.fromList . V.toList $ V.zip hdr v
 
 -- | Is the CSV data preceded by a header?
-data HasHeader = HasHeader | NoHeader
+data HasHeader = HasHeader  -- ^ The CSV data is preceded by a header
+               | NoHeader   -- ^ The CSV data is not preceded by a header
