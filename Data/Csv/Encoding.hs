@@ -146,6 +146,10 @@ decodeByNameWith !opts = decodeWithP (csvWithHeader opts)
 -- > myOptions = defaultEncodeOptions {
 -- >       encDelimiter = fromIntegral (ord '\t')
 -- >     }
+--
+-- /N.B./ The 'encDelimiter' must /not/ be the quote character (i.e.
+-- @\"@) or one of the record separator characters (i.e. @\\n@ or
+-- @\\r@).
 data EncodeOptions = EncodeOptions
     { -- | Field delimiter.
       encDelimiter  :: {-# UNPACK #-} !Word8
@@ -160,20 +164,42 @@ defaultEncodeOptions = EncodeOptions
 -- | Like 'encode', but lets you customize how the CSV data is
 -- encoded.
 encodeWith :: ToRecord a => EncodeOptions -> [a] -> L.ByteString
-encodeWith opts = toLazyByteString
-                  . unlines
-                  . map (encodeRecord (encDelimiter opts) . toRecord)
+encodeWith opts
+    | validDelim (encDelimiter opts) =
+        toLazyByteString
+        . unlines
+        . map (encodeRecord (encDelimiter opts) . toRecord)
+    | otherwise = encodeOptionsError
 {-# INLINE encodeWith #-}
+
+-- | Check if the delimiter is valid.
+validDelim :: Word8 -> Bool
+validDelim delim = delim `notElem` [cr, nl, dquote]
+  where
+    nl = 10
+    cr = 13
+    dquote = 34
+
+-- | Raises an exception indicating that the provided delimiter isn't
+-- valid. See 'validDelim'.
+--
+-- Keep this message consistent with the documentation of
+-- 'EncodeOptions'.
+encodeOptionsError :: a
+encodeOptionsError = error $
+        "The 'encDelimiter' must /not/ be the quote character (i.e. " ++
+        "\") or one of the record separator characters (i.e. \\n or " ++
+        "\\r)"
 
 encodeRecord :: Word8 -> Record -> Builder
 encodeRecord delim = mconcat . intersperse (fromWord8 delim)
-                     . map fromByteString . map escape . V.toList
+                     . map fromByteString . map (escape delim) . V.toList
 {-# INLINE encodeRecord #-}
 
 -- TODO: Optimize
-escape :: B.ByteString -> B.ByteString
-escape s
-    | B.any (\ b -> b == dquote || b == comma || b == nl || b == cr || b == sp)
+escape :: Word8 -> B.ByteString -> B.ByteString
+escape !delim !s
+    | B.any (\ b -> b == dquote || b == delim || b == nl || b == cr || b == sp)
         s = toByteString $
             fromWord8 dquote
             <> B.foldl
@@ -186,7 +212,6 @@ escape s
     | otherwise = s
   where
     dquote = 34
-    comma  = 44
     nl     = 10
     cr     = 13
     sp     = 32
@@ -195,9 +220,11 @@ escape s
 -- encoded.
 encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> [a]
                  -> L.ByteString
-encodeByNameWith opts hdr v =
-    toLazyByteString ((encodeRecord (encDelimiter opts) hdr) <>
-                      fromByteString "\r\n" <> records)
+encodeByNameWith opts hdr v
+    | validDelim (encDelimiter opts) =
+        toLazyByteString ((encodeRecord (encDelimiter opts) hdr) <>
+                          fromByteString "\r\n" <> records)
+    | otherwise = encodeOptionsError
   where
     records = unlines
               . map (encodeRecord (encDelimiter opts)

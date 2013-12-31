@@ -264,12 +264,32 @@ conversionTests =
     ]
 
 ------------------------------------------------------------------------
+-- Custom options tests
+
+customDelim :: Word8 -> B.ByteString -> B.ByteString -> Property
+customDelim delim f1 f2 = delim `notElem` [cr, nl, dquote] ==>
+    (decodeWith decOpts NoHeader (encodeWith encOpts [V.fromList [f1, f2]]) ==
+     Right (V.fromList [V.fromList [f1, f2]]))
+  where
+    encOpts = defaultEncodeOptions { encDelimiter = delim }
+    decOpts = defaultDecodeOptions { decDelimiter = delim }
+    nl = 10
+    cr = 13
+    dquote = 34
+
+customOptionsTests :: [TF.Test]
+customOptionsTests =
+    [ testProperty "customDelim" customDelim
+    ]
+
+------------------------------------------------------------------------
 -- Test harness
 
 allTests :: [TF.Test]
 allTests = [ testGroup "positional" positionalTests
            , testGroup "named" nameBasedTests
            , testGroup "conversion" conversionTests
+           , testGroup "custom-options" customOptionsTests
            ]
 
 main :: IO ()
