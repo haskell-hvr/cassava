@@ -3,8 +3,7 @@
 -- | Tests that runtime and space usage is linear in the number of rows.
 -- Run with e.g.
 --
--- > cabal bench super-linear --benchmark-option='+RTS'
--- --benchmark-option='-hy'
+-- > cabal bench super-linear --benchmark-option='+RTS' --benchmark-option='-hy'
 --
 -- You can provide an optional argument specifying the number of rows
 -- to use in the benchmark.
