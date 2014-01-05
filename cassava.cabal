@@ -51,7 +51,7 @@ Library
   if impl(ghc >= 7.2.1)
     cpp-options: -DGENERICS
     build-depends: ghc-prim >= 0.2 && < 0.4
-  
+
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Main-is: UnitTests.hs
@@ -86,6 +86,19 @@ Benchmark benchmarks
     unordered-containers,
     vector
   hs-source-dirs: benchmarks
+
+Benchmark super-linear
+  Type: exitcode-stdio-1.0
+  Main-is: SuperLinear.hs
+  Build-depends:
+    base,
+    bytestring,
+    cassava,
+    deepseq,
+    directory,
+    vector >= 0.10.9.1
+  hs-source-dirs: benchmarks
+  ghc-options: -rtsopts
 
 source-repository head
   type:     git
