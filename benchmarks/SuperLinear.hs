@@ -36,9 +36,10 @@ createData :: Int -> FilePath -> IO ()
 createData n filename = do
     exist <- doesFileExist filename
     unless exist $ do
-        putStrLn $ "Creating " ++ filename ++ "..."
+        putStr $ "Creating " ++ filename ++ "..."
         row <- BS8.pack `fmap` withFile oneLinePath ReadMode hGetLine
         withFile filename WriteMode (writeN n row)
+        putStrLn " done"
   where
     writeN :: Int -> BS.ByteString -> Handle -> IO ()
     writeN 0 row _      = return ()
@@ -46,6 +47,14 @@ createData n filename = do
 
     oneLinePath = "benchmarks/one-line.csv"
 
+{-
+Sample input sizes:
+5000
+10000
+20000
+30000
+40000
+-}
 main :: IO ()
 main = do
     args <- getArgs
