@@ -36,13 +36,13 @@ Library
 
   Build-depends:
     array < 0.6,
-    attoparsec >= 0.10.2 && < 0.11,
+    attoparsec >= 0.10.2 && < 0.1,
     base < 5,
     blaze-builder < 0.4,
     bytestring < 0.11,
     containers < 0.6,
     deepseq < 1.4,
-    text < 0.12,
+    text < 1.2,
     unordered-containers < 0.3,
     vector < 0.11
 
