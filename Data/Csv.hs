@@ -92,7 +92,7 @@ import Data.Csv.Types
 -- A short encoding usage example:
 --
 -- > >>> encode [("John" :: Text, 27), ("Jane", 28)]
--- > Chunk "John,27\r\nJane,28\r\n" Empty
+-- > "John,27\r\nJane,28\r\n"
 --
 -- Since string literals are overloaded we have to supply a type
 -- signature as the compiler couldn't deduce which string type (i.e.
@@ -103,7 +103,7 @@ import Data.Csv.Types
 -- A short decoding usage example:
 --
 -- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
--- > Right (fromList [("John",27),("Jane",28)])
+-- > Right [("John",27),("Jane",28)]
 --
 -- We pass 'NoHeader' as the first argument to indicate that the CSV
 -- input data isn't preceded by a header.
@@ -120,7 +120,7 @@ import Data.Csv.Types
 -- record to a @'Vector' 'ByteString'@ value, like so:
 --
 -- > decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
--- > Right (fromList [fromList ["John","27"],fromList ["Jane","28"]])
+-- > Right [["John","27"],["Jane","28"]]
 --
 -- As the example output above shows, all the fields are returned as
 -- uninterpreted 'ByteString' values.
