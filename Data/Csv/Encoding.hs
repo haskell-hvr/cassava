@@ -153,12 +153,22 @@ decodeByNameWith !opts = decodeWithP (csvWithHeader opts)
 data EncodeOptions = EncodeOptions
     { -- | Field delimiter.
       encDelimiter  :: {-# UNPACK #-} !Word8
+
+      -- | Record separator selection.  @True@ for CRLF (@\\r\\n@) and
+      -- @False@ for LF (@\\n@).
+    , encUseCrLf :: !Bool
+
+      -- | Include a header row when encoding @ToNamedRecord@
+      -- instances.
+    , encIncludeHeader :: !Bool
     } deriving (Eq, Show)
 
 -- | Encoding options for CSV files.
 defaultEncodeOptions :: EncodeOptions
 defaultEncodeOptions = EncodeOptions
-    { encDelimiter = 44  -- comma
+    { encDelimiter     = 44  -- comma
+    , encUseCrLf       = True
+    , encIncludeHeader = True
     }
 
 -- | Like 'encode', but lets you customize how the CSV data is
@@ -167,7 +177,7 @@ encodeWith :: ToRecord a => EncodeOptions -> [a] -> L.ByteString
 encodeWith opts
     | validDelim (encDelimiter opts) =
         toLazyByteString
-        . unlines
+        . unlines (recordSep (encUseCrLf opts))
         . map (encodeRecord (encDelimiter opts) . toRecord)
     | otherwise = encodeOptionsError
 {-# INLINE encodeWith #-}
@@ -222,11 +232,13 @@ encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> [a]
                  -> L.ByteString
 encodeByNameWith opts hdr v
     | validDelim (encDelimiter opts) =
-        toLazyByteString ((encodeRecord (encDelimiter opts) hdr) <>
-                          fromByteString "\r\n" <> records)
+        toLazyByteString (rows (encIncludeHeader opts))
     | otherwise = encodeOptionsError
   where
-    records = unlines
+    rows False = records
+    rows True  = encodeRecord (encDelimiter opts) hdr <>
+                 recordSep (encUseCrLf opts) <> records
+    records = unlines (recordSep (encUseCrLf opts))
               . map (encodeRecord (encDelimiter opts)
                      . namedRecordToRecord hdr . toNamedRecord)
               $ v
@@ -246,9 +258,13 @@ moduleError :: String -> String -> a
 moduleError func msg = error $ "Data.Csv.Encoding." ++ func ++ ": " ++ msg
 {-# NOINLINE moduleError #-}
 
-unlines :: [Builder] -> Builder
-unlines [] = mempty
-unlines (b:bs) = b <> fromString "\r\n" <> unlines bs
+recordSep :: Bool -> Builder
+recordSep False = fromWord8 10 -- new line (\n)
+recordSep True  = fromString "\r\n"
+
+unlines :: Builder -> [Builder] -> Builder
+unlines _ [] = mempty
+unlines sep (b:bs) = b <> sep <> unlines sep bs
 
 intersperse :: Builder -> [Builder] -> [Builder]
 intersperse _   []      = []

@@ -54,6 +54,12 @@ namedEncodesAs :: [B.ByteString] -> [[(B.ByteString, B.ByteString)]]
 namedEncodesAs hdr input expected =
     encodeByName (V.fromList hdr) (map HM.fromList input) @?= expected
 
+namedEncodesWithAs :: EncodeOptions -> [B.ByteString]
+                   -> [[(B.ByteString, B.ByteString)]]
+                   -> BL.ByteString -> Assertion
+namedEncodesWithAs opts hdr input expected =
+    encodeByNameWith opts (V.fromList hdr) (map HM.fromList input) @?= expected
+
 namedDecodesAs :: BL.ByteString -> [B.ByteString]
                -> [[(B.ByteString, B.ByteString)]] -> Assertion
 namedDecodesAs input ehdr expected = case decodeByName input of
@@ -113,6 +119,8 @@ positionalTests =
     , testGroup "encodeWith"
       [ testCase "tab-delim" $ encodesWithAs (defEnc { encDelimiter = 9 })
         [["1", "2"]] "1\t2\r\n"
+      , testCase "newline" $ encodesWithAs (defEnc {encUseCrLf = False})
+        [["1", "2"], ["3", "4"]] "1,2\n3,4\n"
       ]
     , testGroup "decode" $ map decodeTest decodeTests
     , testGroup "decodeWith" $ map decodeWithTest decodeWithTests
@@ -168,6 +176,10 @@ nameBasedTests =
       , ("twoRecords", ["field"], [[("field", "abc")], [("field", "def")]],
          "field\r\nabc\r\ndef\r\n")
       ]
+    , testGroup "encodeWith" $ map encodeWithTest
+      [ ("no header", defEnc {encIncludeHeader = False}, ["field"],
+         [[("field", "abc")]], "abc\r\n")
+      ]
     , testGroup "decode" $ map decodeTest decodeTests
     , testGroup "streaming"
       [ testGroup "decode" $ map streamingDecodeTest decodeTests
@@ -184,10 +196,13 @@ nameBasedTests =
 
     encodeTest (name, hdr, input, expected) =
         testCase name $ namedEncodesAs hdr input expected
+    encodeWithTest (name, opts, hdr, input, expected) =
+        testCase name $ namedEncodesWithAs opts hdr input expected
     decodeTest (name, input, hdr, expected) =
         testCase name $ namedDecodesAs input hdr expected
     streamingDecodeTest (name, input, hdr, expected) =
         testCase name $ namedDecodesStreamingAs input hdr expected
+    defEnc = defaultEncodeOptions
 
 ------------------------------------------------------------------------
 -- Conversion tests
@@ -208,7 +223,7 @@ instance Arbitrary LT.Text where
 -- empty line (which we will ignore.) We therefore encode at least two
 -- columns.
 roundTrip :: (Eq a, FromField a, ToField a) => a -> Bool
-roundTrip x = Right (V.fromList record) == decode NoHeader (encode record) 
+roundTrip x = Right (V.fromList record) == decode NoHeader (encode record)
   where record = [(x, dummy)]
         dummy = 'a'
 
