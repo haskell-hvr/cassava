@@ -34,7 +34,7 @@ module Data.Csv.Conversion
 import Control.Applicative (Alternative, Applicative, (<*>), (<$>), (<|>),
                             empty, pure)
 import Control.Monad (MonadPlus, mplus, mzero)
-import Data.Attoparsec.Char8 (double, parseOnly)
+import Data.Attoparsec.Char8 (double)
 import qualified Data.Attoparsec.Char8 as A8
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
@@ -624,6 +624,19 @@ parseUnsigned typ s = case parseOnly A8.decimal s of
     Left err -> typeError typ s (Just err)
     Right n  -> pure n
 {-# INLINE parseUnsigned #-}
+
+------------------------------------------------------------------------
+-- Custom version of attoparsec @parseOnly@ function which fails if
+-- there is leftover content after parsing a field.
+parseOnly :: A8.Parser a -> B.ByteString -> Either String a
+parseOnly parser input = go (A8.parse parser input) where
+  go (A8.Fail _ _ err) = Left err
+  go (A8.Partial f)    = go (f B.empty)
+  go (A8.Done leftover result)
+    | B.null leftover = Right result
+    | otherwise = Left ("incomplete field parse, leftover: "
+                        ++ show (B.unpack leftover))
+{-# INLINE parseOnly #-}
 
 typeError :: String -> B.ByteString -> Maybe String -> Parser a
 typeError typ s mmsg =

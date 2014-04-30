@@ -236,6 +236,11 @@ roundTripUnicode x = Right (V.fromList record) @=?
 boundary :: forall a. (Bounded a, Eq a, FromField a, ToField a) => a -> Bool
 boundary _dummy = roundTrip (minBound :: a) && roundTrip (maxBound :: a)
 
+partialDecode :: Parser a -> Assertion
+partialDecode p = case runParser p of
+  Left _  -> return ()
+  Right _ -> assertFailure "expected partial field decode"
+
 conversionTests :: [TF.Test]
 conversionTests =
     [ testGroup "roundTrip"
@@ -275,6 +280,16 @@ conversionTests =
                               "Sævör grét áðan því úlpan var ónýt.")
       , testCase "Turkish" (roundTripUnicode
                             "Cam yiyebilirim, bana zararı dokunmaz.")
+      ]
+    , testGroup "Partial Decodes"
+      [ testCase "Int"     (partialDecode
+                            (parseField "12.7" :: Parser Int))
+      , testCase "Word"    (partialDecode
+                            (parseField "12.7" :: Parser Word))
+      , testCase "Double"  (partialDecode
+                            (parseField "1.0+" :: Parser Double))
+      , testCase "Integer" (partialDecode
+                            (parseField "1e6"  :: Parser Integer))
       ]
     ]
 
