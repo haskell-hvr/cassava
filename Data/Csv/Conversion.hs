@@ -32,7 +32,7 @@ module Data.Csv.Conversion
     ) where
 
 import Control.Applicative (Alternative, Applicative, (<*>), (<$>), (<|>),
-                            empty, pure)
+                            (<*), (*>), empty, pure)
 import Control.Monad (MonadPlus, mplus, mzero)
 import Data.Attoparsec.Char8 (double)
 import qualified Data.Attoparsec.Char8 as A8
@@ -452,7 +452,7 @@ instance ToField Float where
     {-# INLINE toField #-}
 
 parseDouble :: B.ByteString -> Parser Double
-parseDouble s = case parseOnly double s of
+parseDouble s = case parseOnly (ws *> double <* ws) s of
     Left err -> typeError "Double" s (Just err)
     Right n  -> pure n
 {-# INLINE parseDouble #-}
@@ -614,16 +614,21 @@ instance ToField [Char] where
     {-# INLINE toField #-}
 
 parseSigned :: (Integral a, Num a) => String -> B.ByteString -> Parser a
-parseSigned typ s = case parseOnly (A8.signed A8.decimal) s of
+parseSigned typ s = case parseOnly (ws *> A8.signed A8.decimal <* ws) s of
     Left err -> typeError typ s (Just err)
     Right n  -> pure n
 {-# INLINE parseSigned #-}
 
 parseUnsigned :: Integral a => String -> B.ByteString -> Parser a
-parseUnsigned typ s = case parseOnly A8.decimal s of
+parseUnsigned typ s = case parseOnly (ws *> A8.decimal <* ws) s of
     Left err -> typeError typ s (Just err)
     Right n  -> pure n
 {-# INLINE parseUnsigned #-}
+
+ws :: A8.Parser ()
+ws = A8.skipWhile (\c -> c == ' ' || c == '\t')
+
+
 
 ------------------------------------------------------------------------
 -- Custom version of attoparsec @parseOnly@ function which fails if
