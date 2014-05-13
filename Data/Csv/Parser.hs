@@ -27,7 +27,7 @@ module Data.Csv.Parser
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
 import Control.Applicative ((*>), (<$>), (<*), optional, pure)
-import Data.Attoparsec.Char8 (char, endOfInput, endOfLine)
+import Data.Attoparsec.Char8 (char, endOfInput)
 import qualified Data.Attoparsec as A
 import qualified Data.Attoparsec.Lazy as AL
 import qualified Data.Attoparsec.Zepto as Z
@@ -38,7 +38,7 @@ import qualified Data.Vector as V
 import Data.Word (Word8)
 
 import Data.Csv.Types
-import Data.Csv.Util ((<$!>), blankLine, liftM2')
+import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, newline, doubleQuote)
 
 -- | Options that controls how data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
@@ -186,8 +186,3 @@ unescape = toByteString <$!> go mempty where
     if done
       then return (acc `mappend` fromByteString h)
       else rest
-
-doubleQuote, newline, cr :: Word8
-doubleQuote = 34
-newline = 10
-cr = 13

@@ -1,13 +1,22 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns, OverloadedStrings #-}
 
 module Data.Csv.Util
     ( (<$!>)
     , blankLine
     , liftM2'
+    , endOfLine
+    , doubleQuote
+    , newline
+    , cr
     ) where
 
+import Control.Applicative ((<|>), (*>))
+import Data.Word (Word8)
+import Data.Attoparsec.ByteString.Char8 (string)
+import qualified Data.Attoparsec as A
 import qualified Data.ByteString as B
 import qualified Data.Vector as V
+import Data.Attoparsec.Types (Parser)
 
 -- | A strict version of 'Data.Functor.<$>' for monads.
 (<$!>) :: Monad m => (a -> b) -> m a -> m b
@@ -30,3 +39,16 @@ liftM2' f a b = do
     y <- b
     return (f x y)
 {-# INLINE liftM2' #-}
+
+
+-- | Match either a single newline character @\'\\n\'@, or a carriage
+-- return followed by a newline character @\"\\r\\n\"@, or a single
+-- carriage return @\'\\r\'@.
+endOfLine :: Parser B.ByteString ()
+endOfLine = (A.word8 newline *> return ()) <|> (string "\r\n" *> return ()) <|> (A.word8 cr *> return ())
+{-# INLINE endOfLine #-}
+
+doubleQuote, newline, cr :: Word8
+doubleQuote = 34
+newline = 10
+cr = 13
