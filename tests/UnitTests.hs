@@ -192,6 +192,9 @@ nameBasedTests =
            [[("field1", "abc"), ("field2", "def")]])
         , ("twoRecords", "field\r\nabc\r\ndef\r\n", ["field"],
            [[("field", "abc")], [("field", "def")]])
+        , ("cr header", "field\rabc", ["field"], [[("field", "abc")]])
+        , ("cr trailing", "field\rabc\r", ["field"], [[("field", "abc")]])
+        , ("cr separator", "field\rabc\rdef", ["field"], [[("field", "abc")],[("field","def")]])
         ]
 
     encodeTest (name, hdr, input, expected) =

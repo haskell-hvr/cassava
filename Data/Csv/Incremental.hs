@@ -29,7 +29,7 @@ module Data.Csv.Incremental
 
 import Control.Applicative ((<*), (<|>))
 import qualified Data.Attoparsec as A
-import Data.Attoparsec.Char8 (endOfInput, endOfLine)
+import Data.Attoparsec.Char8 (endOfInput)
 import qualified Data.ByteString as B
 import qualified Data.Vector as V
 
@@ -37,6 +37,7 @@ import Data.Csv.Conversion hiding (Parser, record, toNamedRecord)
 import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Parser
 import Data.Csv.Types
+import Data.Csv.Util (endOfLine)
 
 -- $feed-header
 --
