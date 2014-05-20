@@ -244,6 +244,12 @@ partialDecode p = case runParser p of
   Left _  -> return ()
   Right _ -> assertFailure "expected partial field decode"
 
+expect :: (Eq a, Show a) => Parser a -> a -> Assertion
+expect p a0 =
+  case runParser p of
+    Right a -> a @=? a0
+    Left  e -> assertFailure e
+
 conversionTests :: [TF.Test]
 conversionTests =
     [ testGroup "roundTrip"
@@ -293,6 +299,17 @@ conversionTests =
                             (parseField "1.0+" :: Parser Double))
       , testCase "Integer" (partialDecode
                             (parseField "1e6"  :: Parser Integer))
+      ]
+    , testGroup "Space trimming"
+      [ testCase "_Int"     (expect (parseField " 12"     :: Parser Int)    12)
+      , testCase "Int_"     (expect (parseField "12 "     :: Parser Int)    12)
+      , testCase "_Int_"    (expect (parseField " 12 "    :: Parser Int)    12)
+      , testCase "_Word"    (expect (parseField " 12"     :: Parser Word)   12)
+      , testCase "Word_"    (expect (parseField "12 "     :: Parser Word)   12)
+      , testCase "_Word_"   (expect (parseField " 12 "    :: Parser Word)   12)
+      , testCase "_Double"  (expect (parseField " 1.2e1"  :: Parser Double) 12)
+      , testCase "Double_"  (expect (parseField "1.2e1 "  :: Parser Double) 12)
+      , testCase "_Double_" (expect (parseField " 1.2e1 " :: Parser Double) 12)
       ]
     ]
 
