@@ -429,7 +429,7 @@ instance ToField Char where
     toField = toField . T.encodeUtf8 . T.singleton
     {-# INLINE toField #-}
 
--- | Accepts same syntax as 'rational'.
+-- | Accepts same syntax as 'rational'. Ignores whitespace.
 instance FromField Double where
     parseField = parseDouble
     {-# INLINE parseField #-}
@@ -440,7 +440,7 @@ instance ToField Double where
     toField = realFloat
     {-# INLINE toField #-}
 
--- | Accepts same syntax as 'rational'.
+-- | Accepts same syntax as 'rational'. Ignores whitespace.
 instance FromField Float where
     parseField s = double2Float <$> parseDouble s
     {-# INLINE parseField #-}
@@ -457,7 +457,7 @@ parseDouble s = case parseOnly (ws *> double <* ws) s of
     Right n  -> pure n
 {-# INLINE parseDouble #-}
 
--- | Accepts a signed decimal number.
+-- | Accepts a signed decimal number. Ignores whitespace.
 instance FromField Int where
     parseField = parseSigned "Int"
     {-# INLINE parseField #-}
@@ -467,7 +467,7 @@ instance ToField Int where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts a signed decimal number.
+-- | Accepts a signed decimal number. Ignores whitespace.
 instance FromField Integer where
     parseField = parseSigned "Integer"
     {-# INLINE parseField #-}
@@ -477,7 +477,7 @@ instance ToField Integer where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts a signed decimal number.
+-- | Accepts a signed decimal number. Ignores whitespace.
 instance FromField Int8 where
     parseField = parseSigned "Int8"
     {-# INLINE parseField #-}
@@ -487,7 +487,7 @@ instance ToField Int8 where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts a signed decimal number.
+-- | Accepts a signed decimal number. Ignores whitespace.
 instance FromField Int16 where
     parseField = parseSigned "Int16"
     {-# INLINE parseField #-}
@@ -497,7 +497,7 @@ instance ToField Int16 where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts a signed decimal number.
+-- | Accepts a signed decimal number. Ignores whitespace.
 instance FromField Int32 where
     parseField = parseSigned "Int32"
     {-# INLINE parseField #-}
@@ -507,7 +507,7 @@ instance ToField Int32 where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts a signed decimal number.
+-- | Accepts a signed decimal number. Ignores whitespace.
 instance FromField Int64 where
     parseField = parseSigned "Int64"
     {-# INLINE parseField #-}
@@ -517,7 +517,7 @@ instance ToField Int64 where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts an unsigned decimal number.
+-- | Accepts an unsigned decimal number. Ignores whitespace.
 instance FromField Word where
     parseField = parseUnsigned "Word"
     {-# INLINE parseField #-}
@@ -527,7 +527,7 @@ instance ToField Word where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts an unsigned decimal number.
+-- | Accepts an unsigned decimal number. Ignores whitespace.
 instance FromField Word8 where
     parseField = parseUnsigned "Word8"
     {-# INLINE parseField #-}
@@ -537,7 +537,7 @@ instance ToField Word8 where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts an unsigned decimal number.
+-- | Accepts an unsigned decimal number. Ignores whitespace.
 instance FromField Word16 where
     parseField = parseUnsigned "Word16"
     {-# INLINE parseField #-}
@@ -547,7 +547,7 @@ instance ToField Word16 where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts an unsigned decimal number.
+-- | Accepts an unsigned decimal number. Ignores whitespace.
 instance FromField Word32 where
     parseField = parseUnsigned "Word32"
     {-# INLINE parseField #-}
@@ -557,7 +557,7 @@ instance ToField Word32 where
     toField = decimal
     {-# INLINE toField #-}
 
--- | Accepts an unsigned decimal number.
+-- | Accepts an unsigned decimal number. Ignores whitespace.
 instance FromField Word64 where
     parseField = parseUnsigned "Word64"
     {-# INLINE parseField #-}
