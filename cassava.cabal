@@ -36,7 +36,7 @@ Library
 
   Build-depends:
     array < 0.6,
-    attoparsec >= 0.10.2 && < 0.12,
+    attoparsec >= 0.10.2 && < 0.13,
     base < 5,
     blaze-builder < 0.4,
     bytestring < 0.11,
