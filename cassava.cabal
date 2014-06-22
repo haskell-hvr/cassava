@@ -19,6 +19,10 @@ Cabal-version:       >=1.8
 Extra-source-files:  examples/*.hs
 
 
+Flag maintainer
+  Description: Enable settings for the package maintainer.
+  Default: False
+
 Library
   Exposed-modules:
     Data.Csv
@@ -51,7 +55,7 @@ Library
   if impl(ghc >= 7.2.1)
     cpp-options: -DGENERICS
     build-depends: ghc-prim >= 0.2 && < 0.4
-  
+
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Main-is: UnitTests.hs
@@ -86,6 +90,22 @@ Benchmark benchmarks
     unordered-containers,
     vector
   hs-source-dirs: benchmarks
+
+executable compare
+  hs-source-dirs: benchmarks
+  Main-is: Compare.hs
+
+  if !flag(maintainer)
+    buildable: False
+  else
+    build-depends:
+      base,
+      bytestring,
+      cassava,
+      containers,
+      mtl >= 2.1,
+      text,
+      vector
 
 source-repository head
   type:     git
