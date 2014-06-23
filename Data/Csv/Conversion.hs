@@ -108,7 +108,7 @@ fromStrict = L.fromChunks . (:[])
 -- >         | otherwise     = mzero
 class FromRecord a where
     parseRecord :: Record -> Parser a
-  
+
 #ifdef GENERICS
     default parseRecord :: (Generic a, GFromRecord (Rep a)) => Record -> Parser a
     parseRecord r = to <$> gparseRecord r
@@ -636,8 +636,15 @@ ws = A8.skipWhile (\c -> c == ' ' || c == '\t')
 parseOnly :: A8.Parser a -> B.ByteString -> Either String a
 parseOnly parser input = go (A8.parse parser input) where
   go (A8.Fail _ _ err) = Left err
-  go (A8.Partial f)    = go (f B.empty)
+  go (A8.Partial f)    = go2 (f B.empty)
   go (A8.Done leftover result)
+    | B.null leftover = Right result
+    | otherwise = Left ("incomplete field parse, leftover: "
+                        ++ show (B.unpack leftover))
+
+  go2 (A8.Fail _ _ err) = Left err
+  go2 (A8.Partial _)    = error "parseOnly: impossible error!"
+  go2 (A8.Done leftover result)
     | B.null leftover = Right result
     | otherwise = Left ("incomplete field parse, leftover: "
                         ++ show (B.unpack leftover))
@@ -797,9 +804,9 @@ class GFromRecord f where
     gparseRecord :: Record -> Parser (f p)
 
 instance GFromRecordSum f Record => GFromRecord (M1 i n f) where
-    gparseRecord v = 
+    gparseRecord v =
         case (IM.lookup n gparseRecordSum) of
-            Nothing -> lengthMismatch n v 
+            Nothing -> lengthMismatch n v
             Just p -> M1 <$> p v
       where
         n = V.length v
@@ -808,15 +815,15 @@ class GFromNamedRecord f where
     gparseNamedRecord :: NamedRecord -> Parser (f p)
 
 instance GFromRecordSum f NamedRecord => GFromNamedRecord (M1 i n f) where
-    gparseNamedRecord v = 
+    gparseNamedRecord v =
         foldr (\f p -> p <|> M1 <$> f v) empty (IM.elems gparseRecordSum)
 
 class GFromRecordSum f r where
     gparseRecordSum :: IM.IntMap (r -> Parser (f p))
 
 instance (GFromRecordSum a r, GFromRecordSum b r) => GFromRecordSum (a :+: b) r where
-    gparseRecordSum = 
-        IM.unionWith (\a b r -> a r <|> b r) 
+    gparseRecordSum =
+        IM.unionWith (\a b r -> a r <|> b r)
             (fmap (L1 <$>) <$> gparseRecordSum)
             (fmap (R1 <$>) <$> gparseRecordSum)
 
