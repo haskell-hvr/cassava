@@ -331,7 +331,12 @@ csvWithHeader !opts = do
         if blankLine r
             then (endOfLine *> records hdr) <|> pure []
             else case runParser (convert hdr r) of
-                Left msg  -> fail $ "conversion error: " ++ msg
+                Left msg  ->
+                    if ignoreFailingRows opts
+                       then do !vals <- (endOfLine *> records hdr) <|> pure []
+                               return vals
+
+                       else fail $ "conversion error: " ++ msg
                 Right val -> do
                     !vals <- (endOfLine *> records hdr) <|> pure []
                     return (val : vals)

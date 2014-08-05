@@ -54,12 +54,14 @@ import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, newline, double
 data DecodeOptions = DecodeOptions
     { -- | Field delimiter.
       decDelimiter  :: {-# UNPACK #-} !Word8
+    , ignoreFailingRows :: {-# UNPACK #-} !Bool
     } deriving (Eq, Show)
 
 -- | Decoding options for parsing CSV files.
 defaultDecodeOptions :: DecodeOptions
 defaultDecodeOptions = DecodeOptions
     { decDelimiter = 44  -- comma
+    , ignoreFailingRows = False
     }
 
 -- | Parse a CSV file that does not include a header.
