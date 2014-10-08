@@ -54,7 +54,8 @@ executable NamedBasedGeneric
 executable StreamingIndexBasedDecode
   main-is: StreamingIndexBasedDecode.hs
   build-depends:
-    base,
-    bytestring,
-    cassava
+                  base
+                , bifunctors >= 4.1.1.1
+                , bytestring
+                , cassava
   default-language:    Haskell2010
