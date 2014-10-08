@@ -70,7 +70,7 @@ namedDecodesAs input ehdr expected = case decodeByName input of
   where
     expected' = V.fromList $ map HM.fromList expected
 
-recordsToList :: S.Records a -> Either String [a]
+recordsToList :: S.Records String a -> Either String [a]
 recordsToList (S.Nil (Just err) _)  = Left err
 recordsToList (S.Nil Nothing _)     = Right []
 recordsToList (S.Cons (Left err) _) = Left err

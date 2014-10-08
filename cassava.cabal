@@ -44,14 +44,15 @@ Library
     deepseq < 1.4,
     text < 1.3,
     unordered-containers < 0.3,
-    vector < 0.11
+    vector < 0.11,
+    bifunctors >= 4.0 && < 4.2
 
   ghc-options: -Wall -O2
 
   if impl(ghc >= 7.2.1)
     cpp-options: -DGENERICS
     build-depends: ghc-prim >= 0.2 && < 0.4
-  
+
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Main-is: UnitTests.hs

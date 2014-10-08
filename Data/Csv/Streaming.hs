@@ -28,13 +28,16 @@ module Data.Csv.Streaming
     , decodeByNameWith
     ) where
 
-import Control.Applicative ((<$>), (<*>), pure)
+import Control.Applicative ((<$>), (<*>), pure, Applicative)
 import Control.DeepSeq (NFData(rnf))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import Data.Foldable (Foldable(..))
 import Data.Traversable (Traversable(..))
+import Data.Bifunctor (Bifunctor(..))
+import Data.Bifoldable (Bifoldable(..))
+import Data.Bitraversable (Bitraversable(..))
 import Prelude hiding (foldr)
 
 import Data.Csv.Conversion
@@ -82,9 +85,9 @@ import qualified Data.ByteString.Lazy.Internal as BL  -- for constructors
 
 -- | A stream of parsed records. If type conversion failed for the
 -- record, the error is returned as @'Left' errMsg@.
-data Records a
+data Records e a
     = -- | A record or an error message, followed by more records.
-      Cons (Either String a) (Records a)
+      Cons (Either e a) (Records e a)
 
       -- | End of stream, potentially due to a parse error. If a parse
       -- error occured, the first field contains the error message.
@@ -93,13 +96,13 @@ data Records a
     deriving (Eq, Functor, Show)
 
 -- | Skips records that failed to convert.
-instance Foldable Records where
+instance Foldable (Records e) where
     foldr = foldrRecords
 #if MIN_VERSION_base(4,6,0)
     foldl' = foldlRecords'
 #endif
 
-foldrRecords :: (a -> b -> b) -> b -> Records a -> b
+foldrRecords :: (a -> b -> b) -> b -> Records e a -> b
 foldrRecords f = go
   where
     go z (Cons (Right x) rs) = f x (go z rs)
@@ -107,7 +110,7 @@ foldrRecords f = go
 {-# INLINE foldrRecords #-}
 
 #if MIN_VERSION_base(4,6,0)
-foldlRecords' :: (a -> b -> a) -> a -> Records b -> a
+foldlRecords' :: (a -> b -> a) -> a -> Records e b -> a
 foldlRecords' f = go
   where
     go z (Cons (Right x) rs) = let z' = f z x in z' `seq` go z' rs
@@ -115,14 +118,14 @@ foldlRecords' f = go
 {-# INLINE foldlRecords' #-}
 #endif
 
-instance Traversable Records where
+instance Traversable (Records e) where
     traverse _ (Nil merr rest) = pure $ Nil merr rest
     traverse f (Cons x xs)     = Cons <$> traverseElem x <*> traverse f xs
       where
         traverseElem (Left err) = pure $ Left err
         traverseElem (Right y)  = Right <$> f y
 
-instance NFData a => NFData (Records a) where
+instance (NFData e, NFData a) => NFData (Records e a) where
     rnf (Cons r rs) = rnf r `seq` rnf rs
 #if MIN_VERSION_bytestring(0,10,0)
     rnf (Nil errMsg rest) = rnf errMsg `seq` rnf rest
@@ -134,13 +137,51 @@ rnfLazyByteString BL.Empty       = ()
 rnfLazyByteString (BL.Chunk _ b) = rnfLazyByteString b
 #endif
 
+instance Bifunctor Records where
+    bimap = bimapRecords
+
+bimapRecords :: (a -> c) -> (b -> d) -> Records a b -> Records c d
+bimapRecords f g = go
+  where go (Cons x xs) = Cons (bimap f g x) (bimapRecords f g xs)
+        go (Nil merr rest) = Nil merr rest
+{-# INLINE bimapRecords #-}
+
+instance Bifoldable Records where
+    bifoldr = bifoldrRecords
+    bifoldl = bifoldlRecords
+
+bifoldrRecords :: (a -> c -> c) -> (b -> c -> c) -> c -> Records a b -> c
+bifoldrRecords f g = go
+  where go z (Nil _ _) = z
+        go z (Cons r xs) =
+          bifoldr f g (go z xs) r
+{-# INLINE bifoldrRecords #-}
+
+bifoldlRecords :: (c -> a -> c) -> (c -> b -> c) -> c -> Records a b -> c
+bifoldlRecords f g = go
+  where go z (Nil _ _) = z
+        go z (Cons r xs) =
+          let z' = bifoldl f g z r
+          in go z' xs
+{-# INLINE bifoldlRecords #-}
+
+instance Bitraversable Records where
+    bitraverse = bitraverseRecords
+
+bitraverseRecords :: Applicative f
+                  => (a -> f c) -> (b -> f d) -> Records a b -> f (Records c d)
+bitraverseRecords f g = go
+    where go (Nil merr rest) = pure (Nil merr rest)
+          go (Cons r xs) = Cons <$> bitraverse f g r <*> bitraverseRecords f g xs
+{-# INLINE bitraverseRecords #-}
+
 -- | Efficiently deserialize CSV records in a streaming fashion.
 -- Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
 decode :: FromRecord a
        => HasHeader      -- ^ Data contains header that should be
                          -- skipped
        -> BL.ByteString  -- ^ CSV data
-       -> Records a
+       -> Records String a
 decode = decodeWith defaultDecodeOptions
 
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
@@ -149,7 +190,7 @@ decodeWith :: FromRecord a
            -> HasHeader      -- ^ Data contains header that should be
                              -- skipped
            -> BL.ByteString  -- ^ CSV data
-           -> Records a
+           -> Records String a
 decodeWith !opts hasHeader s0 =
     go (BL.toChunks s0) (I.decodeWith opts hasHeader)
   where
@@ -164,7 +205,7 @@ decodeWith !opts hasHeader s0 =
 -- 'defaultDecodeOptions'@.
 decodeByName :: FromNamedRecord a
              => BL.ByteString  -- ^ CSV data
-             -> Either String (Header, Records a)
+             -> Either String (Header, Records String a)
 decodeByName = decodeByNameWith defaultDecodeOptions
 
 -- TODO: Include something more in error messages?
@@ -174,7 +215,7 @@ decodeByName = decodeByNameWith defaultDecodeOptions
 decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> BL.ByteString  -- ^ CSV data
-                 -> Either String (Header, Records a)
+                 -> Either String (Header, Records String a)
 decodeByNameWith !opts s0 = go (BL.toChunks s0) (I.decodeByNameWith opts)
   where
     go ss (DoneH hdr p)    = Right (hdr, go2 ss p)
