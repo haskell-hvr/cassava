@@ -22,7 +22,6 @@ module Data.Csv.Parser
     , record
     , name
     , field
-    , unescapedField
     ) where
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
