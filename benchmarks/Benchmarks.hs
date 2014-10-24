@@ -84,7 +84,7 @@ instance ToNamedRecord President where
         , "Home State"      .= homeState
         ]
 
-
+fromStrict :: B.ByteString -> BL.ByteString
 fromStrict s = BL.fromChunks [s]
 
 type BSHashMap a = HM.HashMap B.ByteString a
