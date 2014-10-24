@@ -81,7 +81,8 @@ script:
  - cabal-1.20 build
 
  - cabal-1.20 test
- - cabal-1.20 check
+ # We use -O2 so check will fail.
+ # - cabal-1.20 check
 
  # tests that a source-distribution can be generated
  - cabal-1.20 sdist
