@@ -33,7 +33,7 @@ import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
                                  toLazyByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromString)
 import Control.Applicative ((*>), (<|>), optional, pure)
-import Data.Attoparsec.Char8 (endOfInput)
+import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8

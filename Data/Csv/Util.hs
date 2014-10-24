@@ -13,10 +13,10 @@ module Data.Csv.Util
 import Control.Applicative ((<|>), (*>))
 import Data.Word (Word8)
 import Data.Attoparsec.ByteString.Char8 (string)
-import qualified Data.Attoparsec as A
+import qualified Data.Attoparsec.ByteString as A
 import qualified Data.ByteString as B
 import qualified Data.Vector as V
-import Data.Attoparsec (Parser)
+import Data.Attoparsec.ByteString (Parser)
 
 -- | A strict version of 'Data.Functor.<$>' for monads.
 (<$!>) :: Monad m => (a -> b) -> m a -> m b

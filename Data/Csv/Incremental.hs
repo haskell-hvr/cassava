@@ -28,8 +28,8 @@ module Data.Csv.Incremental
     ) where
 
 import Control.Applicative ((<*), (<|>))
-import qualified Data.Attoparsec as A
-import Data.Attoparsec.Char8 (endOfInput)
+import qualified Data.Attoparsec.ByteString as A
+import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.ByteString as B
 import qualified Data.Vector as V
 

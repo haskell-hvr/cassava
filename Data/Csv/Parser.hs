@@ -27,8 +27,8 @@ module Data.Csv.Parser
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
 import Control.Applicative ((*>), (<$>), (<*), optional, pure)
-import Data.Attoparsec.Char8 (char, endOfInput)
-import qualified Data.Attoparsec as A
+import Data.Attoparsec.ByteString.Char8 (char, endOfInput)
+import qualified Data.Attoparsec.ByteString as A
 import qualified Data.Attoparsec.Lazy as AL
 import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
