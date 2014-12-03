@@ -40,6 +40,7 @@ module Data.Csv
     , EncodeOptions(..)
     , defaultEncodeOptions
     , encodeWith
+    , encodeBuilderWith
     , encodeByNameWith
 
     -- * Core CSV types
