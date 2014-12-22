@@ -1,3 +1,7 @@
+## Version 0.4.2.1
+
+ * Support deepseq-1.4.
+
 ## Version 0.4.2.0
 
  * Minor performance improvements.
