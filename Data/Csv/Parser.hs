@@ -84,7 +84,7 @@ sepByDelim1' p !delim = liftM2' (:) p loop
         case mb of
             Just b | b == delim -> liftM2' (:) (A.anyWord8 *> p) loop
             _                   -> pure []
-{-# INLINe sepByDelim1' #-}
+{-# INLINE sepByDelim1' #-}
 
 -- | Specialized version of 'sepBy1'' which is faster due to not
 -- accepting an arbitrary separator.
@@ -100,7 +100,7 @@ sepByEndOfLine1' p = liftM2' (:) p loop
                    | b == newline ->
                 liftM2' (:) (A.anyWord8 *> p) loop
             _ -> pure []
-{-# INLINe sepByEndOfLine1' #-}
+{-# INLINE sepByEndOfLine1' #-}
 
 -- | Parse a CSV file that includes a header.
 csvWithHeader :: DecodeOptions -> AL.Parser (Header, V.Vector NamedRecord)
