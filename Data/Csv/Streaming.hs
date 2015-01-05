@@ -28,13 +28,12 @@ module Data.Csv.Streaming
     , decodeByNameWith
     ) where
 
-import Control.Applicative ((<$>), (<*>), pure)
+import Control.Applicative ((<$>))
 import Control.DeepSeq (NFData(rnf))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import Data.Foldable (Foldable(..))
-import Data.Traversable (Traversable(..))
 import Prelude hiding (foldr)
 
 import Data.Csv.Conversion
@@ -43,6 +42,11 @@ import Data.Csv.Incremental hiding (decode, decodeByName, decodeByNameWith,
 import qualified Data.Csv.Incremental as I
 import Data.Csv.Parser
 import Data.Csv.Types
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((<*>), pure)
+import Data.Traversable (Traversable(..))
+#endif
 
 #if !MIN_VERSION_bytestring(0,10,0)
 import qualified Data.ByteString.Lazy.Internal as BL  -- for constructors

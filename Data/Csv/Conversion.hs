@@ -31,8 +31,7 @@ module Data.Csv.Conversion
     , namedRecord
     ) where
 
-import Control.Applicative (Alternative, Applicative, (<*>), (<$>), (<|>),
-                            (<*), (*>), empty, pure)
+import Control.Applicative (Alternative, (<$>), (<|>), empty)
 import Control.Monad (MonadPlus, mplus, mzero)
 import Data.Attoparsec.ByteString.Char8 (double)
 import qualified Data.Attoparsec.ByteString.Char8 as A8
@@ -42,21 +41,26 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Lazy as HM
 import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.Map as M
-import Data.Monoid (Monoid, mappend, mempty)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
-import Data.Traversable (traverse)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
-import Data.Word (Word, Word8, Word16, Word32, Word64)
+import Data.Word (Word8, Word16, Word32, Word64)
 import GHC.Float (double2Float)
 import Prelude hiding (lookup, takeWhile)
 
 import Data.Csv.Conversion.Internal
 import Data.Csv.Types
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative (Applicative, (<*>), (<*), (*>), pure)
+import Data.Monoid (Monoid, mappend, mempty)
+import Data.Traversable (traverse)
+import Data.Word (Word)
+#endif
 
 #ifdef GENERICS
 import GHC.Generics

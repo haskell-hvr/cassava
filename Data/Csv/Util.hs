@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, OverloadedStrings #-}
+{-# LANGUAGE BangPatterns, CPP, OverloadedStrings #-}
 
 module Data.Csv.Util
     ( (<$!>)
@@ -10,13 +10,17 @@ module Data.Csv.Util
     , cr
     ) where
 
-import Control.Applicative ((<|>), (*>))
+import Control.Applicative ((<|>))
 import Data.Word (Word8)
 import Data.Attoparsec.ByteString.Char8 (string)
 import qualified Data.Attoparsec.ByteString as A
 import qualified Data.ByteString as B
 import qualified Data.Vector as V
 import Data.Attoparsec.ByteString (Parser)
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((*>))
+#endif
 
 -- | A strict version of 'Data.Functor.<$>' for monads.
 (<$!>) :: Monad m => (a -> b) -> m a -> m b

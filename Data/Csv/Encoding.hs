@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, OverloadedStrings #-}
+{-# LANGUAGE BangPatterns, CPP, OverloadedStrings #-}
 
 -- Module:      Data.Csv.Encoding
 -- Copyright:   (c) 2011 MailRank, Inc.
@@ -32,7 +32,7 @@ module Data.Csv.Encoding
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
                                  toLazyByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromString)
-import Control.Applicative ((*>), (<|>), optional, pure)
+import Control.Applicative ((<|>), optional)
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
@@ -40,7 +40,6 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.HashMap.Strict as HM
-import Data.Monoid (mconcat, mempty)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Data.Word (Word8)
@@ -55,6 +54,11 @@ import qualified Data.Csv.Parser as Parser
 import Data.Csv.Types hiding (toNamedRecord)
 import qualified Data.Csv.Types as Types
 import Data.Csv.Util (blankLine, endOfLine)
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((*>), pure)
+import Data.Monoid (mconcat, mempty)
+#endif
 
 -- TODO: 'encode' isn't as efficient as it could be.
 

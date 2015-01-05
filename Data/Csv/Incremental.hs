@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, DeriveFunctor #-}
+{-# LANGUAGE BangPatterns, CPP, DeriveFunctor #-}
 
 -- | This module allows for incremental decoding of CSV data. This is
 -- useful if you e.g. want to interleave I\/O with parsing or if you
@@ -27,7 +27,7 @@ module Data.Csv.Incremental
     , decodeByNameWith
     ) where
 
-import Control.Applicative ((<*), (<|>))
+import Control.Applicative ((<|>))
 import qualified Data.Attoparsec.ByteString as A
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.ByteString as B
@@ -38,6 +38,10 @@ import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Parser
 import Data.Csv.Types
 import Data.Csv.Util (endOfLine)
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((<*))
+#endif
 
 -- $feed-header
 --
