@@ -24,9 +24,10 @@ decimal = toByteString . formatDecimal
 -- TODO: Add an optimized version for Integer.
 
 formatDecimal :: Integral a => a -> Builder
-{-# SPECIALIZE formatDecimal :: Int8 -> Builder #-}
 {-# RULES "formatDecimal/Int" formatDecimal = formatBoundedSigned
     :: Int -> Builder #-}
+{-# RULES "formatDecimal/Int8" formatDecimal = formatBoundedSigned
+    :: Int8 -> Builder #-}
 {-# RULES "formatDecimal/Int16" formatDecimal = formatBoundedSigned
     :: Int16 -> Builder #-}
 {-# RULES "formatDecimal/Int32" formatDecimal = formatBoundedSigned
@@ -43,6 +44,7 @@ formatDecimal :: Integral a => a -> Builder
     :: Word32 -> Builder #-}
 {-# RULES "formatDecimal/Word64" formatDecimal = formatPositive
     :: Word64 -> Builder #-}
+{-# NOINLINE formatDecimal #-}
 formatDecimal i
     | i < 0     = minus <>
                   if i <= -128
