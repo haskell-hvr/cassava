@@ -78,7 +78,7 @@ install:
  - travis_retry cabal update
  - cabal install --only-dependencies --enable-tests
  # Install benchmark dependencies manually to avoid dependency cycle.
- - cabal-1.20 install criterion "lazy-csv >= 0.5"
+ - cabal install criterion "lazy-csv >= 0.5"
 
 # Here starts the actual work to be performed for the package under
 # test; any command which exits with a non-zero exit code causes the
