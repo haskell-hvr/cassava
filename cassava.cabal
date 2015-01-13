@@ -18,7 +18,6 @@ Build-type:          Simple
 Cabal-version:       >=1.8
 Extra-source-files:  examples/*.hs
 
-
 Library
   Exposed-modules:
     Data.Csv
@@ -51,7 +50,7 @@ Library
   if impl(ghc >= 7.2.1)
     cpp-options: -DGENERICS
     build-depends: ghc-prim >= 0.2 && < 0.4
-  
+
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Main-is: UnitTests.hs
@@ -75,17 +74,43 @@ Test-suite unit-tests
 Benchmark benchmarks
   Type: exitcode-stdio-1.0
   Main-is: Benchmarks.hs
+
+  Other-modules:
+    Data.Csv
+    Data.Csv.Compat.Monoid
+    Data.Csv.Conversion
+    Data.Csv.Conversion.Internal
+    Data.Csv.Encoding
+    Data.Csv.Incremental
+    Data.Csv.Parser
+    Data.Csv.Streaming
+    Data.Csv.Types
+    Data.Csv.Util
+
   Build-depends:
-    base,
-    bytestring,
-    cassava,
-    criterion,
-    deepseq,
+    array < 0.6,
+    attoparsec >= 0.10.2 && < 0.13,
+    base < 5,
+    blaze-builder < 0.4,
+    bytestring < 0.11,
+    containers < 0.6,
+    criterion >= 1.0,
+    deepseq < 1.5,
     lazy-csv >= 0.5,
+    text < 1.3,
     text,
-    unordered-containers,
-    vector
-  hs-source-dirs: benchmarks
+    unordered-containers < 0.3,
+    vector < 0.11
+
+  ghc-options: -Wall -O2
+
+  if impl(ghc >= 7.2.1)
+    cpp-options: -DGENERICS
+    build-depends: ghc-prim >= 0.2 && < 0.4
+
+  -- We cannot depend on the library directly as that creates a
+  -- dependency cycle.
+  hs-source-dirs: . benchmarks
 
 source-repository head
   type:     git
