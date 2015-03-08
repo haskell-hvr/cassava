@@ -11,6 +11,7 @@
 -- > main = withFile "salaries.csv" ReadMode $ \ csvFile -> do
 -- >     let loop !_ (Fail _ errMsg) = putStrLn errMsg >> exitFailure
 -- >         loop acc (Many rs k)    = loop (acc + sumSalaries rs) =<< feed k
+
 -- >         loop acc (Done rs)      = putStrLn $ "Total salaries: " ++
 -- >                                   show (sumSalaries rs + acc)
 -- >
@@ -55,11 +56,13 @@ module Data.Csv.Incremental
     , HasHeader(..)
     , decode
     , decodeWith
+    , decodeWithP
 
     -- ** Name-based record conversion
     -- $namebased
     , decodeByName
     , decodeByNameWith
+    , decodeByNameWithP
 
     -- * Encoding
     -- ** Index-based record conversion
@@ -247,12 +250,21 @@ decodeWith :: FromRecord a
            -> HasHeader      -- ^ Data contains header that should be
                              -- skipped
            -> Parser a
-decodeWith !opts hasHeader = case hasHeader of
+decodeWith !opts hasHeader = decodeWithP parseRecord opts hasHeader
+
+-- | Like 'decodeWith', but lets you pass an explicit parser value instead of
+-- using a typeclass
+decodeWithP :: (Record -> Conversion.Parser a)
+            -> DecodeOptions  -- ^ Decoding options
+            -> HasHeader      -- ^ Data contains header that should be
+                             -- skipped
+            -> Parser a
+decodeWithP p !opts hasHeader = case hasHeader of
     HasHeader -> go (decodeHeaderWith opts)
-    NoHeader  -> Many [] $ \ s -> decodeWithP parseRecord opts s
+    NoHeader  -> Many [] $ \ s -> decodeWithP' p opts s
   where go (FailH rest msg) = Fail rest msg
         go (PartialH k)     = Many [] $ \ s' -> go (k s')
-        go (DoneH _ rest)   = decodeWithP parseRecord opts rest
+        go (DoneH _ rest)   = decodeWithP' p opts rest
 
 ------------------------------------------------------------------------
 
@@ -269,12 +281,19 @@ decodeByName = decodeByNameWith defaultDecodeOptions
 decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> HeaderParser (Parser a)
-decodeByNameWith !opts = go (decodeHeaderWith opts)
+decodeByNameWith !opts = decodeByNameWithP parseNamedRecord opts
+
+-- | Like 'decodeByNameWith', but lets you pass an explicit parser value instead
+-- of using a typeclass
+decodeByNameWithP :: (NamedRecord -> Conversion.Parser a)
+                  -> DecodeOptions  -- ^ Decoding options
+                  -> HeaderParser (Parser a)
+decodeByNameWithP p !opts = go (decodeHeaderWith opts)
   where
     go (FailH rest msg) = FailH rest msg
     go (PartialH k)     = PartialH $ \ s -> go (k s)
     go (DoneH hdr rest) =
-        DoneH hdr (decodeWithP (parseNamedRecord . toNamedRecord hdr) opts rest)
+        DoneH hdr (decodeWithP' (p . toNamedRecord hdr) opts rest)
 
 ------------------------------------------------------------------------
 
@@ -282,9 +301,9 @@ decodeByNameWith !opts = go (decodeHeaderWith opts)
 -- 'B.ByteString' input.
 
 -- | Like 'decode', but lets you customize how the CSV data is parsed.
-decodeWithP :: (Record -> Conversion.Parser a) -> DecodeOptions -> B.ByteString
+decodeWithP' :: (Record -> Conversion.Parser a) -> DecodeOptions -> B.ByteString
             -> Parser a
-decodeWithP p !opts = go Incomplete [] . parser
+decodeWithP' p !opts = go Incomplete [] . parser
   where
     go !_ !acc (A.Fail rest _ msg)
         | null acc  = Fail rest err
@@ -294,7 +313,7 @@ decodeWithP p !opts = go Incomplete [] . parser
       where cont s = go m [] (k s)
               where m | B.null s  = Complete
                       | otherwise = Incomplete
-    go Complete _ (A.Partial _) = moduleError "decodeWithP" msg
+    go Complete _ (A.Partial _) = moduleError "decodeWithP'" msg
         where msg = "attoparsec should never return Partial in this case"
     go m acc (A.Done rest r)
         | B.null rest = case m of
@@ -309,7 +328,7 @@ decodeWithP p !opts = go Incomplete [] . parser
 
     parser = A.parse (record (decDelimiter opts) <* (endOfLine <|> endOfInput))
     convert = runParser . p
-{-# INLINE decodeWithP #-}
+{-# INLINE decodeWithP' #-}
 
 blankLine :: V.Vector B.ByteString -> Bool
 blankLine v = V.length v == 1 && (B.null (V.head v))
