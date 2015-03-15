@@ -1,3 +1,11 @@
+## Version 0.4.2.2
+
+ * Support blaze-builder 0.4.
+
+ * Make sure inlining doesn't prevent rules from firing.
+
+ * Fix incorrect INLINE pragmas.
+
 ## Version 0.4.2.1
 
  * Support deepseq-1.4.
