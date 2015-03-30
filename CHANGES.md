@@ -1,3 +1,7 @@
+## Version 0.4.2.3
+
+ * Support GHC 7.10.
+
 ## Version 0.4.2.2
 
  * Support blaze-builder 0.4.
