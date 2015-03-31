@@ -26,6 +26,7 @@ module Data.Csv.Encoding
     , EncodeOptions(..)
     , defaultEncodeOptions
     , encodeWith
+    , encodeBuilderWith
     , encodeByNameWith
     ) where
 
@@ -178,10 +179,13 @@ defaultEncodeOptions = EncodeOptions
 -- | Like 'encode', but lets you customize how the CSV data is
 -- encoded.
 encodeWith :: ToRecord a => EncodeOptions -> [a] -> L.ByteString
-encodeWith opts
+encodeWith opts = toLazyByteString . encodeBuilderWith opts
+
+-- | Like 'encodeWith', but returns a 'Builder'.
+encodeBuilderWith :: ToRecord a => EncodeOptions -> [a] -> Builder
+encodeBuilderWith opts
     | validDelim (encDelimiter opts) =
-        toLazyByteString
-        . unlines (recordSep (encUseCrLf opts))
+          unlines (recordSep (encUseCrLf opts))
         . map (encodeRecord (encDelimiter opts) . toRecord)
     | otherwise = encodeOptionsError
 {-# INLINE encodeWith #-}
