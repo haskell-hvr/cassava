@@ -140,11 +140,11 @@ decodeByNameWith :: FromNamedRecord a
                  -> Either String (Header, Vector a)
 decodeByNameWith !opts = decodeWithP (csvWithHeader opts)
 
--- | Should quoting be applied to text fields, and at which level
+-- | Should quoting be applied to fields, and at which level
 data Quoting
     = QuoteNone        -- ^ No quotes
-    | QuoteMinimal     -- ^ Quotes if the field has spaces
-    | QuoteAll         -- ^ Allways Quote
+    | QuoteMinimal     -- ^ Quotes according to RFC 4180
+    | QuoteAll         -- ^ Always quote
     deriving (Eq, Show)
 
 -- | Options that controls how data is encoded. These options can be
