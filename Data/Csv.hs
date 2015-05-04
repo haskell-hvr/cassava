@@ -28,6 +28,7 @@ module Data.Csv
       HasHeader(..)
     , decode
     , decodeByName
+    , Quoting(..)
     , encode
     , encodeByName
 

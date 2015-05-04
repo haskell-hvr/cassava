@@ -15,6 +15,7 @@ module Data.Csv.Encoding
       HasHeader(..)
     , decode
     , decodeByName
+    , Quoting(..)
     , encode
     , encodeByName
 
@@ -139,6 +140,13 @@ decodeByNameWith :: FromNamedRecord a
                  -> Either String (Header, Vector a)
 decodeByNameWith !opts = decodeWithP (csvWithHeader opts)
 
+-- | Should quoting be applied to text fields, and at which level
+data Quoting
+    = QuoteNone        -- ^ No quotes
+    | QuoteMinimal     -- ^ Quotes if the field has spaces
+    | QuoteAll         -- ^ Allways Quote
+    deriving (Eq, Show)
+
 -- | Options that controls how data is encoded. These options can be
 -- used to e.g. encode data in a tab-separated format instead of in a
 -- comma-separated format.
@@ -165,6 +173,9 @@ data EncodeOptions = EncodeOptions
       -- | Include a header row when encoding @ToNamedRecord@
       -- instances.
     , encIncludeHeader :: !Bool
+
+      -- | What kind of quoting should be applied to text fields.
+    , encQuoting :: !Quoting
     } deriving (Eq, Show)
 
 -- | Encoding options for CSV files.
@@ -173,6 +184,7 @@ defaultEncodeOptions = EncodeOptions
     { encDelimiter     = 44  -- comma
     , encUseCrLf       = True
     , encIncludeHeader = True
+    , encQuoting       = QuoteMinimal
     }
 
 -- | Like 'encode', but lets you customize how the CSV data is
@@ -182,7 +194,8 @@ encodeWith opts
     | validDelim (encDelimiter opts) =
         toLazyByteString
         . unlines (recordSep (encUseCrLf opts))
-        . map (encodeRecord (encDelimiter opts) . toRecord)
+        . map (encodeRecord (encQuoting opts) (encDelimiter opts)
+              . toRecord)
     | otherwise = encodeOptionsError
 {-# INLINE encodeWith #-}
 
@@ -205,16 +218,18 @@ encodeOptionsError = error $ "Data.Csv: " ++
         "\") or one of the record separator characters (i.e. \\n or " ++
         "\\r)"
 
-encodeRecord :: Word8 -> Record -> Builder
-encodeRecord delim = mconcat . intersperse (fromWord8 delim)
-                     . map fromByteString . map (escape delim) . V.toList
+encodeRecord :: Quoting -> Word8 -> Record -> Builder
+encodeRecord qtng delim = mconcat . intersperse (fromWord8 delim)
+                     . map fromByteString . map (escape qtng delim) . V.toList
 {-# INLINE encodeRecord #-}
 
 -- TODO: Optimize
-escape :: Word8 -> B.ByteString -> B.ByteString
-escape !delim !s
-    | B.any (\ b -> b == dquote || b == delim || b == nl || b == cr || b == sp)
-        s = toByteString $
+escape :: Quoting -> Word8 -> B.ByteString -> B.ByteString
+escape !qtng !delim !s
+    | (qtng == QuoteMinimal &&
+        B.any (\ b -> b == dquote || b == delim || b == nl || b == cr || b == sp) s
+      ) || qtng == QuoteAll
+         = toByteString $
             fromWord8 dquote
             <> B.foldl
                 (\ acc b -> acc <> if b == dquote
@@ -240,10 +255,10 @@ encodeByNameWith opts hdr v
     | otherwise = encodeOptionsError
   where
     rows False = records
-    rows True  = encodeRecord (encDelimiter opts) hdr <>
+    rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
                  recordSep (encUseCrLf opts) <> records
     records = unlines (recordSep (encUseCrLf opts))
-              . map (encodeRecord (encDelimiter opts)
+              . map (encodeRecord (encQuoting opts) (encDelimiter opts)
                      . namedRecordToRecord hdr . toNamedRecord)
               $ v
 {-# INLINE encodeByNameWith #-}

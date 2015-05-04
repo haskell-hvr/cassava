@@ -116,6 +116,18 @@ positionalTests =
       , ("twoRecords",   [["abc"], ["def"]], "abc\r\ndef\r\n")
       , ("newline",      [["abc\ndef"]],     "\"abc\ndef\"\r\n")
       ]
+    , testGroup "encode" $ map encodeTestUnqtd
+      [ ("simple",       [["abc"]],          "abc\r\n")
+      , ("quoted",       [["\"abc\""]],      "\"abc\"\r\n")
+      , ("quote",        [["a\"b"]],         "a\"b\r\n")
+      , ("quotedQuote",  [["\"a\"b\""]],     "\"a\"b\"\r\n")
+      , ("leadingSpace", [[" abc"]],         " abc\r\n")
+      , ("comma",        [["abc,def"]],      "abc,def\r\n")
+      , ("twoFields",    [["abc","def"]],    "abc,def\r\n")
+      , ("twoRecords",   [["abc"], ["def"]], "abc\r\ndef\r\n")
+      , ("newline",      [["abc\ndef"]],     "abc\ndef\r\n")
+      ]
+
     , testGroup "encodeWith"
       [ testCase "tab-delim" $ encodesWithAs (defEnc { encDelimiter = 9 })
         [["1", "2"]] "1\t2\r\n"
@@ -155,6 +167,8 @@ positionalTests =
 
     encodeTest (name, input, expected) =
         testCase name $ input `encodesAs` expected
+    encodeTestUnqtd (name, input, expected) =
+        testCase name $ encodesWithAs defEncNoneEnq input expected
     decodeTest (name, input, expected) =
         testCase name $ input `decodesAs` expected
     decodeWithTest (name, opts, input, expected) =
@@ -164,6 +178,7 @@ positionalTests =
     streamingDecodeWithTest (name, opts, input, expected) =
         testCase name $ decodesWithStreamingAs opts input expected
     defEnc = defaultEncodeOptions
+    defEncNoneEnq = defaultEncodeOptions { encQuoting = QuoteNone }
     defDec = defaultDecodeOptions
 
 nameBasedTests :: [TF.Test]
