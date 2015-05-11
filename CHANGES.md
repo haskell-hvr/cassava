@@ -1,3 +1,7 @@
+## Version 0.4.2.4
+
+ * Support attoparsec 0.13.
+
 ## Version 0.4.2.3
 
  * Support GHC 7.10.
