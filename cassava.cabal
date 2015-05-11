@@ -1,5 +1,5 @@
 Name:                cassava
-Version:             0.4.2.3
+Version:             0.4.2.4
 Synopsis:            A CSV parsing and encoding library
 Description:
   A CSV parsing and encoding library optimized for ease of use and high
@@ -35,7 +35,7 @@ Library
 
   Build-depends:
     array < 0.6,
-    attoparsec >= 0.10.2 && < 0.13,
+    attoparsec >= 0.10.2 && < 0.14,
     base < 5,
     blaze-builder < 0.5,
     bytestring < 0.11,
