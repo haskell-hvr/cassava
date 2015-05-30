@@ -18,6 +18,7 @@ instance DefaultOrdered Person
 persons :: [Person]
 persons = [Person "John" 50000, Person "Jane" 60000]
 
+main :: IO ()
 main = L.putStrLn $ encodeDefaultOrderedByName (go persons)
   where
     go (x:xs) = encodeNamedRecord x <> go xs
