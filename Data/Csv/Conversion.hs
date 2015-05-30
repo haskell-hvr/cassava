@@ -1,10 +1,18 @@
-{-# LANGUAGE BangPatterns, CPP, FlexibleInstances, OverloadedStrings,
-             Rank2Types #-}
-#ifdef GENERICS
-{-# LANGUAGE DefaultSignatures, TypeOperators, KindSignatures, FlexibleContexts,
-             MultiParamTypeClasses, OverlappingInstances, UndecidableInstances,
-             ScopedTypeVariables #-}
-#endif
+{-# LANGUAGE
+    BangPatterns,
+    CPP,
+    DefaultSignatures,
+    FlexibleContexts,
+    FlexibleInstances,
+    KindSignatures,
+    MultiParamTypeClasses,
+    OverlappingInstances,
+    OverloadedStrings,
+    Rank2Types,
+    ScopedTypeVariables,
+    TypeOperators,
+    UndecidableInstances
+    #-}
 module Data.Csv.Conversion
     (
     -- * Type conversion
@@ -42,6 +50,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Lazy as HM
 import Data.Int (Int8, Int16, Int32, Int64)
+import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -52,6 +61,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word8, Word16, Word32, Word64)
 import GHC.Float (double2Float)
+import GHC.Generics
 import Prelude hiding (lookup, takeWhile)
 
 import Data.Csv.Conversion.Internal
@@ -62,11 +72,6 @@ import Control.Applicative (Applicative, (<*>), (<*), (*>), pure)
 import Data.Monoid (Monoid, mappend, mempty)
 import Data.Traversable (traverse)
 import Data.Word (Word)
-#endif
-
-#ifdef GENERICS
-import GHC.Generics
-import qualified Data.IntMap as IM
 #endif
 
 ------------------------------------------------------------------------
@@ -115,10 +120,8 @@ fromStrict = L.fromChunks . (:[])
 class FromRecord a where
     parseRecord :: Record -> Parser a
 
-#ifdef GENERICS
     default parseRecord :: (Generic a, GFromRecord (Rep a)) => Record -> Parser a
     parseRecord r = to <$> gparseRecord r
-#endif
 
 -- | Haskell lacks a single-element tuple type, so if you CSV data
 -- with just one column you can use the 'Only' type to represent a
@@ -145,10 +148,8 @@ class ToRecord a where
     -- | Convert a value to a record.
     toRecord :: a -> Record
 
-#ifdef GENERICS
     default toRecord :: (Generic a, GToRecord (Rep a) Field) => a -> Record
     toRecord = V.fromList . gtoRecord . from
-#endif
 
 instance FromField a => FromRecord (Only a) where
     parseRecord v
@@ -368,10 +369,8 @@ instance (ToField a, U.Unbox a) => ToRecord (U.Vector a) where
 class FromNamedRecord a where
     parseNamedRecord :: NamedRecord -> Parser a
 
-#ifdef GENERICS
     default parseNamedRecord :: (Generic a, GFromNamedRecord (Rep a)) => NamedRecord -> Parser a
     parseNamedRecord r = to <$> gparseNamedRecord r
-#endif
 
 -- | A type that can be converted to a single CSV record.
 --
@@ -387,12 +386,10 @@ class ToNamedRecord a where
     -- | Convert a value to a named record.
     toNamedRecord :: a -> NamedRecord
 
-#ifdef GENERICS
     default toNamedRecord ::
         (Generic a, GToRecord (Rep a) (B.ByteString, B.ByteString)) =>
         a -> NamedRecord
     toNamedRecord = namedRecord . gtoRecord . from
-#endif
 
 -- | A type that has a default field order when converted to CSV. This
 -- class lets you specify how to get the headers to use for a record
@@ -423,12 +420,10 @@ class DefaultOrdered a where
     -- e.g. @'header' ('undefined' :: MyRecord)@.
     header :: a -> Header  -- TODO: Add Generic implementation
 
-#ifdef GENERICS
     default header ::
         (Generic a, GToNamedRecordHeader (Rep a)) =>
         a -> Header
     header = V.fromList. gtoNamedRecordHeader . from
-#endif
 
 instance FromField a => FromNamedRecord (M.Map B.ByteString a) where
     parseNamedRecord m = M.fromList <$>
@@ -892,8 +887,6 @@ runParser p = unParser p left right
 ------------------------------------------------------------------------
 -- Generics
 
-#ifdef GENERICS
-
 class GFromRecord f where
     gparseRecord :: Record -> Parser (f p)
 
@@ -1019,5 +1012,3 @@ instance Selector s => GToNamedRecordHeader (M1 S s a)
         | null name = error "Cannot derive DefaultOrdered for constructors without selectors"
         | otherwise = [B8.pack (selName m)]
       where name = selName m
-
-#endif
