@@ -352,9 +352,10 @@ instance Monoid (Builder a) where
 ------------------------------------------------------------------------
 -- ** Index-based record conversion
 
--- | Efficiently serialize named records in an incremental
--- fashion. Equivalent to @'encodeWith' 'defaultEncodeOptions'@. The
--- header is written before any records and dictates the field order.
+-- | Efficiently serialize named records in an incremental fashion,
+-- including the leading header. Equivalent to @'encodeWith'
+-- 'defaultEncodeOptions'@. The header is written before any records
+-- and dictates the field order.
 encodeByName :: ToNamedRecord a => Header -> NamedBuilder a -> L.ByteString
 encodeByName = encodeByNameWith Encoding.defaultEncodeOptions
 
