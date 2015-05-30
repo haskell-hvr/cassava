@@ -39,6 +39,7 @@ module Data.Csv.Conversion
     , (.=)
     , record
     , namedRecord
+    , header
     ) where
 
 import Control.Applicative (Alternative, (<$>), (<|>), empty)
@@ -379,7 +380,6 @@ class FromNamedRecord a where
 -- > data Person = Person { name :: !Text, age :: !Int }
 -- >
 -- > instance ToNamedRecord Person where
--- >     header = V.fromList ["name", "age"]
 -- >     toNamedRecord (Person name age) = namedRecord [
 -- >         "name" .= name, "age" .= age]
 class ToNamedRecord a where
@@ -397,11 +397,11 @@ class ToNamedRecord a where
 -- only have one constructor and that constructor must have named
 -- fields (also known as selectors) for all fields.
 --
--- OK: @data Foo = Foo { foo :: !Int }@
+-- Right: @data Foo = Foo { foo :: !Int }@
 --
--- Not OK: @data Bar = Bar Int@
+-- Wrong: @data Bar = Bar Int@
 --
--- If you try to derive an instance using 'GHC.Generics' and your type
+-- If you try to derive an instance using GHC generics and your type
 -- doesn't have named fields, you will get an error along the lines
 -- of:
 --
@@ -417,13 +417,13 @@ class DefaultOrdered a where
     -- | The header order for this record. Should include the names
     -- used in the 'NamedRecord' returned by 'toNamedRecord'. Pass
     -- 'undefined' as the argument, together with a type annotation
-    -- e.g. @'header' ('undefined' :: MyRecord)@.
-    header :: a -> Header  -- TODO: Add Generic implementation
+    -- e.g. @'headerOrder' ('undefined' :: MyRecord)@.
+    headerOrder :: a -> Header  -- TODO: Add Generic implementation
 
-    default header ::
+    default headerOrder ::
         (Generic a, GToNamedRecordHeader (Rep a)) =>
         a -> Header
-    header = V.fromList. gtoNamedRecordHeader . from
+    headerOrder = V.fromList. gtoNamedRecordHeader . from
 
 instance FromField a => FromNamedRecord (M.Map B.ByteString a) where
     parseNamedRecord m = M.fromList <$>
@@ -805,6 +805,10 @@ record = V.fromList
 -- pairs.  Use '.=' to construct such a pair from a name and a value.
 namedRecord :: [(B.ByteString, B.ByteString)] -> NamedRecord
 namedRecord = HM.fromList
+
+-- | Construct a header from a list of 'B.ByteString's.
+header :: [B.ByteString] -> Header
+header = V.fromList
 
 ------------------------------------------------------------------------
 -- Parser for converting records to data types

@@ -343,7 +343,7 @@ encodeDefaultOrderedByNameWith ::
     EncodeOptions -> NamedBuilder a -> L.ByteString
 encodeDefaultOrderedByNameWith opts b =
     Builder.toLazyByteString $
-    runNamedBuilder b (Conversion.header (undefined :: a)) (encQuoting opts)
+    runNamedBuilder b (Conversion.headerOrder (undefined :: a)) (encQuoting opts)
     (encDelimiter opts) (encUseCrLf opts)
 
 -- | Encode a single named record.

@@ -11,8 +11,17 @@
 --    need to be escaped).
 module Data.Csv
     (
-    -- * Usage example
+    -- * Usage examples
     -- $example
+
+    -- ** Encoding and decoding custom data types
+    -- $example-instance
+
+    -- *** Index-based record conversion
+    -- $example-indexed-instance
+
+    -- *** Name-based record conversion
+    -- $example-named-instance
 
     -- * Treating CSV data as opaque byte strings
     -- $generic-processing
@@ -78,6 +87,7 @@ module Data.Csv
     , namedRecord
     , namedField
     , (.=)
+    , header
 
     -- ** Field conversion
     -- $fieldconversion
@@ -93,7 +103,7 @@ import Data.Csv.Types
 
 -- $example
 --
--- A short encoding usage example:
+-- A simple encoding usage example:
 --
 -- > >>> encode [("John" :: Text, 27), ("Jane", 28)]
 -- > "John,27\r\nJane,28\r\n"
@@ -104,7 +114,7 @@ import Data.Csv.Types
 -- will infer the type from the context and you can omit type
 -- signatures.
 --
--- A short decoding usage example:
+-- A simple decoding usage example:
 --
 -- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
 -- > Right [("John",27),("Jane",28)]
@@ -114,6 +124,93 @@ import Data.Csv.Types
 --
 -- In practice, the return type of 'decode' rarely needs to be given,
 -- as it can often be inferred from the context.
+
+-- $example-instance
+--
+-- To encode and decode your own data types you need to defined
+-- instances of either 'ToRecord' and 'FromRecord' or 'ToNamedRecord'
+-- and 'FromNamedRecord'. The former is used for encoding/decoding
+-- using the column index and the latter using column name.
+--
+-- There are two ways to to define these instances, either by manually
+-- defining them or by using GHC generics to derive them automatically.
+
+-- $example-indexed-instance
+--
+-- Derived:
+--
+-- > {-# LANGUAGE DeriveGeneric #-}
+-- >
+-- > data Person = Person { name :: !Text , salary :: !Int }
+-- >     deriving Generic
+-- >
+-- > instance FromRecord Person
+-- > instance ToRecord Person
+--
+-- We can now use e.g. 'encode' and 'decode' to encode and decode our
+-- data type.
+--
+-- Manually defined:
+--
+-- > data Person = Person { name :: !Text , salary :: !Int }
+-- >
+-- > instance FromRecord Person where
+-- >     parseRecord v
+-- >         | length v == 2 = Person <$> v .! 0 <*> v .! 1
+-- >         | otherwise     = mzero
+-- > instance ToRecord Person where
+-- >     toRecord (Person name age) = record [
+-- >         toField name, toField age]
+--
+-- Encoding:
+--
+-- > >>> encode [Person ("John" :: Text) 27]
+-- > "John,27\r\n"
+--
+-- Decoding:
+--
+-- > >>> decode NoHeader "John,27\r\n" :: Either String (Vector Person)
+-- > Right (fromList ["name","salary"],fromList [Person {name = "John", salary = 27}])
+--
+
+-- $example-named-instance
+--
+-- Derived:
+--
+-- > {-# LANGUAGE DeriveGeneric #-}
+-- >
+-- > data Person = Person { name :: !Text , salary :: !Int }
+-- >     deriving Generic
+-- >
+-- > instance FromNamedRecord Person
+-- > instance ToNamedRecord Person
+-- > instance DefaultOrdered Person
+--
+-- We can now use e.g. 'encodeDefaultOrderedByName' and
+-- 'decodeByName' to encode and decode our data type.
+--
+-- Manually defined:
+--
+-- > data Person = Person { name :: !Text , salary :: !Int }
+-- >
+-- > instance FromNamedRecord Person where
+-- >     parseNamedRecord m = Person <$> m .: "name" <*> m .: "salary"
+-- > instance ToNamedRecord Person
+-- >     toNamedRecord (Person name salary) = namedRecord [
+-- >         "name" .= name, "salary" .= salary]
+-- > instance DefaultOrdered Person
+-- >     where headerOrder = header ["name", "salary"]
+--
+-- Encoding:
+--
+-- > >>> encodeDefaultOrderedByName [Person ("John" :: Text) 27]
+-- > "name,salary\r\nJohn,27\r\n"
+--
+-- Decoding:
+--
+-- > >>> decodeByName "name,salary\r\nJohn,27\r\n" :: Either String (Header, Vector Person)
+-- > Right (fromList ["name","salary"],fromList [Person {name = "John", salary = 27}])
+--
 
 -- $generic-processing
 --

@@ -292,7 +292,7 @@ encodeDefaultOrderedByNameWith opts v
         toLazyByteString (rows (encIncludeHeader opts))
     | otherwise = encodeOptionsError
   where
-    hdr = (Conversion.header (undefined :: a))
+    hdr = (Conversion.headerOrder (undefined :: a))
     rows False = records
     rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
                  recordSep (encUseCrLf opts) <> records
