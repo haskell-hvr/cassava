@@ -25,10 +25,7 @@
 --
 -- Encoding example:
 --
--- > data Person = Person
--- >     { name   :: !String
--- >     , salary :: !Int
--- >     }
+-- > data Person = Person { name   :: !String, salary :: !Int }
 -- >     deriving Generic
 -- >
 -- > instance FromNamedRecord Person
@@ -38,6 +35,7 @@
 -- > persons :: [Person]
 -- > persons = [Person "John" 50000, Person "Jane" 60000]
 -- >
+-- > main :: IO ()
 -- > main = putStrLn $ encodeDefaultOrderedByName (go persons)
 -- >   where
 -- >     go (x:xs) = encodeNamedRecord x <> go xs
