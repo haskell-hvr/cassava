@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, CPP, OverloadedStrings #-}
+{-# LANGUAGE BangPatterns, CPP, OverloadedStrings, ScopedTypeVariables #-}
 
 -- Module:      Data.Csv.Encoding
 -- Copyright:   (c) 2011 MailRank, Inc.
@@ -18,6 +18,7 @@ module Data.Csv.Encoding
     , Quoting(..)
     , encode
     , encodeByName
+    , encodeDefaultOrderedByName
 
     -- ** Encoding and decoding options
     , DecodeOptions(..)
@@ -28,6 +29,12 @@ module Data.Csv.Encoding
     , defaultEncodeOptions
     , encodeWith
     , encodeByNameWith
+    , encodeDefaultOrderedByNameWith
+
+    -- ** Encoding and decoding single records
+    , encodeRecord
+    , encodeNamedRecord
+    , recordSep
     ) where
 
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
@@ -47,6 +54,7 @@ import Data.Word (Word8)
 import Prelude hiding (unlines)
 
 import Data.Csv.Compat.Monoid ((<>))
+import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Conversion (FromNamedRecord, FromRecord, ToNamedRecord,
                             ToRecord, parseNamedRecord, parseRecord, runParser,
                             toNamedRecord, toRecord)
@@ -97,6 +105,12 @@ encode = encodeWith defaultEncodeOptions
 encodeByName :: ToNamedRecord a => Header -> [a] -> L.ByteString
 encodeByName = encodeByNameWith defaultEncodeOptions
 {-# INLINE encodeByName #-}
+
+-- | Like 'encodeByName', but header and field order is dictated by
+-- the 'Conversion.header' method in 'ToNamedRecord'.
+encodeDefaultOrderedByName :: ToNamedRecord a => [a] -> L.ByteString
+encodeDefaultOrderedByName = encodeDefaultOrderedByNameWith defaultEncodeOptions
+{-# INLINE encodeDefaultOrderedByName #-}
 
 ------------------------------------------------------------------------
 -- ** Encoding and decoding options
@@ -223,6 +237,10 @@ encodeRecord qtng delim = mconcat . intersperse (fromWord8 delim)
                      . map fromByteString . map (escape qtng delim) . V.toList
 {-# INLINE encodeRecord #-}
 
+encodeNamedRecord :: Header -> Quoting -> Word8 -> NamedRecord -> Builder
+encodeNamedRecord hdr qtng delim =
+    encodeRecord qtng delim . namedRecordToRecord hdr
+
 -- TODO: Optimize
 escape :: Quoting -> Word8 -> B.ByteString -> B.ByteString
 escape !qtng !delim !s
@@ -258,11 +276,29 @@ encodeByNameWith opts hdr v
     rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
                  recordSep (encUseCrLf opts) <> records
     records = unlines (recordSep (encUseCrLf opts))
-              . map (encodeRecord (encQuoting opts) (encDelimiter opts)
-                     . namedRecordToRecord hdr . toNamedRecord)
+              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts)
+                     . toNamedRecord)
               $ v
 {-# INLINE encodeByNameWith #-}
 
+-- | Like 'encodeDefaultOrderedByNameWith', but lets you customize how
+-- the CSV data is encoded.
+encodeDefaultOrderedByNameWith ::
+    forall a. ToNamedRecord a => EncodeOptions -> [a] -> L.ByteString
+encodeDefaultOrderedByNameWith opts v
+    | validDelim (encDelimiter opts) =
+        toLazyByteString (rows (encIncludeHeader opts))
+    | otherwise = encodeOptionsError
+  where
+    hdr = (Conversion.header (undefined :: a))
+    rows False = records
+    rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
+                 recordSep (encUseCrLf opts) <> records
+    records = unlines (recordSep (encUseCrLf opts))
+              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts)
+                     . toNamedRecord)
+              $ v
+{-# INLINE encodeDefaultOrderedByNameWith #-}
 
 namedRecordToRecord :: Header -> NamedRecord -> Record
 namedRecordToRecord hdr nr = V.map find hdr

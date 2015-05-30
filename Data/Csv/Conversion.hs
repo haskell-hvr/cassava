@@ -140,6 +140,7 @@ newtype Only a = Only {
 -- > John,56
 -- > Jane,55
 class ToRecord a where
+    -- | Convert a value to a record.
     toRecord :: a -> Record
 
 #ifdef GENERICS
@@ -377,9 +378,17 @@ class FromNamedRecord a where
 -- > data Person = Person { name :: !Text, age :: !Int }
 -- >
 -- > instance ToNamedRecord Person where
+-- >     header = V.fromList ["name", "age"]
 -- >     toNamedRecord (Person name age) = namedRecord [
 -- >         "name" .= name, "age" .= age]
 class ToNamedRecord a where
+    -- | The header order for this record. Should include the names
+    -- used in the 'NamedRecord' returned by 'toNamedRecord'. Pass
+    -- 'undefined' as the argument, together with a type annotation
+    -- e.g. @'header' ('undefined' :: MyRecord)@.
+    header :: a -> Header  -- TODO: Add Generic implementation
+
+    -- | Convert a value to a named record.
     toNamedRecord :: a -> NamedRecord
 
 #ifdef GENERICS

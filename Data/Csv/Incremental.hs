@@ -1,17 +1,16 @@
-{-# LANGUAGE BangPatterns, CPP, DeriveFunctor #-}
+{-# LANGUAGE BangPatterns, CPP, DeriveFunctor, ScopedTypeVariables #-}
 
--- | This module allows for incremental decoding of CSV data. This is
--- useful if you e.g. want to interleave I\/O with parsing or if you
--- want finer grained control over how you deal with type conversion
--- errors.
+-- | This module allows for incremental decoding and encoding of CSV
+-- data. This is useful if you e.g. want to interleave I\/O with
+-- parsing or if you want finer grained control over how you deal with
+-- type conversion errors.
 module Data.Csv.Incremental
     (
-    -- * Decoding headers
+    -- * Decoding
       HeaderParser(..)
     , decodeHeader
     , decodeHeaderWith
 
-    -- * Decoding records
     -- $typeconversion
     , Parser(..)
 
@@ -25,16 +24,38 @@ module Data.Csv.Incremental
     -- $namebased
     , decodeByName
     , decodeByNameWith
+
+    -- * Encoding
+    -- ** Index-based record conversion
+    , encode
+    , encodeWith
+    , encodeRecord
+    , Builder
+
+    -- ** Name-based record conversion
+    , encodeByName
+    , encodeDefaultOrderedByName
+    , encodeByNameWith
+    , encodeDefaultOrderedByNameWith
+    , encodeNamedRecord
+    , NamedBuilder
     ) where
 
 import Control.Applicative ((<|>))
 import qualified Data.Attoparsec.ByteString as A
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Builder as Builder
+import qualified Data.ByteString.Lazy as L
+import Data.Monoid (Monoid, (<>))
 import qualified Data.Vector as V
+import Data.Word (Word8)
 
-import Data.Csv.Conversion hiding (Parser, record, toNamedRecord)
+import Data.Csv.Conversion hiding (Parser, header, namedRecord, record,
+                                   toNamedRecord)
 import qualified Data.Csv.Conversion as Conversion
+import qualified Data.Csv.Encoding as Encoding
+import Data.Csv.Encoding (EncodeOptions(..), Quoting(..), recordSep)
 import Data.Csv.Parser
 import Data.Csv.Types
 import Data.Csv.Util (endOfLine)
@@ -253,6 +274,98 @@ decodeWithP p !opts = go Incomplete [] . parser
 
 blankLine :: V.Vector B.ByteString -> Bool
 blankLine v = V.length v == 1 && (B.null (V.head v))
+
+------------------------------------------------------------------------
+-- * Encoding
+
+-- | Efficiently serialize records in an incremental
+-- fashion. Equivalent to @'encodeWith' 'defaultEncodeOptions'@.
+encode :: ToRecord a => Builder a -> L.ByteString
+encode = encodeWith Encoding.defaultEncodeOptions
+
+-- | Like 'encode', but lets you customize how the CSV data is
+-- encoded.
+encodeWith :: ToRecord a => EncodeOptions -> Builder a
+                 -> L.ByteString
+encodeWith opts b =
+    Builder.toLazyByteString $
+    runBuilder b (encQuoting opts) (encDelimiter opts) (encUseCrLf opts)
+
+-- | Encode a single record.
+encodeRecord :: ToRecord a => a -> Builder a
+encodeRecord r = Builder $ \ qtng delim useCrLf ->
+    Encoding.encodeRecord qtng delim (toRecord r) <> recordSep useCrLf
+
+-- | A builder for building the CSV data incrementally. Just like the
+-- @ByteString@ builder, this builder should be used in a
+-- right-associative, 'foldr' style. Using '<>' to compose builders in
+-- a left-associative, `foldl'` style makes the building not be
+-- incremental.
+newtype Builder a = Builder {
+      runBuilder :: Quoting -> Word8 -> Bool -> Builder.Builder
+    }
+
+instance Monoid (Builder a) where
+    mempty = Builder (\ _ _ _ -> mempty)
+    mappend (Builder f) (Builder g) =
+        Builder $ \ qtng delim useCrlf ->
+        f qtng delim useCrlf <> g qtng delim useCrlf
+
+------------------------------------------------------------------------
+-- ** Index-based record conversion
+
+-- | Efficiently serialize named records in an incremental
+-- fashion. Equivalent to @'encodeWith' 'defaultEncodeOptions'@. The
+-- header is written before any records and dictates the field order.
+encodeByName :: ToNamedRecord a => Header -> NamedBuilder a -> L.ByteString
+encodeByName = encodeByNameWith Encoding.defaultEncodeOptions
+
+-- | Like 'encodeByName', but header and field order is dictated by
+-- the 'Conversion.header' method in 'ToNamedRecord'.
+encodeDefaultOrderedByName :: ToNamedRecord a => NamedBuilder a -> L.ByteString
+encodeDefaultOrderedByName =
+    encodeDefaultOrderedByNameWith Encoding.defaultEncodeOptions
+
+-- | Like 'encodeByName', but lets you customize how the CSV data is
+-- encoded.
+encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> NamedBuilder a
+                 -> L.ByteString
+encodeByNameWith opts hdr b =
+    Builder.toLazyByteString $
+    runNamedBuilder b hdr (encQuoting opts) (encDelimiter opts)
+    (encUseCrLf opts)
+
+-- | Like 'encodeDefaultOrderedByName', but lets you customize how the
+-- CSV data is encoded.
+encodeDefaultOrderedByNameWith ::
+    forall a. ToNamedRecord a => EncodeOptions -> NamedBuilder a -> L.ByteString
+encodeDefaultOrderedByNameWith opts b =
+    Builder.toLazyByteString $
+    runNamedBuilder b (Conversion.header (undefined :: a)) (encQuoting opts)
+    (encDelimiter opts) (encUseCrLf opts)
+
+-- | Encode a single named record.
+encodeNamedRecord :: forall a. ToNamedRecord a => a -> NamedBuilder a
+encodeNamedRecord nr = NamedBuilder $ \ hdr qtng delim useCrLf ->
+    Encoding.encodeNamedRecord hdr qtng delim
+    (Conversion.toNamedRecord nr) <> recordSep useCrLf
+
+-- | A builder for building the CSV data incrementally. Just like the
+-- @ByteString@ builder, this builder should be used in a
+-- right-associative, 'foldr' style. Using '<>' to compose builders in
+-- a left-associative, `foldl'` style makes the building not be
+-- incremental.
+newtype NamedBuilder a = NamedBuilder {
+      runNamedBuilder :: Header -> Quoting -> Word8 -> Bool -> Builder.Builder
+    }
+
+instance Monoid (NamedBuilder a) where
+    mempty = NamedBuilder (\ _ _ _ _ -> mempty)
+    mappend (NamedBuilder f) (NamedBuilder g) =
+        NamedBuilder $ \ hdr qtng delim useCrlf ->
+        f hdr qtng delim useCrlf <> g hdr qtng delim useCrlf
+
+------------------------------------------------------------------------
 
 moduleError :: String -> String -> a
 moduleError func msg = error $ "Data.Csv.Incremental." ++ func ++ ": " ++ msg
