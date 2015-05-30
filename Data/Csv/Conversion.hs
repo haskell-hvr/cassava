@@ -2,7 +2,8 @@
              Rank2Types #-}
 #ifdef GENERICS
 {-# LANGUAGE DefaultSignatures, TypeOperators, KindSignatures, FlexibleContexts,
-             MultiParamTypeClasses, UndecidableInstances, ScopedTypeVariables #-}
+             MultiParamTypeClasses, OverlappingInstances, UndecidableInstances,
+             ScopedTypeVariables #-}
 #endif
 module Data.Csv.Conversion
     (
@@ -11,6 +12,7 @@ module Data.Csv.Conversion
     , FromRecord(..)
     , FromNamedRecord(..)
     , ToNamedRecord(..)
+    , DefaultOrdered(..)
     , FromField(..)
     , ToRecord(..)
     , ToField(..)
@@ -382,18 +384,50 @@ class FromNamedRecord a where
 -- >     toNamedRecord (Person name age) = namedRecord [
 -- >         "name" .= name, "age" .= age]
 class ToNamedRecord a where
+    -- | Convert a value to a named record.
+    toNamedRecord :: a -> NamedRecord
+
+#ifdef GENERICS
+    default toNamedRecord ::
+        (Generic a, GToRecord (Rep a) (B.ByteString, B.ByteString)) =>
+        a -> NamedRecord
+    toNamedRecord = namedRecord . gtoRecord . from
+#endif
+
+-- | A type that has a default field order when converted to CSV. This
+-- class lets you specify how to get the headers to use for a record
+-- type that's an instance of 'ToNamedRecord'. The type is required to
+-- only have one constructor and that constructor must have named
+-- fields (also known as selectors) for all fields.
+--
+-- OK: @data Foo = Foo { foo :: !Int }@
+--
+-- Not OK: @data Bar = Bar Int@
+--
+-- If you try to derive an instance using 'GHC.Generics' and your type
+-- doesn't have named fields, you will get an error along the lines
+-- of:
+--
+-- > <interactive>:9:10:
+-- >     No instance for (DefaultOrdered (M1 S NoSelector (K1 R Char) ()))
+-- >       arising from a use of ‘Data.Csv.Conversion.$gdmheader’
+-- >     In the expression: Data.Csv.Conversion.$gdmheader
+-- >     In an equation for ‘header’:
+-- >         header = Data.Csv.Conversion.$gdmheader
+-- >     In the instance declaration for ‘DefaultOrdered Foo’
+--
+class DefaultOrdered a where
     -- | The header order for this record. Should include the names
     -- used in the 'NamedRecord' returned by 'toNamedRecord'. Pass
     -- 'undefined' as the argument, together with a type annotation
     -- e.g. @'header' ('undefined' :: MyRecord)@.
     header :: a -> Header  -- TODO: Add Generic implementation
 
-    -- | Convert a value to a named record.
-    toNamedRecord :: a -> NamedRecord
-
 #ifdef GENERICS
-    default toNamedRecord :: (Generic a, GToRecord (Rep a) (B.ByteString, B.ByteString)) => a -> NamedRecord
-    toNamedRecord = namedRecord . gtoRecord . from
+    default header ::
+        (Generic a, GToNamedRecordHeader (Rep a)) =>
+        a -> Header
+    header = V.fromList. gtoNamedRecordHeader . from
 #endif
 
 instance FromField a => FromNamedRecord (M.Map B.ByteString a) where
@@ -946,5 +980,44 @@ instance ToField a => GToRecord (K1 i a) Field where
 
 instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B.ByteString) where
     gtoRecord m@(M1 (K1 a)) = [T.encodeUtf8 (T.pack (selName m)) .= toField a]
+
+-- We statically fail on sum types and product types without selectors
+-- (field names).
+
+class GToNamedRecordHeader a
+  where
+    gtoNamedRecordHeader :: a p -> [Name]
+
+instance GToNamedRecordHeader U1
+  where
+    gtoNamedRecordHeader _ = []
+
+instance (GToNamedRecordHeader a, GToNamedRecordHeader b) =>
+         GToNamedRecordHeader (a :*: b)
+  where
+    gtoNamedRecordHeader _ = gtoNamedRecordHeader (undefined :: a p) ++
+                             gtoNamedRecordHeader (undefined :: b p)
+
+instance GToNamedRecordHeader a => GToNamedRecordHeader (M1 D c a)
+  where
+    gtoNamedRecordHeader _ = gtoNamedRecordHeader (undefined :: a p)
+
+instance GToNamedRecordHeader a => GToNamedRecordHeader (M1 C c a)
+  where
+    gtoNamedRecordHeader _ = gtoNamedRecordHeader (undefined :: a p)
+
+-- | Instance to ensure that you cannot derive DefaultOrdered for
+-- constructors without selectors.
+instance DefaultOrdered (M1 S NoSelector a ()) => GToNamedRecordHeader (M1 S NoSelector a)
+  where
+    gtoNamedRecordHeader _ =
+        error "You cannot derive DefaultOrdered for constructors without selectors."
+
+instance Selector s => GToNamedRecordHeader (M1 S s a)
+  where
+    gtoNamedRecordHeader m
+        | null name = error "Cannot derive DefaultOrdered for constructors without selectors"
+        | otherwise = [B8.pack (selName m)]
+      where name = selName m
 
 #endif

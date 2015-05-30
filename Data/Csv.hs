@@ -31,6 +31,8 @@ module Data.Csv
     , Quoting(..)
     , encode
     , encodeByName
+    , encodeDefaultOrderedByName
+    , DefaultOrdered(..)
 
     -- ** Encoding and decoding options
     -- $options
@@ -42,6 +44,7 @@ module Data.Csv
     , defaultEncodeOptions
     , encodeWith
     , encodeByNameWith
+    , encodeDefaultOrderedByNameWith
 
     -- * Core CSV types
     , Csv

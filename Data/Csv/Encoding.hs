@@ -107,8 +107,9 @@ encodeByName = encodeByNameWith defaultEncodeOptions
 {-# INLINE encodeByName #-}
 
 -- | Like 'encodeByName', but header and field order is dictated by
--- the 'Conversion.header' method in 'ToNamedRecord'.
-encodeDefaultOrderedByName :: ToNamedRecord a => [a] -> L.ByteString
+-- the 'Conversion.header' method.
+encodeDefaultOrderedByName :: (Conversion.DefaultOrdered a, ToNamedRecord a) =>
+                              [a] -> L.ByteString
 encodeDefaultOrderedByName = encodeDefaultOrderedByNameWith defaultEncodeOptions
 {-# INLINE encodeDefaultOrderedByName #-}
 
@@ -284,7 +285,8 @@ encodeByNameWith opts hdr v
 -- | Like 'encodeDefaultOrderedByNameWith', but lets you customize how
 -- the CSV data is encoded.
 encodeDefaultOrderedByNameWith ::
-    forall a. ToNamedRecord a => EncodeOptions -> [a] -> L.ByteString
+    forall a. (Conversion.DefaultOrdered a, ToNamedRecord a) =>
+    EncodeOptions -> [a] -> L.ByteString
 encodeDefaultOrderedByNameWith opts v
     | validDelim (encDelimiter opts) =
         toLazyByteString (rows (encIncludeHeader opts))

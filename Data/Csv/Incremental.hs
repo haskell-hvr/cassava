@@ -47,7 +47,7 @@ import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy as L
-import Data.Monoid (Monoid, (<>))
+import Data.Monoid (Monoid(mappend, mempty), (<>))
 import qualified Data.Vector as V
 import Data.Word (Word8)
 
@@ -321,8 +321,9 @@ encodeByName :: ToNamedRecord a => Header -> NamedBuilder a -> L.ByteString
 encodeByName = encodeByNameWith Encoding.defaultEncodeOptions
 
 -- | Like 'encodeByName', but header and field order is dictated by
--- the 'Conversion.header' method in 'ToNamedRecord'.
-encodeDefaultOrderedByName :: ToNamedRecord a => NamedBuilder a -> L.ByteString
+-- the 'Conversion.header' method.
+encodeDefaultOrderedByName :: (DefaultOrdered a, ToNamedRecord a) =>
+                              NamedBuilder a -> L.ByteString
 encodeDefaultOrderedByName =
     encodeDefaultOrderedByNameWith Encoding.defaultEncodeOptions
 
@@ -338,7 +339,8 @@ encodeByNameWith opts hdr b =
 -- | Like 'encodeDefaultOrderedByName', but lets you customize how the
 -- CSV data is encoded.
 encodeDefaultOrderedByNameWith ::
-    forall a. ToNamedRecord a => EncodeOptions -> NamedBuilder a -> L.ByteString
+    forall a. (DefaultOrdered a, ToNamedRecord a) =>
+    EncodeOptions -> NamedBuilder a -> L.ByteString
 encodeDefaultOrderedByNameWith opts b =
     Builder.toLazyByteString $
     runNamedBuilder b (Conversion.header (undefined :: a)) (encQuoting opts)
