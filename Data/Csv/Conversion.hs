@@ -49,6 +49,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A8
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
+import Data.Hashable (Hashable)
 import qualified Data.HashMap.Lazy as HM
 import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.IntMap as IM
@@ -425,19 +426,22 @@ class DefaultOrdered a where
         a -> Header
     headerOrder = V.fromList. gtoNamedRecordHeader . from
 
-instance FromField a => FromNamedRecord (M.Map B.ByteString a) where
+instance (FromField a, FromField b, Ord a) => FromNamedRecord (M.Map a b) where
     parseNamedRecord m = M.fromList <$>
-                         (traverse parseSnd $ HM.toList m)
-      where parseSnd (name, s) = (,) <$> pure name <*> parseField s
+                         (traverse parseBoth $ HM.toList m)
 
-instance ToField a => ToNamedRecord (M.Map B.ByteString a) where
-    toNamedRecord = HM.fromList . map (\ (k, v) -> (k, toField v)) . M.toList
+instance (ToField a, ToField b, Ord a) => ToNamedRecord (M.Map a b) where
+    toNamedRecord = HM.fromList . map (\ (k, v) -> (toField k, toField v)) . M.toList
 
-instance FromField a => FromNamedRecord (HM.HashMap B.ByteString a) where
-    parseNamedRecord m = traverse (\ s -> parseField s) m
+instance (Eq a, FromField a, FromField b, Hashable a) => FromNamedRecord (HM.HashMap a b) where
+    parseNamedRecord m = HM.fromList <$>
+                         (traverse parseBoth $ HM.toList m)
 
-instance ToField a => ToNamedRecord (HM.HashMap B.ByteString a) where
-    toNamedRecord = HM.map toField
+instance (Eq a, ToField a, ToField b, Hashable a) => ToNamedRecord (HM.HashMap a b) where
+    toNamedRecord = HM.fromList . map (\ (k, v) -> (toField k, toField v)) . HM.toList
+
+parseBoth :: (FromField a, FromField b) => (Field, Field) -> Parser (a, b)
+parseBoth (k, v) = (,) <$> parseField k <*> parseField v
 
 ------------------------------------------------------------------------
 -- Individual field conversion
