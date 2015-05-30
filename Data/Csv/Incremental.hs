@@ -4,6 +4,44 @@
 -- data. This is useful if you e.g. want to interleave I\/O with
 -- parsing or if you want finer grained control over how you deal with
 -- type conversion errors.
+--
+-- Decoding example:
+--
+-- > main :: IO ()
+-- > main = withFile "salaries.csv" ReadMode $ \ csvFile -> do
+-- >     let loop !_ (Fail _ errMsg) = putStrLn errMsg >> exitFailure
+-- >         loop acc (Many rs k)    = loop (acc + sumSalaries rs) =<< feed k
+-- >         loop acc (Done rs)      = putStrLn $ "Total salaries: " ++
+-- >                                   show (sumSalaries rs + acc)
+-- >
+-- >         feed k = do
+-- >             isEof <- hIsEOF csvFile
+-- >             if isEof
+-- >                 then return $ k B.empty
+-- >                 else k `fmap` B.hGetSome csvFile 4096
+-- >     loop 0 (decode NoHeader)
+-- >   where
+-- >     sumSalaries rs = sum [salary | Right (_ :: String, salary :: Int) <- rs]
+--
+-- Encoding example:
+--
+-- > data Person = Person
+-- >     { name   :: !String
+-- >     , salary :: !Int
+-- >     }
+-- >     deriving Generic
+-- >
+-- > instance FromNamedRecord Person
+-- > instance ToNamedRecord Person
+-- > instance DefaultOrdered Person
+-- >
+-- > persons :: [Person]
+-- > persons = [Person "John" 50000, Person "Jane" 60000]
+-- >
+-- > main = putStrLn $ encodeDefaultOrderedByName (go persons)
+-- >   where
+-- >     go (x:xs) = encodeNamedRecord x <> go xs
+--
 module Data.Csv.Incremental
     (
     -- * Decoding
@@ -27,12 +65,14 @@ module Data.Csv.Incremental
 
     -- * Encoding
     -- ** Index-based record conversion
+    -- $indexbased
     , encode
     , encodeWith
     , encodeRecord
     , Builder
 
     -- ** Name-based record conversion
+    -- $namebased
     , encodeByName
     , encodeDefaultOrderedByName
     , encodeByNameWith
@@ -347,7 +387,7 @@ encodeDefaultOrderedByNameWith opts b =
     (encDelimiter opts) (encUseCrLf opts)
 
 -- | Encode a single named record.
-encodeNamedRecord :: forall a. ToNamedRecord a => a -> NamedBuilder a
+encodeNamedRecord :: ToNamedRecord a => a -> NamedBuilder a
 encodeNamedRecord nr = NamedBuilder $ \ hdr qtng delim useCrLf ->
     Encoding.encodeNamedRecord hdr qtng delim
     (Conversion.toNamedRecord nr) <> recordSep useCrLf
