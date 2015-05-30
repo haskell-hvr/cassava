@@ -233,11 +233,15 @@ encodeOptionsError = error $ "Data.Csv: " ++
         "\") or one of the record separator characters (i.e. \\n or " ++
         "\\r)"
 
+-- | Encode a single record, without the trailing record separator
+-- (i.e. newline).
 encodeRecord :: Quoting -> Word8 -> Record -> Builder
 encodeRecord qtng delim = mconcat . intersperse (fromWord8 delim)
                      . map fromByteString . map (escape qtng delim) . V.toList
 {-# INLINE encodeRecord #-}
 
+-- | Encode a single named record, without the trailing record
+-- separator (i.e. newline), using the given field order.
 encodeNamedRecord :: Header -> Quoting -> Word8 -> NamedRecord -> Builder
 encodeNamedRecord hdr qtng delim =
     encodeRecord qtng delim . namedRecordToRecord hdr

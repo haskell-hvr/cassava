@@ -371,6 +371,8 @@ encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> NamedBuilder a
                  -> L.ByteString
 encodeByNameWith opts hdr b =
     Builder.toLazyByteString $
+    Encoding.encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
+    recordSep (encUseCrLf opts) <>
     runNamedBuilder b hdr (encQuoting opts) (encDelimiter opts)
     (encUseCrLf opts)
 
@@ -381,8 +383,11 @@ encodeDefaultOrderedByNameWith ::
     EncodeOptions -> NamedBuilder a -> L.ByteString
 encodeDefaultOrderedByNameWith opts b =
     Builder.toLazyByteString $
-    runNamedBuilder b (Conversion.headerOrder (undefined :: a)) (encQuoting opts)
+    Encoding.encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
+    recordSep (encUseCrLf opts) <>
+    runNamedBuilder b hdr (encQuoting opts)
     (encDelimiter opts) (encUseCrLf opts)
+  where hdr = Conversion.headerOrder (undefined :: a)
 
 -- | Encode a single named record.
 encodeNamedRecord :: ToNamedRecord a => a -> NamedBuilder a
