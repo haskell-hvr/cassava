@@ -83,7 +83,7 @@ import Control.Applicative ((<|>))
 import qualified Data.Attoparsec.ByteString as A
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Builder as Builder
+import qualified Blaze.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy as L
 import Data.Monoid (Monoid(mappend, mempty), (<>))
 import qualified Data.Vector as V
