@@ -394,9 +394,11 @@ class ToNamedRecord a where
 
 -- | A type that has a default field order when converted to CSV. This
 -- class lets you specify how to get the headers to use for a record
--- type that's an instance of 'ToNamedRecord'. The type is required to
--- only have one constructor and that constructor must have named
--- fields (also known as selectors) for all fields.
+-- type that's an instance of 'ToNamedRecord'.
+--
+-- To derive an instance, the type is required to only have one
+-- constructor and that constructor must have named fields (also known
+-- as selectors) for all fields.
 --
 -- Right: @data Foo = Foo { foo :: !Int }@
 --

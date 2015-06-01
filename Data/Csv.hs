@@ -103,7 +103,7 @@ import Data.Csv.Types
 
 -- $example
 --
--- A simple encoding usage example:
+-- Encoding standard Haskell types:
 --
 -- > >>> encode [("John" :: Text, 27), ("Jane", 28)]
 -- > "John,27\r\nJane,28\r\n"
@@ -114,7 +114,7 @@ import Data.Csv.Types
 -- will infer the type from the context and you can omit type
 -- signatures.
 --
--- A simple decoding usage example:
+-- Decoding standard Haskell types:
 --
 -- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
 -- > Right [("John",27),("Jane",28)]
@@ -147,9 +147,6 @@ import Data.Csv.Types
 -- > instance FromRecord Person
 -- > instance ToRecord Person
 --
--- We can now use e.g. 'encode' and 'decode' to encode and decode our
--- data type.
---
 -- Manually defined:
 --
 -- > data Person = Person { name :: !Text , salary :: !Int }
@@ -162,6 +159,9 @@ import Data.Csv.Types
 -- >     toRecord (Person name age) = record [
 -- >         toField name, toField age]
 --
+-- We can now use e.g. 'encode' and 'decode' to encode and decode our
+-- data type.
+--
 -- Encoding:
 --
 -- > >>> encode [Person ("John" :: Text) 27]
@@ -170,7 +170,7 @@ import Data.Csv.Types
 -- Decoding:
 --
 -- > >>> decode NoHeader "John,27\r\n" :: Either String (Vector Person)
--- > Right (fromList ["name","salary"],fromList [Person {name = "John", salary = 27}])
+-- > Right (["name","salary"],[Person {name = "John", salary = 27}])
 --
 
 -- $example-named-instance
@@ -186,9 +186,6 @@ import Data.Csv.Types
 -- > instance ToNamedRecord Person
 -- > instance DefaultOrdered Person
 --
--- We can now use e.g. 'encodeDefaultOrderedByName' and
--- 'decodeByName' to encode and decode our data type.
---
 -- Manually defined:
 --
 -- > data Person = Person { name :: !Text , salary :: !Int }
@@ -201,6 +198,10 @@ import Data.Csv.Types
 -- > instance DefaultOrdered Person
 -- >     where headerOrder = header ["name", "salary"]
 --
+-- We can now use e.g. 'encodeDefaultOrderedByName' (or 'encodeByName'
+-- with an explicit header order) and 'decodeByName' to encode and
+-- decode our data type.
+--
 -- Encoding:
 --
 -- > >>> encodeDefaultOrderedByName [Person ("John" :: Text) 27]
@@ -209,7 +210,7 @@ import Data.Csv.Types
 -- Decoding:
 --
 -- > >>> decodeByName "name,salary\r\nJohn,27\r\n" :: Either String (Header, Vector Person)
--- > Right (fromList ["name","salary"],fromList [Person {name = "John", salary = 27}])
+-- > Right (["name","salary"],[Person {name = "John", salary = 27}])
 --
 
 -- $generic-processing
@@ -220,7 +221,7 @@ import Data.Csv.Types
 -- parse a CSV file to a generic representation, just convert each
 -- record to a @'Vector' 'ByteString'@ value, like so:
 --
--- > decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
+-- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
 -- > Right [["John","27"],["Jane","28"]]
 --
 -- As the example output above shows, all the fields are returned as
