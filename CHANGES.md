@@ -1,3 +1,17 @@
+## Version 0.4.3.0
+
+ * Documentation overhaul with more examples.
+
+ * Add Data.Csv.Builder, a low-level bytestring builder API.
+
+ * Add a high-level builder API to Data.Csv.Incremental.
+
+ * Generalize the default FromNamedRecord/ToNamedRecord instances.
+
+ * Improved support for deriving instances using GHC.Generics.
+
+ * Added some control over quoting.
+
 ## Version 0.4.2.4
 
  * Support attoparsec 0.13.
