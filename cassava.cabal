@@ -61,6 +61,7 @@ Test-suite unit-tests
     base,
     bytestring,
     cassava,
+    hashable < 1.3,
     HUnit,
     QuickCheck >= 2.0,
     test-framework,
