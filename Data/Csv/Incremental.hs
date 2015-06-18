@@ -360,7 +360,7 @@ encodeByName :: ToNamedRecord a => Header -> NamedBuilder a -> L.ByteString
 encodeByName = encodeByNameWith Encoding.defaultEncodeOptions
 
 -- | Like 'encodeByName', but header and field order is dictated by
--- the 'Conversion.header' method.
+-- the 'Conversion.headerOrder' method.
 encodeDefaultOrderedByName :: (DefaultOrdered a, ToNamedRecord a) =>
                               NamedBuilder a -> L.ByteString
 encodeDefaultOrderedByName =
