@@ -42,7 +42,7 @@ module Data.Csv.Conversion
     , header
     ) where
 
-import Control.Applicative (Alternative, (<$>), (<|>), empty)
+import Control.Applicative (Alternative, (<|>), empty)
 import Control.Monad (MonadPlus, mplus, mzero)
 import Data.Attoparsec.ByteString.Char8 (double)
 import qualified Data.Attoparsec.ByteString.Char8 as A8
@@ -70,7 +70,7 @@ import Data.Csv.Conversion.Internal
 import Data.Csv.Types
 
 #if !MIN_VERSION_base(4,8,0)
-import Control.Applicative (Applicative, (<*>), (<*), (*>), pure)
+import Control.Applicative (Applicative, (<$>), (<*>), (<*), (*>), pure)
 import Data.Monoid (Monoid, mappend, mempty)
 import Data.Traversable (traverse)
 import Data.Word (Word)

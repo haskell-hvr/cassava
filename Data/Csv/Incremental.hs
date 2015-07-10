@@ -85,7 +85,7 @@ import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.ByteString as B
 import qualified Blaze.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy as L
-import Data.Monoid (Monoid(mappend, mempty), (<>))
+import Data.Monoid ((<>))
 import qualified Data.Vector as V
 import Data.Word (Word8)
 
@@ -99,6 +99,7 @@ import Data.Csv.Types
 import Data.Csv.Util (endOfLine)
 
 #if !MIN_VERSION_base(4,8,0)
+import Data.Monoid (Monoid(mappend, mempty))
 import Control.Applicative ((<*))
 #endif
 

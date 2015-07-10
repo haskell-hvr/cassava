@@ -28,7 +28,6 @@ module Data.Csv.Streaming
     , decodeByNameWith
     ) where
 
-import Control.Applicative ((<$>))
 import Control.DeepSeq (NFData(rnf))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
@@ -44,7 +43,7 @@ import Data.Csv.Parser
 import Data.Csv.Types
 
 #if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((<*>), pure)
+import Control.Applicative ((<$>), (<*>), pure)
 import Data.Traversable (Traversable(..))
 #endif
 

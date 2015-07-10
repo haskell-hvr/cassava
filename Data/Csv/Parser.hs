@@ -26,7 +26,7 @@ module Data.Csv.Parser
 
 import Blaze.ByteString.Builder (fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char.Utf8 (fromChar)
-import Control.Applicative ((<$>), optional)
+import Control.Applicative (optional)
 import Data.Attoparsec.ByteString.Char8 (char, endOfInput)
 import qualified Data.Attoparsec.ByteString as A
 import qualified Data.Attoparsec.Lazy as AL
@@ -40,7 +40,7 @@ import Data.Csv.Types
 import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, newline, doubleQuote)
 
 #if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((*>), (<*), pure)
+import Control.Applicative ((<$>), (*>), (<*), pure)
 import Data.Monoid (mappend, mempty)
 #endif
 
