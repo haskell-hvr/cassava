@@ -49,6 +49,9 @@ import qualified Data.Attoparsec.ByteString.Char8 as A8
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
+#if MIN_VERSION_bytestring(0,10,4)
+import qualified Data.ByteString.Short as SBS
+#endif
 import Data.Hashable (Hashable)
 import qualified Data.HashMap.Lazy as HM
 import Data.Int (Int8, Int16, Int32, Int64)
@@ -677,6 +680,16 @@ instance FromField L.ByteString where
 instance ToField L.ByteString where
     toField = toStrict
     {-# INLINE toField #-}
+
+#if MIN_VERSION_bytestring(0,10,4)
+instance FromField SBS.ShortByteString where
+    parseField = pure . SBS.toShort
+    {-# INLINE parseField #-}
+
+instance ToField SBS.ShortByteString where
+    toField = SBS.fromShort
+    {-# INLINE toField #-}
+#endif
 
 -- | Assumes UTF-8 encoding. Fails on invalid byte sequences.
 instance FromField T.Text where
