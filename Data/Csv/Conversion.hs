@@ -6,13 +6,16 @@
     FlexibleInstances,
     KindSignatures,
     MultiParamTypeClasses,
-    OverlappingInstances,
     OverloadedStrings,
     Rank2Types,
     ScopedTypeVariables,
     TypeOperators,
     UndecidableInstances
     #-}
+#if __GLASGOW_HASKELL__ < 710
+{-# LANGUAGE OverlappingInstances #-}
+#endif
+
 module Data.Csv.Conversion
     (
     -- * Type conversion
