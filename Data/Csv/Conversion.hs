@@ -313,6 +313,182 @@ instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
         toField a, toField b, toField c, toField d, toField e, toField f,
         toField g, toField h, toField i]
 
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g, FromField h, FromField i, FromField j) =>
+         FromRecord (a, b, c, d, e, f, g, h, i, j) where
+    parseRecord v
+        | n == 10    = (,,,,,,,,,) <$> unsafeIndex v 0
+                                   <*> unsafeIndex v 1
+                                   <*> unsafeIndex v 2
+                                   <*> unsafeIndex v 3
+                                   <*> unsafeIndex v 4
+                                   <*> unsafeIndex v 5
+                                   <*> unsafeIndex v 6
+                                   <*> unsafeIndex v 7
+                                   <*> unsafeIndex v 8
+                                   <*> unsafeIndex v 9
+        | otherwise = lengthMismatch 10 v
+          where
+            n = V.length v
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j) =>
+         ToRecord (a, b, c, d, e, f, g, h, i, j) where
+    toRecord (a, b, c, d, e, f, g, h, i, j) = V.fromList [
+        toField a, toField b, toField c, toField d, toField e, toField f,
+        toField g, toField h, toField i, toField j]
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g, FromField h, FromField i, FromField j,
+          FromField k) =>
+         FromRecord (a, b, c, d, e, f, g, h, i, j, k) where
+    parseRecord v
+        | n == 11    = (,,,,,,,,,,) <$> unsafeIndex v 0
+                                    <*> unsafeIndex v 1
+                                    <*> unsafeIndex v 2
+                                    <*> unsafeIndex v 3
+                                    <*> unsafeIndex v 4
+                                    <*> unsafeIndex v 5
+                                    <*> unsafeIndex v 6
+                                    <*> unsafeIndex v 7
+                                    <*> unsafeIndex v 8
+                                    <*> unsafeIndex v 9
+                                    <*> unsafeIndex v 10
+        | otherwise = lengthMismatch 11 v
+          where
+            n = V.length v
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k) =>
+         ToRecord (a, b, c, d, e, f, g, h, i, j, k) where
+    toRecord (a, b, c, d, e, f, g, h, i, j, k) = V.fromList [
+        toField a, toField b, toField c, toField d, toField e, toField f,
+        toField g, toField h, toField i, toField j, toField k]
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g, FromField h, FromField i, FromField j,
+          FromField k, FromField l) =>
+         FromRecord (a, b, c, d, e, f, g, h, i, j, k, l) where
+    parseRecord v
+        | n == 12    = (,,,,,,,,,,,) <$> unsafeIndex v 0
+                                     <*> unsafeIndex v 1
+                                     <*> unsafeIndex v 2
+                                     <*> unsafeIndex v 3
+                                     <*> unsafeIndex v 4
+                                     <*> unsafeIndex v 5
+                                     <*> unsafeIndex v 6
+                                     <*> unsafeIndex v 7
+                                     <*> unsafeIndex v 8
+                                     <*> unsafeIndex v 9
+                                     <*> unsafeIndex v 10
+                                     <*> unsafeIndex v 11
+        | otherwise = lengthMismatch 12 v
+          where
+            n = V.length v
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l) =>
+         ToRecord (a, b, c, d, e, f, g, h, i, j, k, l) where
+    toRecord (a, b, c, d, e, f, g, h, i, j, k, l) = V.fromList [
+        toField a, toField b, toField c, toField d, toField e, toField f,
+        toField g, toField h, toField i, toField j, toField k, toField l]
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g, FromField h, FromField i, FromField j,
+          FromField k, FromField l, FromField m) =>
+         FromRecord (a, b, c, d, e, f, g, h, i, j, k, l, m) where
+    parseRecord v
+        | n == 13    = (,,,,,,,,,,,,) <$> unsafeIndex v 0
+                                      <*> unsafeIndex v 1
+                                      <*> unsafeIndex v 2
+                                      <*> unsafeIndex v 3
+                                      <*> unsafeIndex v 4
+                                      <*> unsafeIndex v 5
+                                      <*> unsafeIndex v 6
+                                      <*> unsafeIndex v 7
+                                      <*> unsafeIndex v 8
+                                      <*> unsafeIndex v 9
+                                      <*> unsafeIndex v 10
+                                      <*> unsafeIndex v 11
+                                      <*> unsafeIndex v 12
+        | otherwise = lengthMismatch 13 v
+          where
+            n = V.length v
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m) =>
+         ToRecord (a, b, c, d, e, f, g, h, i, j, k, l, m) where
+    toRecord (a, b, c, d, e, f, g, h, i, j, k, l, m) = V.fromList [
+        toField a, toField b, toField c, toField d, toField e, toField f,
+        toField g, toField h, toField i, toField j, toField k, toField l,
+        toField m]
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g, FromField h, FromField i, FromField j,
+          FromField k, FromField l, FromField m, FromField n) =>
+         FromRecord (a, b, c, d, e, f, g, h, i, j, k, l, m, n) where
+    parseRecord v
+        | n == 14    = (,,,,,,,,,,,,,) <$> unsafeIndex v 0
+                                       <*> unsafeIndex v 1
+                                       <*> unsafeIndex v 2
+                                       <*> unsafeIndex v 3
+                                       <*> unsafeIndex v 4
+                                       <*> unsafeIndex v 5
+                                       <*> unsafeIndex v 6
+                                       <*> unsafeIndex v 7
+                                       <*> unsafeIndex v 8
+                                       <*> unsafeIndex v 9
+                                       <*> unsafeIndex v 10
+                                       <*> unsafeIndex v 11
+                                       <*> unsafeIndex v 12
+                                       <*> unsafeIndex v 13
+        | otherwise = lengthMismatch 14 v
+          where
+            n = V.length v
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m, ToField n) =>
+         ToRecord (a, b, c, d, e, f, g, h, i, j, k, l, m, n) where
+    toRecord (a, b, c, d, e, f, g, h, i, j, k, l, m, n) = V.fromList [
+        toField a, toField b, toField c, toField d, toField e, toField f,
+        toField g, toField h, toField i, toField j, toField k, toField l,
+        toField m, toField n]
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g, FromField h, FromField i, FromField j,
+          FromField k, FromField l, FromField m, FromField n, FromField o) =>
+         FromRecord (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) where
+    parseRecord v
+        | n == 15    = (,,,,,,,,,,,,,,) <$> unsafeIndex v 0
+                                        <*> unsafeIndex v 1
+                                        <*> unsafeIndex v 2
+                                        <*> unsafeIndex v 3
+                                        <*> unsafeIndex v 4
+                                        <*> unsafeIndex v 5
+                                        <*> unsafeIndex v 6
+                                        <*> unsafeIndex v 7
+                                        <*> unsafeIndex v 8
+                                        <*> unsafeIndex v 9
+                                        <*> unsafeIndex v 10
+                                        <*> unsafeIndex v 11
+                                        <*> unsafeIndex v 12
+                                        <*> unsafeIndex v 13
+                                        <*> unsafeIndex v 14
+        | otherwise = lengthMismatch 15 v
+          where
+            n = V.length v
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m, ToField n, ToField o) =>
+         ToRecord (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) where
+    toRecord (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) = V.fromList [
+        toField a, toField b, toField c, toField d, toField e, toField f,
+        toField g, toField h, toField i, toField j, toField k, toField l,
+        toField m, toField n, toField o]
+
 lengthMismatch :: Int -> Record -> Parser a
 lengthMismatch expected v =
     fail $ "cannot unpack array of length " ++
