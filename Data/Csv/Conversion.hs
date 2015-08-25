@@ -492,7 +492,7 @@ class ToField a where
     toField :: a -> Field
 
 -- | 'Nothing' if the 'Field' is 'B.empty', 'Just' otherwise.
-instance FromField a => FromField (Maybe a) where
+instance {-# OVERLAPPABLE #-} FromField a => FromField (Maybe a) where
     parseField s
         | B.null s  = pure Nothing
         | otherwise = Just <$> parseField s
