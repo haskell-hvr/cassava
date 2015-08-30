@@ -17,6 +17,7 @@ Category:            Text, Web, CSV
 Build-type:          Simple
 Cabal-version:       >=1.8
 Extra-source-files:  examples/*.hs
+Tested-with:         GHC == 7.10.2, GHC == 7.8.4, GHC == 7.6.3
 
 Library
   Exposed-modules:
