@@ -26,7 +26,7 @@ module Data.Csv
     -- * Treating CSV data as opaque byte strings
     -- $generic-processing
 
-    -- * Custom type conversions
+    -- * Custom type conversions for fields
     -- $customtypeconversions
 
     -- ** Dealing with bad data
@@ -37,7 +37,6 @@ module Data.Csv
       HasHeader(..)
     , decode
     , decodeByName
-    , Quoting(..)
     , encode
     , encodeByName
     , encodeDefaultOrderedByName
@@ -50,6 +49,7 @@ module Data.Csv
     , decodeWith
     , decodeByNameWith
     , EncodeOptions(..)
+    , Quoting(..)
     , defaultEncodeOptions
     , encodeWith
     , encodeByNameWith
