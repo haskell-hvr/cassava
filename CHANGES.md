@@ -1,3 +1,11 @@
+## Version 0.4.4.0
+
+ * Added record instances for larger tuples.
+
+ * Support attoparsec 0.13.
+
+ * Add field instances for short bytestrings.
+
 ## Version 0.4.3.0
 
  * Documentation overhaul with more examples.
