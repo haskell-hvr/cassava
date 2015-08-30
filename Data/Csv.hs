@@ -130,7 +130,7 @@ import Data.Csv.Types
 -- To encode and decode your own data types you need to defined
 -- instances of either 'ToRecord' and 'FromRecord' or 'ToNamedRecord'
 -- and 'FromNamedRecord'. The former is used for encoding/decoding
--- using the column index and the latter using column name.
+-- using the column index and the latter using the column name.
 --
 -- There are two ways to to define these instances, either by manually
 -- defining them or by using GHC generics to derive them automatically.
