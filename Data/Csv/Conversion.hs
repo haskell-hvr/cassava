@@ -12,9 +12,6 @@
     TypeOperators,
     UndecidableInstances
     #-}
-#if __GLASGOW_HASKELL__ < 710
-{-# LANGUAGE OverlappingInstances #-}
-#endif
 
 module Data.Csv.Conversion
     (
@@ -668,11 +665,7 @@ class ToField a where
     toField :: a -> Field
 
 -- | 'Nothing' if the 'Field' is 'B.empty', 'Just' otherwise.
-instance
-#if __GLASGOW_HASKELL__ >= 710
-  {-# OVERLAPPABLE #-}
-#endif
-  FromField a => FromField (Maybe a) where
+instance FromField a => FromField (Maybe a) where
     parseField s
         | B.null s  = pure Nothing
         | otherwise = Just <$> parseField s
