@@ -170,7 +170,7 @@ import Data.Csv.Types
 -- Decoding:
 --
 -- > >>> decode NoHeader "John,27\r\n" :: Either String (Vector Person)
--- > Right (["name","salary"],[Person {name = "John", salary = 27}])
+-- > Right [Person {name = "John", salary = 27}]
 --
 
 -- $example-named-instance
