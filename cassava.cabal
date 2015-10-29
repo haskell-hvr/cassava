@@ -1,18 +1,18 @@
 Name:                cassava
-Version:             0.4.4.0
+Version:             0.4.4.1
 Synopsis:            A CSV parsing and encoding library
 Description:
   A CSV parsing and encoding library optimized for ease of use and high
   performance.
-Homepage:            https://github.com/tibbe/cassava
+Homepage:            https://github.com/hvr/cassava
 License:             BSD3
 License-file:        LICENSE
-Bug-reports:         https://github.com/tibbe/cassava/issues
+Bug-reports:         https://github.com/hvr/cassava/issues
 Copyright:           (c) 2012 Johan Tibell
                      (c) 2012 Bryan O'Sullivan
                      (c) 2011 MailRank, Inc.
 Author:              Johan Tibell
-Maintainer:          johan.tibell@gmail.com
+Maintainer:          hvr@gnu.org
 Category:            Text, Web, CSV
 Build-type:          Simple
 Cabal-version:       >=1.8
@@ -123,4 +123,4 @@ Benchmark benchmarks
 
 source-repository head
   type:     git
-  location: https://github.com/tibbe/cassava.git
+  location: https://github.com/hvr/cassava.git
