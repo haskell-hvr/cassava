@@ -1028,7 +1028,9 @@ instance Monad Parser where
     m >>= g = Parser $ \kf ks -> let ks' a = unParser (g a) kf ks
                                  in unParser m kf ks'
     {-# INLINE (>>=) #-}
-    return a = Parser $ \_kf ks -> ks a
+    (>>) = (*>)
+    {-# INLINE (>>) #-}
+    return = pure
     {-# INLINE return #-}
     fail msg = Parser $ \kf _ks -> kf msg
     {-# INLINE fail #-}
@@ -1039,7 +1041,7 @@ instance Functor Parser where
     {-# INLINE fmap #-}
 
 instance Applicative Parser where
-    pure  = return
+    pure a = Parser $ \_kf ks -> ks a
     {-# INLINE pure #-}
     (<*>) = apP
     {-# INLINE (<*>) #-}
@@ -1067,7 +1069,7 @@ apP :: Parser (a -> b) -> Parser a -> Parser b
 apP d e = do
   b <- d
   a <- e
-  return (b a)
+  pure (b a)
 {-# INLINE apP #-}
 
 -- | Run a 'Parser', returning either @'Left' errMsg@ or @'Right'
