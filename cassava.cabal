@@ -29,7 +29,6 @@ Library
     Data.Csv.Streaming
 
   Other-modules:
-    Data.Csv.Compat.Monoid
     Data.Csv.Conversion
     Data.Csv.Conversion.Internal
     Data.Csv.Encoding
@@ -82,7 +81,6 @@ Benchmark benchmarks
 
   Other-modules:
     Data.Csv
-    Data.Csv.Compat.Monoid
     Data.Csv.Conversion
     Data.Csv.Conversion.Internal
     Data.Csv.Encoding

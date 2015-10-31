@@ -4,7 +4,7 @@
 
 module Main ( main ) where
 
-import Control.Applicative
+import Control.Applicative as AP
 import Control.Exception (evaluate)
 import Control.DeepSeq
 import Criterion.Main
@@ -42,7 +42,7 @@ instance NFData President where
 instance FromRecord President where
     parseRecord v
         | V.length v == 7 = President <$>
-                            v .!! 0 <*>
+                            v .!! 0 AP.<*>
                             v .!! 1 <*>
                             v .!! 2 <*>
                             v .!! 3 <*>

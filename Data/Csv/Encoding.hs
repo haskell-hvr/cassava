@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, CPP, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns, OverloadedStrings, ScopedTypeVariables #-}
 
 -- Module:      Data.Csv.Encoding
 -- Copyright:   (c) 2011 MailRank, Inc.
@@ -40,7 +40,7 @@ module Data.Csv.Encoding
 import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
                                  toLazyByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromString)
-import Control.Applicative ((<|>), optional)
+import Control.Applicative as AP (Applicative(..), (<|>), optional)
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
@@ -51,9 +51,9 @@ import qualified Data.HashMap.Strict as HM
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Data.Word (Word8)
+import Data.Monoid
 import Prelude hiding (unlines)
 
-import Data.Csv.Compat.Monoid ((<>))
 import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Conversion (FromNamedRecord, FromRecord, ToNamedRecord,
                             ToRecord, parseNamedRecord, parseRecord, runParser,
@@ -64,10 +64,6 @@ import Data.Csv.Types hiding (toNamedRecord)
 import qualified Data.Csv.Types as Types
 import Data.Csv.Util (blankLine, endOfLine)
 
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((*>), pure)
-import Data.Monoid (mconcat, mempty)
-#endif
 
 -- TODO: 'encode' isn't as efficient as it could be.
 
@@ -372,7 +368,7 @@ csv !opts = do
             else case runParser (parseRecord r) of
                 Left msg  -> fail $ "conversion error: " ++ msg
                 Right val -> do
-                    !vals <- (endOfLine *> records) <|> pure []
+                    !vals <- (endOfLine *> records) <|> AP.pure []
                     return (val : vals)
 {-# INLINE csv #-}
 

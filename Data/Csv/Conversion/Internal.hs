@@ -10,9 +10,8 @@ import Data.Array.IArray
 import qualified Data.ByteString as B
 import Data.Char (ord)
 import Data.Int
+import Data.Monoid
 import Data.Word
-
-import Data.Csv.Compat.Monoid ((<>))
 
 ------------------------------------------------------------------------
 -- Integers
