@@ -106,6 +106,7 @@ foldrRecords :: (a -> b -> b) -> b -> Records a -> b
 foldrRecords f = go
   where
     go z (Cons (Right x) rs) = f x (go z rs)
+    go z (Cons (Left _) rs) = go z rs
     go z _ = z
 {-# INLINE foldrRecords #-}
 

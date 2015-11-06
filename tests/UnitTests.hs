@@ -13,6 +13,7 @@ import Data.Int
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Vector as V
+import qualified Data.Foldable as F
 import Data.Word
 import Test.HUnit
 import Test.Framework as TF
@@ -362,6 +363,21 @@ customOptionsTests =
     ]
 
 ------------------------------------------------------------------------
+-- Instance tests
+
+instanceTests :: [TF.Test]
+instanceTests =
+  [
+    testGroup "Records instances"
+    [ testCase "foldr Foldable" (expected @=? F.foldr (:) [] input)
+    ]
+  ]
+  where
+    input = S.Cons (Left "empty") (
+      S.Cons (Right ("a" :: String)) (S.Nil Nothing BL8.empty))
+    expected = ["a" :: String]
+
+------------------------------------------------------------------------
 -- Test harness
 
 allTests :: [TF.Test]
@@ -369,6 +385,7 @@ allTests = [ testGroup "positional" positionalTests
            , testGroup "named" nameBasedTests
            , testGroup "conversion" conversionTests
            , testGroup "custom-options" customOptionsTests
+           , testGroup "instances" instanceTests
            ]
 
 main :: IO ()
