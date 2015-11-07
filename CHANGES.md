@@ -1,3 +1,10 @@
+## Version 0.4.5.0
+
+ * Fix defect in `Foldable(foldr)` implementation failing to skip
+   unconvertable records (#102)
+
+ * Documentation fixes
+
 ## Version 0.4.4.0
 
  * Added record instances for larger tuples.
