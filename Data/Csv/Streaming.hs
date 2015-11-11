@@ -115,6 +115,7 @@ foldlRecords' :: (a -> b -> a) -> a -> Records b -> a
 foldlRecords' f = go
   where
     go z (Cons (Right x) rs) = let z' = f z x in z' `seq` go z' rs
+    go z (Cons (Left _) rs) = go z rs
     go z _ = z
 {-# INLINE foldlRecords' #-}
 #endif

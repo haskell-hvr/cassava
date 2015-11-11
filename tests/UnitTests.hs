@@ -370,6 +370,7 @@ instanceTests =
   [
     testGroup "Records instances"
     [ testCase "foldr Foldable" (expected @=? F.foldr (:) [] input)
+    , testCase "foldl' Foldable" (expected @=? F.foldl' (flip (:)) [] input)
     ]
   ]
   where
