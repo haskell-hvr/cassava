@@ -703,6 +703,17 @@ instance ToField Char where
     toField = toField . T.encodeUtf8 . T.singleton
     {-# INLINE toField #-}
 
+instance FromField Bool where
+    parseField "True"  = pure True
+    parseField "False" = pure False
+    parseField e       = typeError "Bool" e Nothing
+    {-# INLINE parseField #-}
+
+instance ToField Bool where
+    toField True  = "True"
+    toField False = "False"
+    {-# INLINE toField #-}
+
 -- | Accepts same syntax as 'rational'. Ignores whitespace.
 instance FromField Double where
     parseField = parseDouble
