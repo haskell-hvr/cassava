@@ -192,7 +192,7 @@ import Data.Csv.Types
 -- >
 -- > instance FromNamedRecord Person where
 -- >     parseNamedRecord m = Person <$> m .: "name" <*> m .: "salary"
--- > instance ToNamedRecord Person
+-- > instance ToNamedRecord Person where
 -- >     toNamedRecord (Person name salary) = namedRecord [
 -- >         "name" .= name, "salary" .= salary]
 -- > instance DefaultOrdered Person
