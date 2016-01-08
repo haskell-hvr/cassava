@@ -192,11 +192,11 @@ import Data.Csv.Types
 -- >
 -- > instance FromNamedRecord Person where
 -- >     parseNamedRecord m = Person <$> m .: "name" <*> m .: "salary"
--- > instance ToNamedRecord Person
+-- > instance ToNamedRecord Person where
 -- >     toNamedRecord (Person name salary) = namedRecord [
 -- >         "name" .= name, "salary" .= salary]
--- > instance DefaultOrdered Person
--- >     where headerOrder _ = header ["name", "salary"]
+-- > instance DefaultOrdered Person where
+-- >     headerOrder _ = header ["name", "salary"]
 --
 -- We can now use e.g. 'encodeDefaultOrderedByName' (or 'encodeByName'
 -- with an explicit header order) and 'decodeByName' to encode and
