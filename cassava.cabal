@@ -130,12 +130,9 @@ Benchmark benchmarks
 
   ghc-options: -Wall -O2
 
-  if impl(ghc >= 7.2.1)
-    cpp-options: -DGENERICS
-
-    -- GHC.Generics lived in `ghc-prim` for GHC 7.2 & GHC 7.4 only
-    if impl(ghc < 7.6)
-      build-depends: ghc-prim == 0.2.*
+  -- GHC.Generics lived in `ghc-prim` for GHC 7.2 & GHC 7.4 only
+  if impl(ghc < 7.6)
+    build-depends: ghc-prim == 0.2.*
 
   -- We cannot depend on the library directly as that creates a
   -- dependency cycle.
