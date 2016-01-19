@@ -15,12 +15,30 @@ Author:              Johan Tibell
 Maintainer:          hvr@gnu.org
 Category:            Text, Web, CSV
 Build-type:          Simple
-Cabal-version:       >=1.8
+Cabal-version:       >=1.10
 Extra-source-files:  examples/*.hs,
                      CHANGES.md
-Tested-with:         GHC == 7.10.2, GHC == 7.8.4, GHC == 7.6.3, GHC == 7.4.2
+Tested-with:         GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3
 
 Library
+  default-language: Haskell2010
+  other-extensions:
+    BangPatterns
+    CPP
+    DataKinds
+    DefaultSignatures
+    DeriveFunctor
+    FlexibleContexts
+    FlexibleInstances
+    KindSignatures
+    MultiParamTypeClasses
+    OverloadedStrings
+    PolyKinds
+    Rank2Types
+    ScopedTypeVariables
+    TypeOperators
+    UndecidableInstances
+
   Exposed-modules:
     Data.Csv
     Data.Csv.Builder
@@ -38,7 +56,7 @@ Library
   Build-depends:
     array < 0.6,
     attoparsec >= 0.10.2 && < 0.14,
-    base >= 4.5 && < 5,
+    base >= 4.6 && < 5,
     blaze-builder < 0.5,
     bytestring < 0.11,
     containers < 0.6,
@@ -55,11 +73,13 @@ Library
     build-depends: ghc-prim == 0.2.*
 
 Test-suite unit-tests
+  default-language: Haskell2010
+
   Type: exitcode-stdio-1.0
   Main-is: UnitTests.hs
   Build-depends:
     attoparsec,
-    base >= 4.5,
+    base >= 4.6,
     bytestring,
     cassava,
     hashable < 1.3,
@@ -76,6 +96,8 @@ Test-suite unit-tests
   ghc-options: -Wall
 
 Benchmark benchmarks
+  default-language: Haskell2010
+
   Type: exitcode-stdio-1.0
   Main-is: Benchmarks.hs
 
@@ -93,7 +115,7 @@ Benchmark benchmarks
   Build-depends:
     array < 0.6,
     attoparsec >= 0.10.2 && < 0.14,
-    base >= 4.5 && < 5,
+    base >= 4.6 && < 5,
     blaze-builder < 0.5,
     bytestring < 0.11,
     containers < 0.6,

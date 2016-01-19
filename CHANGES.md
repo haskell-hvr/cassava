@@ -1,9 +1,13 @@
 ## Version 0.4.5.0
 
+ * Support for GHC 8.0 added; support for GHC 7.4 dropped
+
  * Fix defect in `Foldable(foldr)` implementation failing to skip
    unconvertable records (#102)
 
  * Documentation fixes
+
+ * Maintainer changed
 
 ## Version 0.4.4.0
 
