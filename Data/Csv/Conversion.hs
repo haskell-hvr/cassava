@@ -2,6 +2,8 @@
     BangPatterns,
     CPP,
     DefaultSignatures,
+    DataKinds,
+    PolyKinds,
     FlexibleContexts,
     FlexibleInstances,
     KindSignatures,
@@ -1018,7 +1020,7 @@ type Success a f r = a -> f r
 -- lets you compose several field conversions together in such a way
 -- that if any of them fail, the whole record conversion fails.
 newtype Parser a = Parser {
-      unParser :: forall f r.
+      unParser :: forall (f :: * -> *) (r :: *).
                   Failure f r
                -> Success a f r
                -> f r
@@ -1202,7 +1204,12 @@ instance GToNamedRecordHeader a => GToNamedRecordHeader (M1 C c a)
 
 -- | Instance to ensure that you cannot derive DefaultOrdered for
 -- constructors without selectors.
+#if MIN_VERSION_base(4,9,0)
+instance DefaultOrdered (M1 S ('MetaSel 'Nothing srcpk srcstr decstr) a ())
+         => GToNamedRecordHeader (M1 S ('MetaSel 'Nothing srcpk srcstr decstr) a)
+#else
 instance DefaultOrdered (M1 S NoSelector a ()) => GToNamedRecordHeader (M1 S NoSelector a)
+#endif
   where
     gtoNamedRecordHeader _ =
         error "You cannot derive DefaultOrdered for constructors without selectors."
