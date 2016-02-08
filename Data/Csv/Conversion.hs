@@ -46,7 +46,7 @@ module Data.Csv.Conversion
 
 import Control.Applicative (Alternative, (<|>), empty)
 import Control.Monad (MonadPlus, mplus, mzero)
-import Data.Attoparsec.ByteString.Char8 (double)
+import Data.Attoparsec.ByteString.Char8 (double, rational)
 import qualified Data.Attoparsec.ByteString.Char8 as A8
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
@@ -727,11 +727,28 @@ instance ToField Float where
     toField = realFloat
     {-# INLINE toField #-}
 
+-- | Accepts same syntax as 'rational'. Ignores whitespace.
+instance FromField Rational where
+    parseField = parseRational
+    {-# INLINE parseField #-}
+
+-- | Uses decimal notation or scientific notation, depending on the
+-- number.
+instance ToField Rational where
+    toField = realFloat . fromRational
+    {-# INLINE toField #-}
+
 parseDouble :: B.ByteString -> Parser Double
 parseDouble s = case parseOnly (ws *> double <* ws) s of
     Left err -> typeError "Double" s (Just err)
     Right n  -> pure n
 {-# INLINE parseDouble #-}
+
+parseRational :: B.ByteString -> Parser Rational
+parseRational s = case parseOnly (ws *> rational <* ws) s of
+    Left err -> typeError "Rational" s (Just err)
+    Right n  -> pure n
+{-# INLINE parseRational #-}
 
 -- | Accepts a signed decimal number. Ignores whitespace.
 instance FromField Int where
