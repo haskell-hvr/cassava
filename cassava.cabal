@@ -16,7 +16,8 @@ Maintainer:          hvr@gnu.org
 Category:            Text, Web, CSV
 Build-type:          Simple
 Cabal-version:       >=1.10
-Extra-source-files:  examples/*.hs,
+Extra-source-files:  benchmarks/*.csv,
+                     examples/*.hs,
                      CHANGES.md
 Tested-with:         GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3
 
