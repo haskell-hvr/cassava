@@ -65,3 +65,11 @@ main = do
         Right (_, v) -> V.forM_ v $ \ p ->
             putStrLn $ name p ++ " earns " ++ show (salary p) ++ " dollars"
 ```
+
+## Further reading
+
+The primary API documentation for `cassava` is its Haddock documentation which can be found at http://hackage.haskell.org/package/cassava/docs/Data-Csv.html 
+
+Below are listed additional recommended third-party blogposts and tutorials
+
+ - [CSV encoding and decoding in Haskell with Cassava](https://www.stackbuilders.com/tutorials/haskell/csv-encoding-decoding/)
