@@ -97,6 +97,21 @@ fromStrict = L.fromChunks . (:[])
 {-# INLINE fromStrict #-}
 
 ------------------------------------------------------------------------
+-- bytestring compatibility
+
+toStrict   :: L.ByteString -> B.ByteString
+fromStrict :: B.ByteString -> L.ByteString
+#if MIN_VERSION_bytestring(0,10,0)
+toStrict   = L.toStrict
+fromStrict = L.fromStrict
+#else
+toStrict   = B.concat . L.toChunks
+fromStrict = L.fromChunks . (:[])
+#endif
+{-# INLINE toStrict #-}
+{-# INLINE fromStrict #-}
+
+------------------------------------------------------------------------
 -- Type conversion
 
 ------------------------------------------------------------------------
