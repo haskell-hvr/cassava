@@ -153,9 +153,10 @@ decodeByNameWith !opts = decodeWithP (csvWithHeader opts)
 
 -- | Should quoting be applied to fields, and at which level?
 data Quoting
-    = QuoteNone        -- ^ No quotes.
-    | QuoteMinimal     -- ^ Quotes according to RFC 4180.
-    | QuoteAll         -- ^ Always quote.
+    = QuoteNone         -- ^ No quotes.
+    | QuoteMinimal      -- ^ Quotes according to RFC 4180.
+    | QuoteConservative -- ^ Like 'QuoteMinimal' but also quote fields with spaces.
+    | QuoteAll          -- ^ Always quote.
     deriving (Eq, Show)
 
 -- | Options that controls how data is encoded. These options can be
@@ -195,7 +196,7 @@ defaultEncodeOptions = EncodeOptions
     { encDelimiter     = 44  -- comma
     , encUseCrLf       = True
     , encIncludeHeader = True
-    , encQuoting       = QuoteMinimal
+    , encQuoting       = QuoteConservative
     }
 
 -- | Like 'encode', but lets you customize how the CSV data is
@@ -246,8 +247,13 @@ encodeNamedRecord hdr qtng delim =
 escape :: Quoting -> Word8 -> B.ByteString -> B.ByteString
 escape !qtng !delim !s
     | (qtng == QuoteMinimal &&
+        B.any (\ b -> b == dquote || b == delim || b == nl || b == cr) s
+      )
+      ||
+      (qtng == QuoteConservative &&
         B.any (\ b -> b == dquote || b == delim || b == nl || b == cr || b == sp) s
-      ) || qtng == QuoteAll
+      )
+      || qtng == QuoteAll
          = toByteString $
             fromWord8 dquote
             <> B.foldl
