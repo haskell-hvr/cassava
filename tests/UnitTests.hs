@@ -111,7 +111,7 @@ positionalTests =
       , ("quoted",       [["\"abc\""]],      "\"\"\"abc\"\"\"\r\n")
       , ("quote",        [["a\"b"]],         "\"a\"\"b\"\r\n")
       , ("quotedQuote",  [["\"a\"b\""]],     "\"\"\"a\"\"b\"\"\"\r\n")
-      , ("leadingSpace", [[" abc"]],         "\" abc\"\r\n")
+      , ("leadingSpace", [[" abc"]],         " abc\r\n")
       , ("comma",        [["abc,def"]],      "\"abc,def\"\r\n")
       , ("twoFields",    [["abc","def"]],    "abc,def\r\n")
       , ("twoRecords",   [["abc"], ["def"]], "abc\r\ndef\r\n")

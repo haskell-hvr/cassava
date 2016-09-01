@@ -246,7 +246,7 @@ encodeNamedRecord hdr qtng delim =
 escape :: Quoting -> Word8 -> B.ByteString -> B.ByteString
 escape !qtng !delim !s
     | (qtng == QuoteMinimal &&
-        B.any (\ b -> b == dquote || b == delim || b == nl || b == cr || b == sp) s
+        B.any (\ b -> b == dquote || b == delim || b == nl || b == cr) s
       ) || qtng == QuoteAll
          = toByteString $
             fromWord8 dquote
@@ -262,7 +262,6 @@ escape !qtng !delim !s
     dquote = 34
     nl     = 10
     cr     = 13
-    sp     = 32
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
