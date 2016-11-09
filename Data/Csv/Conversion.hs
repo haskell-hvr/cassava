@@ -2,8 +2,6 @@
     BangPatterns,
     CPP,
     DefaultSignatures,
-    DataKinds,
-    PolyKinds,
     FlexibleContexts,
     FlexibleInstances,
     KindSignatures,
@@ -14,6 +12,11 @@
     TypeOperators,
     UndecidableInstances
     #-}
+
+#if MIN_VERSION_base(4,9,0)
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+#endif
 
 module Data.Csv.Conversion
     (
