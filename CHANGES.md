@@ -1,3 +1,7 @@
+## Version 0.4.5.1
+
+ * Restore GHC 7.4 support (#124)
+
 ## Version 0.4.5.0
 
  * Support for GHC 8.0 added; support for GHC 7.4 dropped

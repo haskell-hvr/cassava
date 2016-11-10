@@ -1,5 +1,5 @@
 Name:                cassava
-Version:             0.4.5.0
+Version:             0.4.5.1
 Synopsis:            A CSV parsing and encoding library
 Description:
   A CSV parsing and encoding library optimized for ease of use and high
