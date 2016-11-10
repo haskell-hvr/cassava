@@ -19,7 +19,7 @@ Cabal-version:       >=1.10
 Extra-source-files:  benchmarks/*.csv,
                      examples/*.hs,
                      CHANGES.md
-Tested-with:         GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3
+Tested-with:         GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3, GHC ==7.4.2
 
 Library
   default-language: Haskell2010
@@ -40,6 +40,11 @@ Library
     TypeOperators
     UndecidableInstances
 
+  if impl(ghc >= 8.0)
+    other-extensions:
+      DataKinds
+      PolyKinds
+
   Exposed-modules:
     Data.Csv
     Data.Csv.Builder
@@ -57,7 +62,7 @@ Library
   Build-depends:
     array < 0.6,
     attoparsec >= 0.10.2 && < 0.14,
-    base >= 4.6 && < 5,
+    base >= 4.5 && < 5,
     blaze-builder < 0.5,
     bytestring < 0.11,
     containers < 0.6,
@@ -66,6 +71,10 @@ Library
     text < 1.3,
     unordered-containers < 0.3,
     vector < 0.12
+
+  -- Prior to GHC 7.6, GHC.Generics lived in ghc-prim
+  if impl(ghc >= 7.4 && < 7.6)
+    build-depends: ghc-prim
 
   ghc-options: -Wall -O2
 
@@ -76,7 +85,7 @@ Test-suite unit-tests
   Main-is: UnitTests.hs
   Build-depends:
     attoparsec,
-    base >= 4.6,
+    base >= 4.5,
     bytestring,
     cassava,
     hashable < 1.3,
@@ -112,7 +121,7 @@ Benchmark benchmarks
   Build-depends:
     array < 0.6,
     attoparsec >= 0.10.2 && < 0.14,
-    base >= 4.6 && < 5,
+    base >= 4.5 && < 5,
     blaze-builder < 0.5,
     bytestring < 0.11,
     containers < 0.6,
@@ -124,6 +133,9 @@ Benchmark benchmarks
     text,
     unordered-containers < 0.3,
     vector < 0.12
+
+  if impl(ghc >= 7.4 && < 7.6)
+    build-depends: ghc-prim
 
   ghc-options: -Wall -O2
 

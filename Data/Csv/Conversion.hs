@@ -2,8 +2,6 @@
     BangPatterns,
     CPP,
     DefaultSignatures,
-    DataKinds,
-    PolyKinds,
     FlexibleContexts,
     FlexibleInstances,
     KindSignatures,
@@ -14,6 +12,11 @@
     TypeOperators,
     UndecidableInstances
     #-}
+
+#if __GLASGOW_HASKELL__ >= 800
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+#endif
 
 module Data.Csv.Conversion
     (
