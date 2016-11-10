@@ -19,7 +19,7 @@ Cabal-version:       >=1.10
 Extra-source-files:  benchmarks/*.csv,
                      examples/*.hs,
                      CHANGES.md
-Tested-with:         GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3
+Tested-with:         GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3, GHC ==7.4.2
 
 Library
   default-language: Haskell2010
@@ -72,6 +72,7 @@ Library
     unordered-containers < 0.3,
     vector < 0.12
 
+  -- Prior to GHC 7.6, GHC.Generics lived in ghc-prim
   if impl(ghc >= 7.4 && < 7.6)
     build-depends: ghc-prim
 

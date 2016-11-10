@@ -13,7 +13,7 @@
     UndecidableInstances
     #-}
 
-#if MIN_VERSION_base(4,9,0)
+#if __GLASGOW_HASKELL__ >= 800
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 #endif
