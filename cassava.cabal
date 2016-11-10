@@ -72,9 +72,9 @@ Library
     unordered-containers < 0.3,
     vector < 0.12
 
-  -- Prior to GHC 7.6, GHC.Generics lived in ghc-prim
-  if impl(ghc >= 7.4 && < 7.6)
-    build-depends: ghc-prim
+  -- GHC.Generics lived in `ghc-prim` for GHC 7.2 & GHC 7.4 only
+  if impl(ghc < 7.6)
+    build-depends: ghc-prim == 0.2.*
 
   ghc-options: -Wall -O2
 
@@ -134,8 +134,9 @@ Benchmark benchmarks
     unordered-containers < 0.3,
     vector < 0.12
 
-  if impl(ghc >= 7.4 && < 7.6)
-    build-depends: ghc-prim
+  -- GHC.Generics lived in `ghc-prim` for GHC 7.2 & GHC 7.4 only
+  if impl(ghc < 7.6)
+    build-depends: ghc-prim == 0.2.*
 
   ghc-options: -Wall -O2
 
