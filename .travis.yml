@@ -40,6 +40,8 @@ matrix:
     - compiler: "ghc-8.0.1"
       env: 'COLLECTIONS=lts-7'
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.0.1], sources: [hvr-ghc]}}
+    - compiler: "ghc-8.0.2"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.0.2], sources: [hvr-ghc]}}
 
 before_install:
  - HC=${CC}
@@ -91,15 +93,9 @@ script:
  # - rm -rf ./dist-newstyle
  - cabal new-build -w ${HC} ${TEST} ${BENCH} all
 
- # there's no 'cabal new-test' yet, so let's emulate for now
- - TESTS=( $(awk 'tolower($0) ~ /^test-suite / { print $2 }' *.cabal) )
- - if [ "$TEST" != "--enable-tests" ]; then TESTS=(); fi
- - shopt -s globstar;
-   RC=true; for T in ${TESTS[@]}; do echo "== $T ==";
-   if dist-newstyle/build/**/$SRC_BASENAME/**/build/$T/$T; then echo "= $T OK =";
-   else echo "= $T FAILED ="; RC=false; fi; done; $RC
+ - if [ "x$TEST" = "x--enable-tests" ]; then cabal new-test -w ${HC} all; fi
 
- # try building for package collections
+ # try building & testing for package collections
  - for COLL in "${COLLS[@]}"; do
      echo "== collection $COLL ==";
      ghc-travis collection ${COLL} > /dev/null || break;
@@ -107,6 +103,7 @@ script:
      grep ' collection-id' cabal.project.freeze;
      rm -rf dist-newstyle/;
      cabal new-build -w ${HC} ${TEST} ${BENCH} all || break;
+     if [ "x$TEST" = "x--enable-tests" ]; then cabal new-test -w ${HC} all || break; fi;
    done
 
 # EOF
