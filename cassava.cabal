@@ -1,5 +1,5 @@
 Name:                cassava
-Version:             0.4.5.1
+Version:             0.5
 Synopsis:            A CSV parsing and encoding library
 Description:
   A CSV parsing and encoding library optimized for ease of use and high
@@ -19,7 +19,7 @@ Cabal-version:       >=1.10
 Extra-source-files:  benchmarks/*.csv,
                      examples/*.hs,
                      CHANGES.md
-Tested-with:         GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3, GHC ==7.4.2
+Tested-with:         GHC ==8.0.2, GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3, GHC ==7.4.2
 
 Library
   default-language: Haskell2010
@@ -70,7 +70,8 @@ Library
     hashable < 1.3,
     text < 1.3,
     unordered-containers < 0.3,
-    vector >= 0.8 && < 0.13
+    vector >= 0.8 && < 0.13,
+    Only >= 0.1 && < 0.1.1
 
   -- GHC.Generics lived in `ghc-prim` for GHC 7.2 & GHC 7.4 only
   if impl(ghc < 7.6)

@@ -74,6 +74,7 @@ import GHC.Float (double2Float)
 import GHC.Generics
 import Prelude hiding (lookup, takeWhile)
 
+import Data.Tuple.Only (Only(..))
 import Data.Csv.Conversion.Internal
 import Data.Csv.Types
 
@@ -132,13 +133,6 @@ class FromRecord a where
 
     default parseRecord :: (Generic a, GFromRecord (Rep a)) => Record -> Parser a
     parseRecord r = to <$> gparseRecord r
-
--- | Haskell lacks a single-element tuple type, so if you CSV data
--- with just one column you can use the 'Only' type to represent a
--- single-column result.
-newtype Only a = Only {
-      fromOnly :: a
-    } deriving (Eq, Ord, Read, Show)
 
 -- | A type that can be converted to a single CSV record.
 --
