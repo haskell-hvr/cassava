@@ -9,17 +9,18 @@ import qualified Data.ByteString.Builder.Prim as BP
 import Data.Array.Base (unsafeAt)
 import Data.Array.IArray
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as L
 import Data.Char (ord)
 import Data.Int
 import Data.Monoid
 import Data.Word
 
+import Data.Csv.Util (toStrict)
+
 ------------------------------------------------------------------------
 -- Integers
 
 decimal :: Integral a => a -> B.ByteString
-decimal = L.toStrict . toLazyByteString . formatDecimal
+decimal = toStrict . toLazyByteString . formatDecimal
 {-# INLINE decimal #-}
 
 -- TODO: Add an optimized version for Integer.
@@ -101,7 +102,7 @@ i2w i = zero + fromIntegral i
 realFloat :: RealFloat a => a -> B.ByteString
 {-# SPECIALIZE realFloat :: Float -> B.ByteString #-}
 {-# SPECIALIZE realFloat :: Double -> B.ByteString #-}
-realFloat = L.toStrict . toLazyByteString . formatRealFloat Generic
+realFloat = toStrict . toLazyByteString . formatRealFloat Generic
 
 -- | Control the rendering of floating point numbers.
 data FPFormat = Exponent

@@ -8,6 +8,7 @@ module Data.Csv.Util
     , doubleQuote
     , newline
     , cr
+    , toStrict
     ) where
 
 import Control.Applicative ((<|>))
@@ -20,6 +21,15 @@ import Data.Attoparsec.ByteString (Parser)
 
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((*>))
+#endif
+
+#if MIN_VERSION_bytestring(0,10,0)
+import Data.ByteString.Lazy (toStrict)
+#else
+import qualified Data.ByteString.Lazy as L
+
+toStrict :: L.ByteString -> B.ByteString
+toStrict = B.concat . L.toChunks
 #endif
 
 -- | A strict version of 'Data.Functor.<$>' for monads.

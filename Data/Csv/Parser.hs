@@ -32,12 +32,11 @@ import qualified Data.Attoparsec.Lazy as AL
 import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Unsafe as S
-import qualified Data.ByteString.Lazy as L
 import qualified Data.Vector as V
 import Data.Word (Word8)
 
 import Data.Csv.Types
-import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, newline, doubleQuote)
+import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, newline, doubleQuote, toStrict)
 
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>), (*>), (<*), pure)
@@ -177,7 +176,7 @@ dquote :: AL.Parser Char
 dquote = char '"'
 
 unescape :: Z.Parser S.ByteString
-unescape = (L.toStrict . toLazyByteString) <$!> go mempty where
+unescape = (toStrict . toLazyByteString) <$!> go mempty where
   go acc = do
     h <- Z.takeWhile (/= doubleQuote)
     let rest = do

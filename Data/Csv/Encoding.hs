@@ -38,7 +38,7 @@ module Data.Csv.Encoding
     ) where
 
 import Data.ByteString.Builder
-import Control.Applicative as AP (Applicative(..), (<|>), optional)
+import Control.Applicative as AP (Applicative(..), (<|>))
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
@@ -60,7 +60,7 @@ import Data.Csv.Parser hiding (csv, csvWithHeader)
 import qualified Data.Csv.Parser as Parser
 import Data.Csv.Types hiding (toNamedRecord)
 import qualified Data.Csv.Types as Types
-import Data.Csv.Util (blankLine, endOfLine)
+import Data.Csv.Util (blankLine, endOfLine, toStrict)
 
 
 -- TODO: 'encode' isn't as efficient as it could be.
@@ -246,7 +246,7 @@ escape !qtng !delim !s
     | (qtng == QuoteMinimal &&
         B.any (\ b -> b == dquote || b == delim || b == nl || b == cr) s
       ) || qtng == QuoteAll
-         = L.toStrict . toLazyByteString $
+         = toStrict . toLazyByteString $
             word8 dquote
             <> B.foldl
                 (\ acc b -> acc <> if b == dquote
