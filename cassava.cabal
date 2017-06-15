@@ -19,7 +19,7 @@ Cabal-version:       >=1.10
 Extra-source-files:  benchmarks/*.csv,
                      examples/*.hs,
                      CHANGES.md
-Tested-with:         GHC ==8.0.2, GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3, GHC ==7.4.2
+Tested-with:         GHC ==8.2.1, GHC ==8.0.2, GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3, GHC ==7.4.2
 
 Library
   default-language: Haskell2010
