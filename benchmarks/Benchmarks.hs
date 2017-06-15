@@ -102,9 +102,9 @@ instance NFData LazyCsv.CSVError where
 
 main :: IO ()
 main = do
-    !csvData <- fromStrict `fmap` B.readFile "benchmarks/presidents.csv"
+    !csvData <- fromStrict `fmap` B.readFile "./presidents.csv"
     !csvDataN <- fromStrict `fmap` B.readFile
-                 "benchmarks/presidents_with_header.csv"
+                 "./presidents_with_header.csv"
     let (Right !presidents) = V.toList <$> decodePresidents csvData
         (Right (!hdr, !presidentsNV)) = decodePresidentsN csvDataN
         !presidentsN = V.toList presidentsNV

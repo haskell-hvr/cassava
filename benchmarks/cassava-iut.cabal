@@ -1,25 +1,14 @@
-Name:                cassava
-Version:             0.5
-Synopsis:            A CSV parsing and encoding library
-Description:
-  A CSV parsing and encoding library optimized for ease of use and high
-  performance.
+Name:                cassava-iut
+Version:             0
+Synopsis:            benchmarks for cassava
 Homepage:            https://github.com/hvr/cassava
 License:             BSD3
-License-file:        LICENSE
-Bug-reports:         https://github.com/hvr/cassava/issues
-Copyright:           (c) 2012 Johan Tibell
-                     (c) 2012 Bryan O'Sullivan
-                     (c) 2011 MailRank, Inc.
-Author:              Johan Tibell
 Maintainer:          hvr@gnu.org
-Category:            Text, Web, CSV
 Build-type:          Simple
 Cabal-version:       >=1.10
-Extra-source-files:  examples/*.hs,
-                     CHANGES.md
-Tested-with:         GHC ==8.2.1, GHC ==8.0.2, GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3, GHC ==7.4.2
+Extra-source-files:  *.csv
 
+-- cloned from cassava.cabal
 ----------------------------------------------------------------------------
 
 flag pre-bytestring-0-10-4
@@ -99,39 +88,47 @@ Library
 
   ghc-options: -Wall -O2
 
+  hs-source-dirs: ../
+
 ----------------------------------------------------------------------------
 
-Test-suite unit-tests
+Benchmark benchmark-iut
   default-language: Haskell2010
 
   Type: exitcode-stdio-1.0
-  Main-is: UnitTests.hs
-  -- dependencies with version constraints inherited via lib:cassava
-  Build-depends: attoparsec
-               , base
+  Main-is: Benchmarks.hs
+
+  -- dependencies with version constraints inherited via lib:cassava-iut
+  build-depends: base
                , bytestring
-               , cassava
-               , hashable
-               , text
+               , cassava-iut
+               , deepseq
                , unordered-containers
+               , text
                , vector
-  -- extra dependencies not already used by lib:cassava
-  build-depends: HUnit < 1.7
-               , QuickCheck >= 2.0 && < 2.10
-               , test-framework == 0.8.*
-               , test-framework-hunit == 0.3.*
-               , test-framework-quickcheck2 == 0.3.*
 
-  hs-source-dirs: tests
+  build-depends: criterion == 1.2.*
+               , lazy-csv == 0.5.*
 
-  -- https://ghc.haskell.org/trac/ghc/wiki/Migration/8.0#Recommendationsforforward-compatibility
-  if impl(ghc >= 8.0)
-    ghc-options: -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances
-  else
-    -- provide/emulate `Control.Monad.Fail` and `Data.Semigroups` API for pre-GHC8
-    build-depends: fail == 4.9.*, semigroups == 0.18.*
+  ghc-options: -Wall -O2
 
-  if impl(ghc >= 8.2)
-    ghc-options: -Wcpp-undef
 
-  ghc-options: -Wall
+Benchmark benchmark-ref
+  default-language: Haskell2010
+
+  Type: exitcode-stdio-1.0
+  Main-is: Benchmarks.hs
+
+  -- dependencies with version constraints inherited via lib:cassava-iut
+  build-depends: base
+               , bytestring
+               , deepseq
+               , unordered-containers
+               , text
+               , vector
+
+  build-depends: criterion == 1.2.*
+               , lazy-csv == 0.5.*
+               , cassava >= 0.4 && < 0.6
+
+  ghc-options: -Wall -O2
