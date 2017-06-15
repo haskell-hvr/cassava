@@ -376,10 +376,15 @@ encodeByNameWith :: ToNamedRecord a => EncodeOptions -> Header -> NamedBuilder a
                  -> L.ByteString
 encodeByNameWith opts hdr b =
     Builder.toLazyByteString $
-    Encoding.encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
-    recordSep (encUseCrLf opts) <>
+    encHdr <>
     runNamedBuilder b hdr (encQuoting opts) (encDelimiter opts)
     (encUseCrLf opts)
+  where
+    encHdr
+      | encIncludeHeader opts =
+          Encoding.encodeRecord (encQuoting opts) (encDelimiter opts) hdr
+          <> recordSep (encUseCrLf opts)
+      | otherwise = mempty
 
 -- | Like 'encodeDefaultOrderedByName', but lets you customize how the
 -- CSV data is encoded.
@@ -388,11 +393,17 @@ encodeDefaultOrderedByNameWith ::
     EncodeOptions -> NamedBuilder a -> L.ByteString
 encodeDefaultOrderedByNameWith opts b =
     Builder.toLazyByteString $
-    Encoding.encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
-    recordSep (encUseCrLf opts) <>
+    encHdr <>
     runNamedBuilder b hdr (encQuoting opts)
     (encDelimiter opts) (encUseCrLf opts)
-  where hdr = Conversion.headerOrder (undefined :: a)
+  where
+    hdr = Conversion.headerOrder (undefined :: a)
+
+    encHdr
+      | encIncludeHeader opts =
+          Encoding.encodeRecord (encQuoting opts) (encDelimiter opts) hdr
+          <> recordSep (encUseCrLf opts)
+      | otherwise = mempty
 
 -- | Encode a single named record.
 encodeNamedRecord :: ToNamedRecord a => a -> NamedBuilder a
