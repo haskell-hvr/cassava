@@ -53,6 +53,7 @@ module Data.Csv.Conversion
 
 import Control.Applicative (Alternative, (<|>), empty)
 import Control.Monad (MonadPlus, mplus, mzero)
+import qualified Control.Monad.Fail as Fail
 import Data.Attoparsec.ByteString.Char8 (double)
 import qualified Data.Attoparsec.ByteString.Char8 as A8
 import qualified Data.ByteString as B
@@ -66,6 +67,7 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
+import Data.Semigroup (Semigroup, (<>))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
@@ -73,6 +75,7 @@ import qualified Data.Text.Lazy.Encoding as LT
 #if MIN_VERSION_text_short(0,1,0)
 import qualified Data.Text.Short as T.S
 #endif
+import Data.Tuple.Only (Only(..))
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
@@ -81,7 +84,6 @@ import GHC.Float (double2Float)
 import GHC.Generics
 import Prelude hiding (lookup, takeWhile)
 
-import Data.Tuple.Only (Only(..))
 import Data.Csv.Conversion.Internal
 import Data.Csv.Types
 
@@ -1048,6 +1050,10 @@ instance Monad Parser where
     {-# INLINE (>>) #-}
     return = pure
     {-# INLINE return #-}
+    fail = Fail.fail
+    {-# INLINE fail #-}
+
+instance Fail.MonadFail Parser where
     fail msg = Parser $ \kf _ks -> kf msg
     {-# INLINE fail #-}
 
@@ -1075,10 +1081,14 @@ instance MonadPlus Parser where
                                    in unParser a kf' ks
     {-# INLINE mplus #-}
 
+instance Semigroup (Parser a) where
+    (<>) = mplus
+    {-# INLINE (<>) #-}
+
 instance Monoid (Parser a) where
     mempty  = fail "mempty"
     {-# INLINE mempty #-}
-    mappend = mplus
+    mappend = (<>)
     {-# INLINE mappend #-}
 
 apP :: Parser (a -> b) -> Parser a -> Parser b

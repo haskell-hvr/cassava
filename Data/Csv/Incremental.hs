@@ -85,7 +85,7 @@ import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.ByteString as B
 import qualified Blaze.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy as L
-import Data.Monoid ((<>))
+import Data.Semigroup (Semigroup, (<>))
 import qualified Data.Vector as V
 import Data.Word (Word8)
 
@@ -344,11 +344,14 @@ newtype Builder a = Builder {
       runBuilder :: Quoting -> Word8 -> Bool -> Builder.Builder
     }
 
-instance Monoid (Builder a) where
-    mempty = Builder (\ _ _ _ -> mempty)
-    mappend (Builder f) (Builder g) =
+instance Semigroup (Builder a) where
+    Builder f <> Builder g =
         Builder $ \ qtng delim useCrlf ->
         f qtng delim useCrlf <> g qtng delim useCrlf
+
+instance Monoid (Builder a) where
+    mempty  = Builder (\ _ _ _ -> mempty)
+    mappend = (<>)
 
 ------------------------------------------------------------------------
 -- ** Index-based record conversion
@@ -406,11 +409,14 @@ newtype NamedBuilder a = NamedBuilder {
       runNamedBuilder :: Header -> Quoting -> Word8 -> Bool -> Builder.Builder
     }
 
-instance Monoid (NamedBuilder a) where
-    mempty = NamedBuilder (\ _ _ _ _ -> mempty)
-    mappend (NamedBuilder f) (NamedBuilder g) =
+instance Semigroup (NamedBuilder a) where
+    NamedBuilder f <> NamedBuilder g =
         NamedBuilder $ \ hdr qtng delim useCrlf ->
         f hdr qtng delim useCrlf <> g hdr qtng delim useCrlf
+
+instance Monoid (NamedBuilder a) where
+    mempty = NamedBuilder (\ _ _ _ _ -> mempty)
+    mappend = (<>)
 
 ------------------------------------------------------------------------
 
