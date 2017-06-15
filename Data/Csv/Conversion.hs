@@ -18,6 +18,10 @@
 {-# LANGUAGE PolyKinds #-}
 #endif
 
+#if !MIN_VERSION_bytestring(0,10,4)
+# define MIN_VERSION_text_short(a,b,c) 0
+#endif
+
 module Data.Csv.Conversion
     (
     -- * Type conversion
@@ -66,6 +70,9 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
+#if MIN_VERSION_text_short(0,1,0)
+import qualified Data.Text.Short as T.S
+#endif
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
@@ -863,6 +870,16 @@ instance FromField SBS.ShortByteString where
 
 instance ToField SBS.ShortByteString where
     toField = SBS.fromShort
+    {-# INLINE toField #-}
+#endif
+
+#if MIN_VERSION_text_short(0,1,0)
+instance FromField T.S.ShortText where
+    parseField = maybe (fail "Invalid UTF-8 stream") pure . T.S.fromByteString
+    {-# INLINE parseField #-}
+
+instance ToField T.S.ShortText where
+    toField = T.S.toByteString
     {-# INLINE toField #-}
 #endif
 

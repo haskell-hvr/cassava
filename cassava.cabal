@@ -21,6 +21,9 @@ Extra-source-files:  benchmarks/*.csv,
                      CHANGES.md
 Tested-with:         GHC ==8.2.1, GHC ==8.0.2, GHC ==8.0.1, GHC ==7.10.3, GHC ==7.8.4, GHC ==7.6.3, GHC ==7.4.2
 
+flag pre-bytestring-0-10-4
+  description: bytestring < 0.10.4
+
 Library
   default-language: Haskell2010
   other-extensions:
@@ -72,6 +75,12 @@ Library
     unordered-containers < 0.3,
     vector >= 0.8 && < 0.13,
     Only >= 0.1 && < 0.1.1
+
+  if flag(pre-bytestring-0-10-4)
+    build-depends: bytestring <  0.10.4
+  else
+    build-depends: bytestring >= 0.10.4
+                 , text-short == 0.1.*
 
   -- GHC.Generics lived in `ghc-prim` for GHC 7.2 & GHC 7.4 only
   if impl(ghc < 7.6)
