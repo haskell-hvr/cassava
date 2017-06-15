@@ -37,9 +37,7 @@ module Data.Csv.Encoding
     , recordSep
     ) where
 
-import Blaze.ByteString.Builder (Builder, fromByteString, fromWord8,
-                                 toLazyByteString, toByteString)
-import Blaze.ByteString.Builder.Char8 (fromString)
+import Data.ByteString.Builder
 import Control.Applicative as AP (Applicative(..), (<|>), optional)
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.Attoparsec.ByteString.Lazy as AL
@@ -232,8 +230,8 @@ encodeOptionsError = error $ "Data.Csv: " ++
 -- | Encode a single record, without the trailing record separator
 -- (i.e. newline).
 encodeRecord :: Quoting -> Word8 -> Record -> Builder
-encodeRecord qtng delim = mconcat . intersperse (fromWord8 delim)
-                     . map fromByteString . map (escape qtng delim) . V.toList
+encodeRecord qtng delim = mconcat . intersperse (word8 delim)
+                     . map byteString . map (escape qtng delim) . V.toList
 {-# INLINE encodeRecord #-}
 
 -- | Encode a single named record, without the trailing record
@@ -248,15 +246,15 @@ escape !qtng !delim !s
     | (qtng == QuoteMinimal &&
         B.any (\ b -> b == dquote || b == delim || b == nl || b == cr) s
       ) || qtng == QuoteAll
-         = toByteString $
-            fromWord8 dquote
+         = L.toStrict . toLazyByteString $
+            word8 dquote
             <> B.foldl
                 (\ acc b -> acc <> if b == dquote
-                    then fromByteString "\"\""
-                    else fromWord8 b)
+                    then byteString "\"\""
+                    else word8 b)
                 mempty
                 s
-            <> fromWord8 dquote
+            <> word8 dquote
     | otherwise = s
   where
     dquote = 34
@@ -315,8 +313,8 @@ moduleError func msg = error $ "Data.Csv.Encoding." ++ func ++ ": " ++ msg
 {-# NOINLINE moduleError #-}
 
 recordSep :: Bool -> Builder
-recordSep False = fromWord8 10 -- new line (\n)
-recordSep True  = fromString "\r\n"
+recordSep False = word8 10 -- new line (\n)
+recordSep True  = string8 "\r\n"
 
 unlines :: Builder -> [Builder] -> Builder
 unlines _ [] = mempty

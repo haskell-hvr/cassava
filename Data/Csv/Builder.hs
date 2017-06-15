@@ -18,7 +18,7 @@ module Data.Csv.Builder
 
 import Data.Monoid
 
-import Blaze.ByteString.Builder as Builder
+import Data.ByteString.Builder as Builder
 import Data.Csv.Conversion
 import qualified Data.Csv.Encoding as Encoding
 import Data.Csv.Encoding (EncodeOptions(..))
