@@ -24,7 +24,9 @@ module Data.Csv.Encoding
     , DecodeOptions(..)
     , defaultDecodeOptions
     , decodeWith
+    , decodeWith'
     , decodeByNameWith
+    , decodeByNameWith'
     , EncodeOptions(..)
     , defaultEncodeOptions
     , encodeWith
@@ -59,6 +61,7 @@ import Data.Csv.Conversion (FromNamedRecord, FromRecord, ToNamedRecord,
                             ToRecord, parseNamedRecord, parseRecord, runParser,
                             toNamedRecord, toRecord)
 import Data.Csv.Parser hiding (csv, csvWithHeader)
+import qualified Data.Csv.Conversion as Conversion
 import qualified Data.Csv.Parser as Parser
 import Data.Csv.Types hiding (toNamedRecord)
 import qualified Data.Csv.Types as Types
@@ -119,7 +122,7 @@ decodeWith :: FromRecord a
                              -- skipped
            -> L.ByteString   -- ^ CSV data
            -> Either String (Vector a)
-decodeWith = decodeWithC csv
+decodeWith = decodeWithC (csv parseRecord)
 {-# INLINE [1] decodeWith #-}
 
 {-# RULES
@@ -131,6 +134,17 @@ decodeWith = decodeWithC csv
 idDecodeWith :: DecodeOptions -> HasHeader -> L.ByteString
              -> Either String (Vector (Vector B.ByteString))
 idDecodeWith = decodeWithC Parser.csv
+
+-- | Like 'decodeWith'', but lets you specify a parser function.
+decodeWith' :: (Record -> Conversion.Parser a)
+            -- ^ Custom parser function
+            -> DecodeOptions -- ^ Decoding options
+            -> HasHeader     -- ^ Data contains header that should be
+                             -- skipped
+            -> L.ByteString  -- ^ CSV data
+            -> Either String (Vector a)
+decodeWith' _parseRecord = decodeWithC (csv _parseRecord)
+{-# INLINE [1] decodeWith' #-}
 
 -- | Decode CSV data using the provided parser, skipping a leading
 -- header if 'hasHeader' is 'HasHeader'. Returns 'Left' @errMsg@ on
@@ -149,7 +163,16 @@ decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> L.ByteString   -- ^ CSV data
                  -> Either String (Header, Vector a)
-decodeByNameWith !opts = decodeWithP (csvWithHeader opts)
+decodeByNameWith !opts = decodeWithP (csvWithHeader parseNamedRecord opts)
+
+-- | Like 'decodeByNameWith', but lets you specify a parser function.
+decodeByNameWith' :: (NamedRecord -> Conversion.Parser a)
+                  -- ^ Custom parser function
+                  -> DecodeOptions -- ^ Decoding options
+                  -> L.ByteString  -- ^ CSV data
+                  -> Either String (Header, Vector a)
+decodeByNameWith' _parseNamedRecord !opts =
+  decodeWithP (csvWithHeader _parseNamedRecord opts)
 
 -- | Should quoting be applied to fields, and at which level?
 data Quoting
@@ -353,8 +376,9 @@ decodeWithP p s =
 -- "parse error: conversion error: ...".
 
 -- | Parse a CSV file that does not include a header.
-csv :: FromRecord a => DecodeOptions -> AL.Parser (V.Vector a)
-csv !opts = do
+csv :: (Record -> Conversion.Parser a) -> DecodeOptions
+    -> AL.Parser (V.Vector a)
+csv _parseRecord !opts = do
     vals <- records
     _ <- optional endOfLine
     endOfInput
@@ -364,7 +388,7 @@ csv !opts = do
         !r <- record (decDelimiter opts)
         if blankLine r
             then (endOfLine *> records) <|> pure []
-            else case runParser (parseRecord r) of
+            else case runParser (_parseRecord r) of
                 Left msg  -> fail $ "conversion error: " ++ msg
                 Right val -> do
                     !vals <- (endOfLine *> records) <|> AP.pure []
@@ -372,9 +396,9 @@ csv !opts = do
 {-# INLINE csv #-}
 
 -- | Parse a CSV file that includes a header.
-csvWithHeader :: FromNamedRecord a => DecodeOptions
+csvWithHeader :: (NamedRecord -> Conversion.Parser a) -> DecodeOptions
               -> AL.Parser (Header, V.Vector a)
-csvWithHeader !opts = do
+csvWithHeader _parseNamedRecord !opts = do
     !hdr <- header (decDelimiter opts)
     vals <- records hdr
     _ <- optional endOfLine
@@ -392,4 +416,4 @@ csvWithHeader !opts = do
                     !vals <- (endOfLine *> records hdr) <|> pure []
                     return (val : vals)
 
-    convert hdr = parseNamedRecord . Types.toNamedRecord hdr
+    convert hdr = _parseNamedRecord . Types.toNamedRecord hdr
