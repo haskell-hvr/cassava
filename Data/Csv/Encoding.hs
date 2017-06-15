@@ -356,18 +356,16 @@ decodeWithP p s =
 csv :: FromRecord a => DecodeOptions -> AL.Parser (V.Vector a)
 csv !opts = do
     vals <- records
-    _ <- optional endOfLine
-    endOfInput
     return $! V.fromList vals
   where
     records = do
         !r <- record (decDelimiter opts)
         if blankLine r
-            then (endOfLine *> records) <|> pure []
+            then (endOfInput *> pure []) <|> (endOfLine *> records)
             else case runParser (parseRecord r) of
                 Left msg  -> fail $ "conversion error: " ++ msg
                 Right val -> do
-                    !vals <- (endOfLine *> records) <|> AP.pure []
+                    !vals <- (endOfInput *> AP.pure []) <|> (endOfLine *> records)
                     return (val : vals)
 {-# INLINE csv #-}
 
@@ -377,19 +375,17 @@ csvWithHeader :: FromNamedRecord a => DecodeOptions
 csvWithHeader !opts = do
     !hdr <- header (decDelimiter opts)
     vals <- records hdr
-    _ <- optional endOfLine
-    endOfInput
     let !v = V.fromList vals
     return (hdr, v)
   where
     records hdr = do
         !r <- record (decDelimiter opts)
         if blankLine r
-            then (endOfLine *> records hdr) <|> pure []
+            then (endOfInput *> pure []) <|> (endOfLine *> records hdr)
             else case runParser (convert hdr r) of
                 Left msg  -> fail $ "conversion error: " ++ msg
                 Right val -> do
-                    !vals <- (endOfLine *> records hdr) <|> pure []
+                    !vals <- (endOfInput *> pure []) <|> (endOfLine *> records hdr)
                     return (val : vals)
 
     convert hdr = parseNamedRecord . Types.toNamedRecord hdr
