@@ -1,3 +1,21 @@
+## Version 0.5.0.0
+
+### Semantic changes
+
+ * Don't unecessarily quote spaces with `QuoteMinimal` (#118,#122,#86)
+ * Fix semantics of `foldl'` (#102)
+ * Fix field error diagnostics being mapped to `endOfInput` in `Parser` monad. (#99)
+ * Honor `encIncludeHeader` in incremental API (#136)
+
+### Other changes
+
+ * Support GHC 8.2.1
+ * Use factored-out `Only` package
+ * Add `FromField`/`ToField` instance for `ShortText`
+ * Add `MonadFail` and `Semigroup` instance for `Parser`
+ * Add `Semigroup` instance for incremental CSV API `Builder` & `NamedBuilder`
+ * Port to `ByteString` builder & drop dependency on `blaze-builder`
+
 ## Version 0.4.5.1
 
  * Restore GHC 7.4 support (#124)
