@@ -117,7 +117,7 @@ Test-suite unit-tests
                , vector
   -- extra dependencies not already used by lib:cassava
   build-depends: HUnit < 1.7
-               , QuickCheck >= 2.0 && < 2.10
+               , QuickCheck == 2.10.*
                , test-framework == 0.8.*
                , test-framework-hunit == 0.3.*
                , test-framework-quickcheck2 == 0.3.*
