@@ -22,6 +22,10 @@
 # define MIN_VERSION_text_short(a,b,c) 0
 #endif
 
+#if !defined(MIN_VERSION_text_short)
+# error **INVARIANT BROKEN** Detected invalid combination of `text-short` and `bytestring` versions. Please verify the `pre-bytestring-0.10-4` flag-logic in the .cabal file wasn't elided.
+#endif
+
 module Data.Csv.Conversion
     (
     -- * Type conversion
