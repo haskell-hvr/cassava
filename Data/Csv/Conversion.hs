@@ -38,6 +38,18 @@ module Data.Csv.Conversion
     , ToRecord(..)
     , ToField(..)
 
+    -- ** Generic type conversion
+    , genericParseRecord
+    , genericToRecord
+    , genericParseNamedRecord
+    , genericToNamedRecord
+    , genericHeaderOrder
+
+    -- *** Generic type conversion options
+    , Options
+    , defaultOptions
+    , fieldLabelModifier
+
     -- * Parser
     , Parser
     , runParser
@@ -121,6 +133,22 @@ fromStrict = L.fromChunks . (:[])
 ------------------------------------------------------------------------
 -- Index-based conversion
 
+newtype Options = Options
+  { fieldLabelModifier :: String -> String
+  }
+
+-- | Default conversion options.
+--
+--   @
+--   Options
+--   { 'fieldLabelModifier' = id
+--   }
+--   @
+defaultOptions :: Options
+defaultOptions = Options
+  { fieldLabelModifier = id
+  }
+
 -- | A type that can be converted from a single CSV record, with the
 -- possibility of failure.
 --
@@ -147,7 +175,15 @@ class FromRecord a where
     parseRecord :: Record -> Parser a
 
     default parseRecord :: (Generic a, GFromRecord (Rep a)) => Record -> Parser a
-    parseRecord r = to <$> gparseRecord r
+    parseRecord = genericParseRecord defaultOptions
+
+-- | A configurable CSV record parser.  This function applied to
+--   'defaultOptions' is used as the default for 'parseRecord' when the
+--   type is an instance of 'Generic'.
+--
+--   Options are currently not used.
+genericParseRecord :: (Generic a, GFromRecord (Rep a)) => Options -> Record -> Parser a
+genericParseRecord _opts r = to <$> gparseRecord r
 
 -- | A type that can be converted to a single CSV record.
 --
@@ -168,7 +204,15 @@ class ToRecord a where
     toRecord :: a -> Record
 
     default toRecord :: (Generic a, GToRecord (Rep a) Field) => a -> Record
-    toRecord = V.fromList . gtoRecord . from
+    toRecord = genericToRecord defaultOptions
+
+-- | A configurable CSV record creator.  This function applied to
+--   'defaultOptions' is used as the default for 'toRecord' when the
+--   type is an instance of 'Generic'.
+--
+--   Options are currently not used.
+genericToRecord :: (Generic a, GToRecord (Rep a) Field) => Options -> a -> Record
+genericToRecord _opts = V.fromList . gtoRecord . from
 
 instance FromField a => FromRecord (Only a) where
     parseRecord v
@@ -565,7 +609,15 @@ class FromNamedRecord a where
     parseNamedRecord :: NamedRecord -> Parser a
 
     default parseNamedRecord :: (Generic a, GFromNamedRecord (Rep a)) => NamedRecord -> Parser a
-    parseNamedRecord r = to <$> gparseNamedRecord r
+    parseNamedRecord = genericParseNamedRecord defaultOptions
+
+-- | A configurable CSV named record parser.  This function applied to
+--   'defaultOptions' is used as the default for 'parseNamedRecord'
+--   when the type is an instance of 'Generic'.
+--
+--   Options are currently not used.
+genericParseNamedRecord :: (Generic a, GFromNamedRecord (Rep a)) => Options -> NamedRecord -> Parser a
+genericParseNamedRecord _opts r = to <$> gparseNamedRecord r
 
 -- | A type that can be converted to a single CSV record.
 --
@@ -583,7 +635,16 @@ class ToNamedRecord a where
     default toNamedRecord ::
         (Generic a, GToRecord (Rep a) (B.ByteString, B.ByteString)) =>
         a -> NamedRecord
-    toNamedRecord = namedRecord . gtoRecord . from
+    toNamedRecord = genericToNamedRecord defaultOptions
+
+-- | A configurable CSV named record creator.  This function applied
+--   to 'defaultOptions' is used as the default for 'toNamedRecord' when
+--   the type is an instance of 'Generic'.
+--
+--   Options are currently not used.
+genericToNamedRecord :: (Generic a, GToRecord (Rep a) (B.ByteString, B.ByteString))
+                        => Options -> a -> NamedRecord
+genericToNamedRecord _opts = namedRecord . gtoRecord . from
 
 -- | A type that has a default field order when converted to CSV. This
 -- class lets you specify how to get the headers to use for a record
@@ -619,7 +680,16 @@ class DefaultOrdered a where
     default headerOrder ::
         (Generic a, GToNamedRecordHeader (Rep a)) =>
         a -> Header
-    headerOrder = V.fromList. gtoNamedRecordHeader . from
+    headerOrder = genericHeaderOrder defaultOptions
+
+-- | A configurable CSV header record generator.  This function
+--   applied to 'defaultOptions' is used as the default for
+--   'headerOrder' when the type is an instance of 'Generic'.
+--
+--   Options are currently not used.
+genericHeaderOrder :: (Generic a, GToNamedRecordHeader (Rep a))
+                      => Options -> a -> Header
+genericHeaderOrder _opts = V.fromList. gtoNamedRecordHeader . from
 
 instance (FromField a, FromField b, Ord a) => FromNamedRecord (M.Map a b) where
     parseNamedRecord m = M.fromList <$>
