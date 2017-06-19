@@ -131,6 +131,10 @@ Test-suite unit-tests
 
   hs-source-dirs: tests
 
+  -- GHC.Generics lived in `ghc-prim` for GHC 7.2 & GHC 7.4 only
+  if impl(ghc < 7.6)
+    build-depends: ghc-prim == 0.2.*
+
   -- For Numeric.Natural
   if impl(ghc < 7.10)
     build-depends: nats >= 1 && < 1.2
