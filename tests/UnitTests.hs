@@ -284,6 +284,7 @@ conversionTests :: [TF.Test]
 conversionTests =
     [ testGroup "roundTrip"
       [ testProperty "Char" (roundTrip :: Char -> Bool)
+      , testProperty "Bool" (roundTrip :: Bool -> Bool)
       , testProperty "ByteString" (roundTrip :: B.ByteString -> Bool)
       , testProperty "Int" (roundTrip :: Int -> Bool)
       , testProperty "Integer" (roundTrip :: Integer -> Bool)
