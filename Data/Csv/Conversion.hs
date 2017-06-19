@@ -180,10 +180,8 @@ class FromRecord a where
 -- | A configurable CSV record parser.  This function applied to
 --   'defaultOptions' is used as the default for 'parseRecord' when the
 --   type is an instance of 'Generic'.
---
---   Options are currently not used.
 genericParseRecord :: (Generic a, GFromRecord (Rep a)) => Options -> Record -> Parser a
-genericParseRecord _opts r = to <$> gparseRecord r
+genericParseRecord opts r = to <$> gparseRecord opts r
 
 -- | A type that can be converted to a single CSV record.
 --
@@ -614,10 +612,8 @@ class FromNamedRecord a where
 -- | A configurable CSV named record parser.  This function applied to
 --   'defaultOptions' is used as the default for 'parseNamedRecord'
 --   when the type is an instance of 'Generic'.
---
---   Options are currently not used.
 genericParseNamedRecord :: (Generic a, GFromNamedRecord (Rep a)) => Options -> NamedRecord -> Parser a
-genericParseNamedRecord _opts r = to <$> gparseNamedRecord r
+genericParseNamedRecord opts r = to <$> gparseNamedRecord opts r
 
 -- | A type that can be converted to a single CSV record.
 --
@@ -1221,62 +1217,62 @@ runParser p = unParser p left right
 -- Generics
 
 class GFromRecord f where
-    gparseRecord :: Record -> Parser (f p)
+    gparseRecord :: Options -> Record -> Parser (f p)
 
 instance GFromRecordSum f Record => GFromRecord (M1 i n f) where
-    gparseRecord v =
-        case (IM.lookup n gparseRecordSum) of
+    gparseRecord opts v =
+        case IM.lookup n (gparseRecordSum opts) of
             Nothing -> lengthMismatch n v
             Just p -> M1 <$> p v
       where
         n = V.length v
 
 class GFromNamedRecord f where
-    gparseNamedRecord :: NamedRecord -> Parser (f p)
+    gparseNamedRecord :: Options -> NamedRecord -> Parser (f p)
 
 instance GFromRecordSum f NamedRecord => GFromNamedRecord (M1 i n f) where
-    gparseNamedRecord v =
-        foldr (\f p -> p <|> M1 <$> f v) empty (IM.elems gparseRecordSum)
+    gparseNamedRecord opts v =
+        foldr (\f p -> p <|> M1 <$> f v) empty (IM.elems (gparseRecordSum opts))
 
 class GFromRecordSum f r where
-    gparseRecordSum :: IM.IntMap (r -> Parser (f p))
+    gparseRecordSum :: Options -> IM.IntMap (r -> Parser (f p))
 
 instance (GFromRecordSum a r, GFromRecordSum b r) => GFromRecordSum (a :+: b) r where
-    gparseRecordSum =
+    gparseRecordSum opts =
         IM.unionWith (\a b r -> a r <|> b r)
-            (fmap (L1 <$>) <$> gparseRecordSum)
-            (fmap (R1 <$>) <$> gparseRecordSum)
+            (fmap (L1 <$>) <$> gparseRecordSum opts)
+            (fmap (R1 <$>) <$> gparseRecordSum opts)
 
 instance GFromRecordProd f r => GFromRecordSum (M1 i n f) r where
-    gparseRecordSum = IM.singleton n (fmap (M1 <$>) f)
+    gparseRecordSum opts = IM.singleton n (fmap (M1 <$>) f)
       where
-        (n, f) = gparseRecordProd 0
+        (n, f) = gparseRecordProd opts 0
 
 class GFromRecordProd f r where
-    gparseRecordProd :: Int -> (Int, r -> Parser (f p))
+    gparseRecordProd :: Options -> Int -> (Int, r -> Parser (f p))
 
 instance GFromRecordProd U1 r where
-    gparseRecordProd n = (n, const (pure U1))
+    gparseRecordProd _ n = (n, const (pure U1))
 
 instance (GFromRecordProd a r, GFromRecordProd b r) => GFromRecordProd (a :*: b) r where
-    gparseRecordProd n0 = (n2, f)
+    gparseRecordProd opts n0 = (n2, f)
       where
         f r = (:*:) <$> fa r <*> fb r
-        (n1, fa) = gparseRecordProd n0
-        (n2, fb) = gparseRecordProd n1
+        (n1, fa) = gparseRecordProd opts n0
+        (n2, fb) = gparseRecordProd opts n1
 
 instance GFromRecordProd f Record => GFromRecordProd (M1 i n f) Record where
-    gparseRecordProd n = fmap (M1 <$>) <$> gparseRecordProd n
+    gparseRecordProd opts n = fmap (M1 <$>) <$> gparseRecordProd opts n
 
 instance FromField a => GFromRecordProd (K1 i a) Record where
-    gparseRecordProd n = (n + 1, \v -> K1 <$> parseField (V.unsafeIndex v n))
+    gparseRecordProd _ n = (n + 1, \v -> K1 <$> parseField (V.unsafeIndex v n))
 
 data Proxy s (f :: * -> *) a = Proxy
 
 instance (FromField a, Selector s) => GFromRecordProd (M1 S s (K1 i a)) NamedRecord where
-    gparseRecordProd n = (n + 1, \v -> (M1 . K1) <$> v .: name)
+    gparseRecordProd opts n = (n + 1, \v -> (M1 . K1) <$> v .: name)
       where
-        name = T.encodeUtf8 (T.pack (selName (Proxy :: Proxy s f a)))
+        name = T.encodeUtf8 (T.pack (fieldLabelModifier opts (selName (Proxy :: Proxy s f a))))
 
 
 class GToRecord a f where
