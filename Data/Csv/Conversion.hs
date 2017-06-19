@@ -207,10 +207,8 @@ class ToRecord a where
 -- | A configurable CSV record creator.  This function applied to
 --   'defaultOptions' is used as the default for 'toRecord' when the
 --   type is an instance of 'Generic'.
---
---   Options are currently not used.
 genericToRecord :: (Generic a, GToRecord (Rep a) Field) => Options -> a -> Record
-genericToRecord _opts = V.fromList . gtoRecord . from
+genericToRecord opts = V.fromList . gtoRecord opts . from
 
 instance FromField a => FromRecord (Only a) where
     parseRecord v
@@ -636,11 +634,9 @@ class ToNamedRecord a where
 -- | A configurable CSV named record creator.  This function applied
 --   to 'defaultOptions' is used as the default for 'toNamedRecord' when
 --   the type is an instance of 'Generic'.
---
---   Options are currently not used.
 genericToNamedRecord :: (Generic a, GToRecord (Rep a) (B.ByteString, B.ByteString))
                         => Options -> a -> NamedRecord
-genericToNamedRecord _opts = namedRecord . gtoRecord . from
+genericToNamedRecord opts = namedRecord . gtoRecord opts . from
 
 -- | A type that has a default field order when converted to CSV. This
 -- class lets you specify how to get the headers to use for a record
@@ -1276,32 +1272,34 @@ instance (FromField a, Selector s) => GFromRecordProd (M1 S s (K1 i a)) NamedRec
 
 
 class GToRecord a f where
-    gtoRecord :: a p -> [f]
+    gtoRecord :: Options -> a p -> [f]
 
 instance GToRecord U1 f where
-    gtoRecord U1 = []
+    gtoRecord _ U1 = []
 
 instance (GToRecord a f, GToRecord b f) => GToRecord (a :*: b) f where
-    gtoRecord (a :*: b) = gtoRecord a ++ gtoRecord b
+    gtoRecord opts (a :*: b) = gtoRecord opts a ++ gtoRecord opts b
 
 instance (GToRecord a f, GToRecord b f) => GToRecord (a :+: b) f where
-    gtoRecord (L1 a) = gtoRecord a
-    gtoRecord (R1 b) = gtoRecord b
+    gtoRecord opts (L1 a) = gtoRecord opts a
+    gtoRecord opts (R1 b) = gtoRecord opts b
 
 instance GToRecord a f => GToRecord (M1 D c a) f where
-    gtoRecord (M1 a) = gtoRecord a
+    gtoRecord opts (M1 a) = gtoRecord opts a
 
 instance GToRecord a f => GToRecord (M1 C c a) f where
-    gtoRecord (M1 a) = gtoRecord a
+    gtoRecord opts (M1 a) = gtoRecord opts a
 
 instance GToRecord a Field => GToRecord (M1 S c a) Field where
-    gtoRecord (M1 a) = gtoRecord a
+    gtoRecord opts (M1 a) = gtoRecord opts a
 
 instance ToField a => GToRecord (K1 i a) Field where
-    gtoRecord (K1 a) = [toField a]
+    gtoRecord _ (K1 a) = [toField a]
 
 instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B.ByteString) where
-    gtoRecord m@(M1 (K1 a)) = [T.encodeUtf8 (T.pack (selName m)) .= toField a]
+    gtoRecord opts m@(M1 (K1 a)) = [name .= toField a]
+      where
+        name = T.encodeUtf8 (T.pack (fieldLabelModifier opts (selName m)))
 
 -- We statically fail on sum types and product types without selectors
 -- (field names).
