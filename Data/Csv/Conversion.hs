@@ -677,11 +677,9 @@ class DefaultOrdered a where
 -- | A configurable CSV header record generator.  This function
 --   applied to 'defaultOptions' is used as the default for
 --   'headerOrder' when the type is an instance of 'Generic'.
---
---   Options are currently not used.
 genericHeaderOrder :: (Generic a, GToNamedRecordHeader (Rep a))
                       => Options -> a -> Header
-genericHeaderOrder _opts = V.fromList. gtoNamedRecordHeader . from
+genericHeaderOrder opts = V.fromList. gtoNamedRecordHeader opts . from
 
 instance (FromField a, FromField b, Ord a) => FromNamedRecord (M.Map a b) where
     parseNamedRecord m = M.fromList <$>
@@ -1306,25 +1304,25 @@ instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B
 
 class GToNamedRecordHeader a
   where
-    gtoNamedRecordHeader :: a p -> [Name]
+    gtoNamedRecordHeader :: Options -> a p -> [Name]
 
 instance GToNamedRecordHeader U1
   where
-    gtoNamedRecordHeader _ = []
+    gtoNamedRecordHeader _ _ = []
 
 instance (GToNamedRecordHeader a, GToNamedRecordHeader b) =>
          GToNamedRecordHeader (a :*: b)
   where
-    gtoNamedRecordHeader _ = gtoNamedRecordHeader (undefined :: a p) ++
-                             gtoNamedRecordHeader (undefined :: b p)
+    gtoNamedRecordHeader opts _ = gtoNamedRecordHeader opts (undefined :: a p) ++
+                                  gtoNamedRecordHeader opts (undefined :: b p)
 
 instance GToNamedRecordHeader a => GToNamedRecordHeader (M1 D c a)
   where
-    gtoNamedRecordHeader _ = gtoNamedRecordHeader (undefined :: a p)
+    gtoNamedRecordHeader opts _ = gtoNamedRecordHeader opts (undefined :: a p)
 
 instance GToNamedRecordHeader a => GToNamedRecordHeader (M1 C c a)
   where
-    gtoNamedRecordHeader _ = gtoNamedRecordHeader (undefined :: a p)
+    gtoNamedRecordHeader opts _ = gtoNamedRecordHeader opts (undefined :: a p)
 
 -- | Instance to ensure that you cannot derive DefaultOrdered for
 -- constructors without selectors.
@@ -1335,12 +1333,12 @@ instance DefaultOrdered (M1 S ('MetaSel 'Nothing srcpk srcstr decstr) a ())
 instance DefaultOrdered (M1 S NoSelector a ()) => GToNamedRecordHeader (M1 S NoSelector a)
 #endif
   where
-    gtoNamedRecordHeader _ =
+    gtoNamedRecordHeader _ _ =
         error "You cannot derive DefaultOrdered for constructors without selectors."
 
 instance Selector s => GToNamedRecordHeader (M1 S s a)
   where
-    gtoNamedRecordHeader m
+    gtoNamedRecordHeader opts m
         | null name = error "Cannot derive DefaultOrdered for constructors without selectors"
-        | otherwise = [B8.pack (selName m)]
+        | otherwise = [B8.pack (fieldLabelModifier opts (selName m))]
       where name = selName m
