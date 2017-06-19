@@ -1,5 +1,10 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings, ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE CPP, DeriveGeneric, OverloadedStrings, ScopedTypeVariables #-}
+
+#if __GLASGOW_HASKELL__ >= 801
+{-# OPTIONS_GHC -Wno-orphans -Wno-unused-top-binds #-}
+#else
+{-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-binds #-}
+#endif
 
 module Main
     ( main
@@ -27,6 +32,10 @@ import Test.Framework.Providers.QuickCheck2 as TF
 
 import Data.Csv hiding (record)
 import qualified Data.Csv.Streaming as S
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((<$>), (<*>))
+#endif
 
 ------------------------------------------------------------------------
 -- Parse tests
