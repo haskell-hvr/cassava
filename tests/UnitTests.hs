@@ -16,6 +16,7 @@ import qualified Data.Text.Lazy as LT
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
 import Data.Word
+import Numeric.Natural
 import Test.HUnit
 import Test.Framework as TF
 import Test.Framework.Providers.HUnit as TF
@@ -281,6 +282,7 @@ conversionTests =
       , testProperty "Int16" (roundTrip :: Int16 -> Bool)
       , testProperty "Int32" (roundTrip :: Int32 -> Bool)
       , testProperty "Int64" (roundTrip :: Int64 -> Bool)
+      , testProperty "Natural" (roundTrip :: Natural -> Bool)
       , testProperty "Word" (roundTrip :: Word -> Bool)
       , testProperty "Word8" (roundTrip :: Word8 -> Bool)
       , testProperty "Word16" (roundTrip :: Word16 -> Bool)
@@ -314,6 +316,8 @@ conversionTests =
     , testGroup "Partial Decodes"
       [ testCase "Int"         (partialDecode
                                 (parseField "12.7" :: Parser Int))
+      , testCase "Natural"     (partialDecode
+                                (parseField "12.7" :: Parser Natural))
       , testCase "Word"        (partialDecode
                                 (parseField "12.7" :: Parser Word))
       , testCase "Scientific"  (partialDecode
@@ -327,6 +331,9 @@ conversionTests =
       [ testCase "_Int"         (expect (parseField " 12"     :: Parser Int)        12)
       , testCase "Int_"         (expect (parseField "12 "     :: Parser Int)        12)
       , testCase "_Int_"        (expect (parseField " 12 "    :: Parser Int)        12)
+      , testCase "_Natural"     (expect (parseField " 12"     :: Parser Natural)    12)
+      , testCase "Natural_"     (expect (parseField "12 "     :: Parser Natural)    12)
+      , testCase "_Natural_"    (expect (parseField " 12 "    :: Parser Natural)    12)
       , testCase "_Word"        (expect (parseField " 12"     :: Parser Word)       12)
       , testCase "Word_"        (expect (parseField "12 "     :: Parser Word)       12)
       , testCase "_Word_"       (expect (parseField " 12 "    :: Parser Word)       12)
