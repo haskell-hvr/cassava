@@ -19,6 +19,7 @@ import Test.HUnit
 import Test.Framework as TF
 import Test.Framework.Providers.HUnit as TF
 import Test.QuickCheck
+import Test.QuickCheck.Instances ()
 import Test.Framework.Providers.QuickCheck2 as TF
 
 import Data.Csv hiding (record)
@@ -239,18 +240,6 @@ nameBasedTests =
 
 ------------------------------------------------------------------------
 -- Conversion tests
-
-instance Arbitrary B.ByteString where
-    arbitrary = B.pack `fmap` arbitrary
-
-instance Arbitrary BL.ByteString where
-    arbitrary = BL.fromChunks `fmap` arbitrary
-
-instance Arbitrary T.Text where
-    arbitrary = T.pack `fmap` arbitrary
-
-instance Arbitrary LT.Text where
-    arbitrary = LT.fromChunks `fmap` arbitrary
 
 -- A single column with an empty string is indistinguishable from an
 -- empty line (which we will ignore.) We therefore encode at least two
