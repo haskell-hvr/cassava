@@ -1,5 +1,7 @@
 # cassava: A CSV parsing and encoding library
 
+[![Hackage](https://img.shields.io/hackage/v/cassava.svg)](https://hackage.haskell.org/package/cassava) [![Build Status](https://travis-ci.org/hvr/cassava.svg)](https://travis-ci.org/hvr/cassava)
+
 A CSV parsing and encoding library optimized for ease of use and high
 performance.
 
