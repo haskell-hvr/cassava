@@ -71,6 +71,7 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
+import Data.Scientific (Scientific)
 import Data.Semigroup (Semigroup, (<>))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -714,6 +715,18 @@ instance FromField Char where
 instance ToField Char where
     toField = toField . T.encodeUtf8 . T.singleton
     {-# INLINE toField #-}
+
+-- | Accepts the same syntax as 'rational'. Ignores whitespace.
+instance FromField Scientific where
+  parseField s = case parseOnly (ws *> A8.scientific <* ws) s of
+                   Left err -> typeError "Scientific" s (Just err)
+                   Right n  -> pure n
+  {-# INLINE parseField #-}
+
+-- | Uses decimal notation or scientific notation, depending on the number.
+instance ToField Scientific where
+  toField = scientific
+  {-# INLINE toField #-}
 
 -- | Accepts same syntax as 'rational'. Ignores whitespace.
 instance FromField Double where

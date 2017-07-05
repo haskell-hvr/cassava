@@ -10,6 +10,7 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.HashMap.Strict as HM
 import Data.Int
+import Data.Scientific (Scientific)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Vector as V
@@ -19,6 +20,7 @@ import Test.HUnit
 import Test.Framework as TF
 import Test.Framework.Providers.HUnit as TF
 import Test.QuickCheck
+import Test.QuickCheck.Instances ()
 import Test.Framework.Providers.QuickCheck2 as TF
 
 import Data.Csv hiding (record)
@@ -240,18 +242,6 @@ nameBasedTests =
 ------------------------------------------------------------------------
 -- Conversion tests
 
-instance Arbitrary B.ByteString where
-    arbitrary = B.pack `fmap` arbitrary
-
-instance Arbitrary BL.ByteString where
-    arbitrary = BL.fromChunks `fmap` arbitrary
-
-instance Arbitrary T.Text where
-    arbitrary = T.pack `fmap` arbitrary
-
-instance Arbitrary LT.Text where
-    arbitrary = LT.fromChunks `fmap` arbitrary
-
 -- A single column with an empty string is indistinguishable from an
 -- empty line (which we will ignore.) We therefore encode at least two
 -- columns.
@@ -296,6 +286,7 @@ conversionTests =
       , testProperty "Word16" (roundTrip :: Word16 -> Bool)
       , testProperty "Word32" (roundTrip :: Word32 -> Bool)
       , testProperty "Word64" (roundTrip :: Word64 -> Bool)
+      , testProperty "Scientific" (roundTrip :: Scientific -> Bool)
       , testProperty "lazy ByteString"
         (roundTrip :: BL.ByteString -> Bool)
       , testProperty "Text" (roundTrip :: T.Text -> Bool)
@@ -321,25 +312,30 @@ conversionTests =
                             "Cam yiyebilirim, bana zararı dokunmaz.")
       ]
     , testGroup "Partial Decodes"
-      [ testCase "Int"     (partialDecode
-                            (parseField "12.7" :: Parser Int))
-      , testCase "Word"    (partialDecode
-                            (parseField "12.7" :: Parser Word))
-      , testCase "Double"  (partialDecode
-                            (parseField "1.0+" :: Parser Double))
-      , testCase "Integer" (partialDecode
-                            (parseField "1e6"  :: Parser Integer))
+      [ testCase "Int"         (partialDecode
+                                (parseField "12.7" :: Parser Int))
+      , testCase "Word"        (partialDecode
+                                (parseField "12.7" :: Parser Word))
+      , testCase "Scientific"  (partialDecode
+                                (parseField "1.0+" :: Parser Scientific))
+      , testCase "Double"      (partialDecode
+                                (parseField "1.0+" :: Parser Double))
+      , testCase "Integer"     (partialDecode
+                                (parseField "1e6"  :: Parser Integer))
       ]
     , testGroup "Space trimming"
-      [ testCase "_Int"     (expect (parseField " 12"     :: Parser Int)    12)
-      , testCase "Int_"     (expect (parseField "12 "     :: Parser Int)    12)
-      , testCase "_Int_"    (expect (parseField " 12 "    :: Parser Int)    12)
-      , testCase "_Word"    (expect (parseField " 12"     :: Parser Word)   12)
-      , testCase "Word_"    (expect (parseField "12 "     :: Parser Word)   12)
-      , testCase "_Word_"   (expect (parseField " 12 "    :: Parser Word)   12)
-      , testCase "_Double"  (expect (parseField " 1.2e1"  :: Parser Double) 12)
-      , testCase "Double_"  (expect (parseField "1.2e1 "  :: Parser Double) 12)
-      , testCase "_Double_" (expect (parseField " 1.2e1 " :: Parser Double) 12)
+      [ testCase "_Int"         (expect (parseField " 12"     :: Parser Int)        12)
+      , testCase "Int_"         (expect (parseField "12 "     :: Parser Int)        12)
+      , testCase "_Int_"        (expect (parseField " 12 "    :: Parser Int)        12)
+      , testCase "_Word"        (expect (parseField " 12"     :: Parser Word)       12)
+      , testCase "Word_"        (expect (parseField "12 "     :: Parser Word)       12)
+      , testCase "_Word_"       (expect (parseField " 12 "    :: Parser Word)       12)
+      , testCase "_Scientific"  (expect (parseField " 1.2e1"  :: Parser Scientific) 12)
+      , testCase "Scientific_"  (expect (parseField "1.2e1 "  :: Parser Scientific) 12)
+      , testCase "_Scientific_" (expect (parseField " 1.2e1 " :: Parser Scientific) 12)
+      , testCase "_Double"      (expect (parseField " 1.2e1"  :: Parser Double)     12)
+      , testCase "Double_"      (expect (parseField "1.2e1 "  :: Parser Double)     12)
+      , testCase "_Double_"     (expect (parseField " 1.2e1 " :: Parser Double)     12)
       ]
     ]
 

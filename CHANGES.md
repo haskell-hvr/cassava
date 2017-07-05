@@ -1,3 +1,7 @@
+## Version 0.5.1.0
+
+ * Add `FromField`/`ToField` instances for `Scientific` (#143,#144)
+
 ## Version 0.5.0.0
 
 ### Semantic changes

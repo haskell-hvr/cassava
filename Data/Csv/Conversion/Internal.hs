@@ -1,17 +1,20 @@
 module Data.Csv.Conversion.Internal
     ( decimal
+    , scientific
     , realFloat
     ) where
 
 import Data.ByteString.Builder (Builder, toLazyByteString, word8, char8,
                                 string8, byteString)
 import qualified Data.ByteString.Builder.Prim as BP
+import Data.ByteString.Builder.Scientific (scientificBuilder)
 import Data.Array.Base (unsafeAt)
 import Data.Array.IArray
 import qualified Data.ByteString as B
 import Data.Char (ord)
 import Data.Int
 import Data.Monoid
+import Data.Scientific (Scientific)
 import Data.Word
 
 import Data.Csv.Util (toStrict)
@@ -98,6 +101,10 @@ i2w i = zero + fromIntegral i
 
 ------------------------------------------------------------------------
 -- Floating point numbers
+
+scientific :: Scientific -> B.ByteString
+scientific = toStrict . toLazyByteString . scientificBuilder
+{-# INLINE scientific #-}
 
 realFloat :: RealFloat a => a -> B.ByteString
 {-# SPECIALIZE realFloat :: Float -> B.ByteString #-}
