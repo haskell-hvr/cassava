@@ -105,7 +105,9 @@ import Data.Csv.Types
 --
 -- Encoding standard Haskell types:
 --
--- > >>> encode [("John" :: Text, 27), ("Jane", 28)]
+-- > >>> :set -XOverloadedStrings
+-- > >>> import Data.Text
+-- > >>> encode [("John" :: Text, 27 :: Int), ("Jane", 28)]
 -- > "John,27\r\nJane,28\r\n"
 --
 -- Since string literals are overloaded we have to supply a type
@@ -116,6 +118,7 @@ import Data.Csv.Types
 --
 -- Decoding standard Haskell types:
 --
+-- > >>> import Data.Vector
 -- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
 -- > Right [("John",27),("Jane",28)]
 --
@@ -140,24 +143,33 @@ import Data.Csv.Types
 -- Derived:
 --
 -- > {-# LANGUAGE DeriveGeneric #-}
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > import Data.Text    (Text)
+-- > import GHC.Generics (Generic)
 -- >
 -- > data Person = Person { name :: !Text , salary :: !Int }
--- >     deriving Generic
+-- >     deriving (Generic, Show)
 -- >
 -- > instance FromRecord Person
 -- > instance ToRecord Person
 --
 -- Manually defined:
 --
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > import Control.Monad (mzero)
+-- >
 -- > data Person = Person { name :: !Text , salary :: !Int }
+-- >     deriving (Show)
 -- >
 -- > instance FromRecord Person where
 -- >     parseRecord v
 -- >         | length v == 2 = Person <$> v .! 0 <*> v .! 1
 -- >         | otherwise     = mzero
 -- > instance ToRecord Person where
--- >     toRecord (Person name age) = record [
--- >         toField name, toField age]
+-- >     toRecord (Person name' age') = record [
+-- >         toField name', toField age']
 --
 -- We can now use e.g. 'encode' and 'decode' to encode and decode our
 -- data type.
@@ -178,9 +190,13 @@ import Data.Csv.Types
 -- Derived:
 --
 -- > {-# LANGUAGE DeriveGeneric #-}
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > import Data.Text    (Text)
+-- > import GHC.Generics (Generic)
 -- >
 -- > data Person = Person { name :: !Text , salary :: !Int }
--- >     deriving Generic
+-- >     deriving (Generic, Show)
 -- >
 -- > instance FromNamedRecord Person
 -- > instance ToNamedRecord Person
@@ -189,6 +205,7 @@ import Data.Csv.Types
 -- Manually defined:
 --
 -- > data Person = Person { name :: !Text , salary :: !Int }
+-- >     deriving (Show)
 -- >
 -- > instance FromNamedRecord Person where
 -- >     parseNamedRecord m = Person <$> m .: "name" <*> m .: "salary"
@@ -221,6 +238,7 @@ import Data.Csv.Types
 -- parse a CSV file to a generic representation, just convert each
 -- record to a @'Vector' 'ByteString'@ value, like so:
 --
+-- > >>> import Data.ByteString
 -- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
 -- > Right [["John","27"],["Jane","28"]]
 --
