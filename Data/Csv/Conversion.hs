@@ -87,6 +87,7 @@ import qualified Data.Vector.Unboxed as U
 import Data.Word (Word8, Word16, Word32, Word64)
 import GHC.Float (double2Float)
 import GHC.Generics
+import Numeric.Natural
 import Prelude hiding (lookup, takeWhile)
 
 import Data.Csv.Conversion.Internal
@@ -823,6 +824,16 @@ instance FromField Word where
 
 -- | Uses decimal encoding.
 instance ToField Word where
+    toField = decimal
+    {-# INLINE toField #-}
+
+-- | Accepts an unsigned decimal number. Ignores whitespace.
+instance FromField Natural where
+    parseField = parseUnsigned "Natural"
+    {-# INLINE parseField #-}
+
+-- | Uses decimal encoding.
+instance ToField Natural where
     toField = decimal
     {-# INLINE toField #-}
 

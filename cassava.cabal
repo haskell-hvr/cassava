@@ -1,5 +1,5 @@
 Name:                cassava
-Version:             0.5.1.0
+Version:             0.5.2.0
 Synopsis:            A CSV parsing and encoding library
 Description:
   A CSV parsing and encoding library optimized for ease of use and high
@@ -88,6 +88,10 @@ Library
   if impl(ghc < 7.6)
     build-depends: ghc-prim == 0.2.*
 
+  -- For Numeric.Natural
+  if impl(ghc < 7.10)
+    build-depends: nats >= 1 && < 1.2
+
   -- https://ghc.haskell.org/trac/ghc/wiki/Migration/8.0#Recommendationsforforward-compatibility
   if impl(ghc >= 8.0)
     ghc-options: -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances
@@ -126,6 +130,10 @@ Test-suite unit-tests
                , test-framework-quickcheck2 == 0.3.*
 
   hs-source-dirs: tests
+
+  -- For Numeric.Natural
+  if impl(ghc < 7.10)
+    build-depends: nats >= 1 && < 1.2
 
   -- https://ghc.haskell.org/trac/ghc/wiki/Migration/8.0#Recommendationsforforward-compatibility
   if impl(ghc >= 8.0)
