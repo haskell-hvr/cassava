@@ -718,6 +718,8 @@ instance ToField Char where
     {-# INLINE toField #-}
 
 -- | Accepts the same syntax as 'rational'. Ignores whitespace.
+--
+-- @since 0.5.1.0
 instance FromField Scientific where
   parseField s = case parseOnly (ws *> A8.scientific <* ws) s of
                    Left err -> typeError "Scientific" s (Just err)
@@ -725,6 +727,8 @@ instance FromField Scientific where
   {-# INLINE parseField #-}
 
 -- | Uses decimal notation or scientific notation, depending on the number.
+--
+-- @since 0.5.1.0
 instance ToField Scientific where
   toField = scientific
   {-# INLINE toField #-}
