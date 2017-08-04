@@ -828,11 +828,15 @@ instance ToField Word where
     {-# INLINE toField #-}
 
 -- | Accepts an unsigned decimal number. Ignores whitespace.
+--
+-- @since 0.5.1.0
 instance FromField Natural where
     parseField = parseUnsigned "Natural"
     {-# INLINE parseField #-}
 
 -- | Uses decimal encoding.
+--
+-- @since 0.5.1.0
 instance ToField Natural where
     toField = decimal
     {-# INLINE toField #-}
