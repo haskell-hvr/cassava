@@ -2,6 +2,10 @@
 
  * Add `FromField`/`ToField` instance for `Natural` (#141,#142)
  * Add `FromField`/`ToField` instances for `Scientific` (#143,#144)
+ * Add support for modifying Generics-based instances (adding
+   `Options`, `defaultOptions`, `fieldLabelModifier`,
+   `genericParseRecord`, `genericToRecord`, `genericToNamedRecord`,
+   `genericHeaderOrder`) (#139,#140)
 
 ## Version 0.5.0.0
 

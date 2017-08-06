@@ -1,5 +1,10 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE CPP, DeriveGeneric, OverloadedStrings, ScopedTypeVariables #-}
+
+#if __GLASGOW_HASKELL__ >= 801
+{-# OPTIONS_GHC -Wno-orphans -Wno-unused-top-binds #-}
+#else
+{-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-binds #-}
+#endif
 
 module Main
     ( main
@@ -17,6 +22,7 @@ import qualified Data.Vector as V
 import qualified Data.Foldable as F
 import Data.Word
 import Numeric.Natural
+import GHC.Generics (Generic)
 import Test.HUnit
 import Test.Framework as TF
 import Test.Framework.Providers.HUnit as TF
@@ -26,6 +32,10 @@ import Test.Framework.Providers.QuickCheck2 as TF
 
 import Data.Csv hiding (record)
 import qualified Data.Csv.Streaming as S
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((<$>), (<*>))
+#endif
 
 ------------------------------------------------------------------------
 -- Parse tests
@@ -382,6 +392,53 @@ instanceTests =
     expected = ["a" :: String]
 
 ------------------------------------------------------------------------
+-- Custom conversion option tests
+
+genericConversionTests :: [TF.Test]
+genericConversionTests =
+    [ testCase "headerOrder" (header ["column1", "column2", "column_3"] @=? hdrs)
+    , testCase "encode" (encodeDefaultOrderedByName sampleValues @?= sampleEncoding)
+    , testCase "decode" (Right (hdrs, V.fromList sampleValues) @=? decodeByName sampleEncoding)
+    , testProperty "roundTrip" rtProp
+    ]
+  where
+    hdrs = headerOrder (undefined :: SampleType)
+
+    sampleValues = [ SampleType ""      1     Nothing
+                   , SampleType "field" 99999 (Just 1.234)
+                   ]
+
+    sampleEncoding = "column1,column2,column_3\r\n,1,\r\nfield,99999,1.234\r\n"
+
+    rtProp :: [SampleType] -> Bool
+    rtProp vs = Right (hdrs, V.fromList vs)
+                == decodeByName (encodeDefaultOrderedByName vs)
+
+data SampleType = SampleType
+  { _column1  :: !T.Text
+  , column2   :: !Int
+  , _column_3 :: !(Maybe Double)
+  } deriving (Eq, Show, Read, Generic)
+
+sampleOptions :: Options
+sampleOptions = defaultOptions { fieldLabelModifier = rmUnderscore }
+  where
+    rmUnderscore ('_':str) = str
+    rmUnderscore str       = str
+
+instance ToNamedRecord SampleType where
+  toNamedRecord = genericToNamedRecord sampleOptions
+
+instance FromNamedRecord SampleType where
+  parseNamedRecord = genericParseNamedRecord sampleOptions
+
+instance DefaultOrdered SampleType where
+  headerOrder = genericHeaderOrder sampleOptions
+
+instance Arbitrary SampleType where
+  arbitrary = SampleType <$> arbitrary <*> arbitrary <*> arbitrary
+
+------------------------------------------------------------------------
 -- Test harness
 
 allTests :: [TF.Test]
@@ -390,6 +447,7 @@ allTests = [ testGroup "positional" positionalTests
            , testGroup "conversion" conversionTests
            , testGroup "custom-options" customOptionsTests
            , testGroup "instances" instanceTests
+           , testGroup "generic-conversions" genericConversionTests
            ]
 
 main :: IO ()

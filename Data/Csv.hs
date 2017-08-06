@@ -93,6 +93,19 @@ module Data.Csv
     -- $fieldconversion
     , FromField(..)
     , ToField(..)
+
+    -- ** Generic record conversion
+    -- $genericconversion
+    , genericParseRecord
+    , genericToRecord
+    , genericParseNamedRecord
+    , genericToNamedRecord
+    , genericHeaderOrder
+
+    -- *** Generic type conversion options
+    , Options
+    , defaultOptions
+    , fieldLabelModifier
     ) where
 
 import Prelude hiding (lookup)
@@ -325,3 +338,29 @@ import Data.Csv.Types
 -- 'Field's and values you care about (e.g. 'Int's). Most of the time
 -- you don't need to write your own instances as the standard ones
 -- cover most use cases.
+
+-- $genericconversion
+--
+-- There may be times that you do not want to manually write out class
+-- instances for record conversion, but you can't rely upon the
+-- default instances (e.g. you can't create field names that match the
+-- actual column names in expected data).
+--
+-- For example, consider you have a type @MyType@ where you have
+-- prefixed certain columns with an underscore, but in the actual data
+-- they're not.  You can then write:
+--
+-- > myOptions :: Options
+-- > myOptions = defaultOptions { fieldLabelmodifier = rmUnderscore }
+-- >   where
+-- >     rmUnderscore ('_':str) = str
+-- >     rmUnderscore str       = str
+-- >
+-- > instance ToNamedRecord MyType where
+-- >   toNamedRecord = genericToNamedRecord myOptions
+-- >
+-- > instance FromNamedRecord MyType where
+-- >   parseNamedRecord = genericParseNamedRecord myOptions
+-- >
+-- > instance DefaultOrdered MyType where
+-- >   headerOrder = genericHeaderOrder myOptions

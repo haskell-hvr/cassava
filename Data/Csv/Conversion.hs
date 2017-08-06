@@ -38,6 +38,18 @@ module Data.Csv.Conversion
     , ToRecord(..)
     , ToField(..)
 
+    -- ** Generic type conversion
+    , genericParseRecord
+    , genericToRecord
+    , genericParseNamedRecord
+    , genericToNamedRecord
+    , genericHeaderOrder
+
+    -- *** Generic type conversion options
+    , Options
+    , defaultOptions
+    , fieldLabelModifier
+
     -- * Parser
     , Parser
     , runParser
@@ -66,6 +78,7 @@ import qualified Data.ByteString.Lazy as L
 #if MIN_VERSION_bytestring(0,10,4)
 import qualified Data.ByteString.Short as SBS
 #endif
+import Data.List (intercalate)
 import Data.Hashable (Hashable)
 import qualified Data.HashMap.Lazy as HM
 import Data.Int (Int8, Int16, Int32, Int64)
@@ -121,6 +134,41 @@ fromStrict = L.fromChunks . (:[])
 ------------------------------------------------------------------------
 -- Index-based conversion
 
+-- | Options to customise how to generically encode\/decode your
+--   datatype to\/from CSV.
+--
+--   @since 0.5.1.0
+newtype Options = Options
+  { fieldLabelModifier :: String -> String
+    -- ^ How to convert Haskell field labels to CSV fields.
+    --
+    --   @since 0.5.1.0
+  }
+
+instance Show Options where
+  show (Options fld) =
+    "Options {"
+      ++ intercalate ","
+         [ "fieldLabelModifier =~ " ++ show sampleField ++ " -> " ++ show (fld sampleField)
+         ]
+      ++ "}"
+    where
+      sampleField = "_column_A"
+
+-- | Default conversion options.
+--
+--   @
+--   Options
+--   { 'fieldLabelModifier' = id
+--   }
+--   @
+--
+--   @since 0.5.1.0
+defaultOptions :: Options
+defaultOptions = Options
+  { fieldLabelModifier = id
+  }
+
 -- | A type that can be converted from a single CSV record, with the
 -- possibility of failure.
 --
@@ -147,7 +195,15 @@ class FromRecord a where
     parseRecord :: Record -> Parser a
 
     default parseRecord :: (Generic a, GFromRecord (Rep a)) => Record -> Parser a
-    parseRecord r = to <$> gparseRecord r
+    parseRecord = genericParseRecord defaultOptions
+
+-- | A configurable CSV record parser.  This function applied to
+--   'defaultOptions' is used as the default for 'parseRecord' when the
+--   type is an instance of 'Generic'.
+--
+--   @since 0.5.1.0
+genericParseRecord :: (Generic a, GFromRecord (Rep a)) => Options -> Record -> Parser a
+genericParseRecord opts r = to <$> gparseRecord opts r
 
 -- | A type that can be converted to a single CSV record.
 --
@@ -168,7 +224,15 @@ class ToRecord a where
     toRecord :: a -> Record
 
     default toRecord :: (Generic a, GToRecord (Rep a) Field) => a -> Record
-    toRecord = V.fromList . gtoRecord . from
+    toRecord = genericToRecord defaultOptions
+
+-- | A configurable CSV record creator.  This function applied to
+--   'defaultOptions' is used as the default for 'toRecord' when the
+--   type is an instance of 'Generic'.
+--
+--   @since 0.5.1.0
+genericToRecord :: (Generic a, GToRecord (Rep a) Field) => Options -> a -> Record
+genericToRecord opts = V.fromList . gtoRecord opts . from
 
 instance FromField a => FromRecord (Only a) where
     parseRecord v
@@ -565,7 +629,15 @@ class FromNamedRecord a where
     parseNamedRecord :: NamedRecord -> Parser a
 
     default parseNamedRecord :: (Generic a, GFromNamedRecord (Rep a)) => NamedRecord -> Parser a
-    parseNamedRecord r = to <$> gparseNamedRecord r
+    parseNamedRecord = genericParseNamedRecord defaultOptions
+
+-- | A configurable CSV named record parser.  This function applied to
+--   'defaultOptions' is used as the default for 'parseNamedRecord'
+--   when the type is an instance of 'Generic'.
+--
+--   @since 0.5.1.0
+genericParseNamedRecord :: (Generic a, GFromNamedRecord (Rep a)) => Options -> NamedRecord -> Parser a
+genericParseNamedRecord opts r = to <$> gparseNamedRecord opts r
 
 -- | A type that can be converted to a single CSV record.
 --
@@ -583,7 +655,16 @@ class ToNamedRecord a where
     default toNamedRecord ::
         (Generic a, GToRecord (Rep a) (B.ByteString, B.ByteString)) =>
         a -> NamedRecord
-    toNamedRecord = namedRecord . gtoRecord . from
+    toNamedRecord = genericToNamedRecord defaultOptions
+
+-- | A configurable CSV named record creator.  This function applied
+--   to 'defaultOptions' is used as the default for 'toNamedRecord' when
+--   the type is an instance of 'Generic'.
+--
+--   @since 0.5.1.0
+genericToNamedRecord :: (Generic a, GToRecord (Rep a) (B.ByteString, B.ByteString))
+                        => Options -> a -> NamedRecord
+genericToNamedRecord opts = namedRecord . gtoRecord opts . from
 
 -- | A type that has a default field order when converted to CSV. This
 -- class lets you specify how to get the headers to use for a record
@@ -619,7 +700,16 @@ class DefaultOrdered a where
     default headerOrder ::
         (Generic a, GToNamedRecordHeader (Rep a)) =>
         a -> Header
-    headerOrder = V.fromList. gtoNamedRecordHeader . from
+    headerOrder = genericHeaderOrder defaultOptions
+
+-- | A configurable CSV header record generator.  This function
+--   applied to 'defaultOptions' is used as the default for
+--   'headerOrder' when the type is an instance of 'Generic'.
+--
+--   @since 0.5.1.0
+genericHeaderOrder :: (Generic a, GToNamedRecordHeader (Rep a))
+                      => Options -> a -> Header
+genericHeaderOrder opts = V.fromList. gtoNamedRecordHeader opts . from
 
 instance (FromField a, FromField b, Ord a) => FromNamedRecord (M.Map a b) where
     parseNamedRecord m = M.fromList <$>
@@ -1151,116 +1241,118 @@ runParser p = unParser p left right
 -- Generics
 
 class GFromRecord f where
-    gparseRecord :: Record -> Parser (f p)
+    gparseRecord :: Options -> Record -> Parser (f p)
 
 instance GFromRecordSum f Record => GFromRecord (M1 i n f) where
-    gparseRecord v =
-        case (IM.lookup n gparseRecordSum) of
+    gparseRecord opts v =
+        case IM.lookup n (gparseRecordSum opts) of
             Nothing -> lengthMismatch n v
             Just p -> M1 <$> p v
       where
         n = V.length v
 
 class GFromNamedRecord f where
-    gparseNamedRecord :: NamedRecord -> Parser (f p)
+    gparseNamedRecord :: Options -> NamedRecord -> Parser (f p)
 
 instance GFromRecordSum f NamedRecord => GFromNamedRecord (M1 i n f) where
-    gparseNamedRecord v =
-        foldr (\f p -> p <|> M1 <$> f v) empty (IM.elems gparseRecordSum)
+    gparseNamedRecord opts v =
+        foldr (\f p -> p <|> M1 <$> f v) empty (IM.elems (gparseRecordSum opts))
 
 class GFromRecordSum f r where
-    gparseRecordSum :: IM.IntMap (r -> Parser (f p))
+    gparseRecordSum :: Options -> IM.IntMap (r -> Parser (f p))
 
 instance (GFromRecordSum a r, GFromRecordSum b r) => GFromRecordSum (a :+: b) r where
-    gparseRecordSum =
+    gparseRecordSum opts =
         IM.unionWith (\a b r -> a r <|> b r)
-            (fmap (L1 <$>) <$> gparseRecordSum)
-            (fmap (R1 <$>) <$> gparseRecordSum)
+            (fmap (L1 <$>) <$> gparseRecordSum opts)
+            (fmap (R1 <$>) <$> gparseRecordSum opts)
 
 instance GFromRecordProd f r => GFromRecordSum (M1 i n f) r where
-    gparseRecordSum = IM.singleton n (fmap (M1 <$>) f)
+    gparseRecordSum opts = IM.singleton n (fmap (M1 <$>) f)
       where
-        (n, f) = gparseRecordProd 0
+        (n, f) = gparseRecordProd opts 0
 
 class GFromRecordProd f r where
-    gparseRecordProd :: Int -> (Int, r -> Parser (f p))
+    gparseRecordProd :: Options -> Int -> (Int, r -> Parser (f p))
 
 instance GFromRecordProd U1 r where
-    gparseRecordProd n = (n, const (pure U1))
+    gparseRecordProd _ n = (n, const (pure U1))
 
 instance (GFromRecordProd a r, GFromRecordProd b r) => GFromRecordProd (a :*: b) r where
-    gparseRecordProd n0 = (n2, f)
+    gparseRecordProd opts n0 = (n2, f)
       where
         f r = (:*:) <$> fa r <*> fb r
-        (n1, fa) = gparseRecordProd n0
-        (n2, fb) = gparseRecordProd n1
+        (n1, fa) = gparseRecordProd opts n0
+        (n2, fb) = gparseRecordProd opts n1
 
 instance GFromRecordProd f Record => GFromRecordProd (M1 i n f) Record where
-    gparseRecordProd n = fmap (M1 <$>) <$> gparseRecordProd n
+    gparseRecordProd opts n = fmap (M1 <$>) <$> gparseRecordProd opts n
 
 instance FromField a => GFromRecordProd (K1 i a) Record where
-    gparseRecordProd n = (n + 1, \v -> K1 <$> parseField (V.unsafeIndex v n))
+    gparseRecordProd _ n = (n + 1, \v -> K1 <$> parseField (V.unsafeIndex v n))
 
 data Proxy s (f :: * -> *) a = Proxy
 
 instance (FromField a, Selector s) => GFromRecordProd (M1 S s (K1 i a)) NamedRecord where
-    gparseRecordProd n = (n + 1, \v -> (M1 . K1) <$> v .: name)
+    gparseRecordProd opts n = (n + 1, \v -> (M1 . K1) <$> v .: name)
       where
-        name = T.encodeUtf8 (T.pack (selName (Proxy :: Proxy s f a)))
+        name = T.encodeUtf8 (T.pack (fieldLabelModifier opts (selName (Proxy :: Proxy s f a))))
 
 
 class GToRecord a f where
-    gtoRecord :: a p -> [f]
+    gtoRecord :: Options -> a p -> [f]
 
 instance GToRecord U1 f where
-    gtoRecord U1 = []
+    gtoRecord _ U1 = []
 
 instance (GToRecord a f, GToRecord b f) => GToRecord (a :*: b) f where
-    gtoRecord (a :*: b) = gtoRecord a ++ gtoRecord b
+    gtoRecord opts (a :*: b) = gtoRecord opts a ++ gtoRecord opts b
 
 instance (GToRecord a f, GToRecord b f) => GToRecord (a :+: b) f where
-    gtoRecord (L1 a) = gtoRecord a
-    gtoRecord (R1 b) = gtoRecord b
+    gtoRecord opts (L1 a) = gtoRecord opts a
+    gtoRecord opts (R1 b) = gtoRecord opts b
 
 instance GToRecord a f => GToRecord (M1 D c a) f where
-    gtoRecord (M1 a) = gtoRecord a
+    gtoRecord opts (M1 a) = gtoRecord opts a
 
 instance GToRecord a f => GToRecord (M1 C c a) f where
-    gtoRecord (M1 a) = gtoRecord a
+    gtoRecord opts (M1 a) = gtoRecord opts a
 
 instance GToRecord a Field => GToRecord (M1 S c a) Field where
-    gtoRecord (M1 a) = gtoRecord a
+    gtoRecord opts (M1 a) = gtoRecord opts a
 
 instance ToField a => GToRecord (K1 i a) Field where
-    gtoRecord (K1 a) = [toField a]
+    gtoRecord _ (K1 a) = [toField a]
 
 instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B.ByteString) where
-    gtoRecord m@(M1 (K1 a)) = [T.encodeUtf8 (T.pack (selName m)) .= toField a]
+    gtoRecord opts m@(M1 (K1 a)) = [name .= toField a]
+      where
+        name = T.encodeUtf8 (T.pack (fieldLabelModifier opts (selName m)))
 
 -- We statically fail on sum types and product types without selectors
 -- (field names).
 
 class GToNamedRecordHeader a
   where
-    gtoNamedRecordHeader :: a p -> [Name]
+    gtoNamedRecordHeader :: Options -> a p -> [Name]
 
 instance GToNamedRecordHeader U1
   where
-    gtoNamedRecordHeader _ = []
+    gtoNamedRecordHeader _ _ = []
 
 instance (GToNamedRecordHeader a, GToNamedRecordHeader b) =>
          GToNamedRecordHeader (a :*: b)
   where
-    gtoNamedRecordHeader _ = gtoNamedRecordHeader (undefined :: a p) ++
-                             gtoNamedRecordHeader (undefined :: b p)
+    gtoNamedRecordHeader opts _ = gtoNamedRecordHeader opts (undefined :: a p) ++
+                                  gtoNamedRecordHeader opts (undefined :: b p)
 
 instance GToNamedRecordHeader a => GToNamedRecordHeader (M1 D c a)
   where
-    gtoNamedRecordHeader _ = gtoNamedRecordHeader (undefined :: a p)
+    gtoNamedRecordHeader opts _ = gtoNamedRecordHeader opts (undefined :: a p)
 
 instance GToNamedRecordHeader a => GToNamedRecordHeader (M1 C c a)
   where
-    gtoNamedRecordHeader _ = gtoNamedRecordHeader (undefined :: a p)
+    gtoNamedRecordHeader opts _ = gtoNamedRecordHeader opts (undefined :: a p)
 
 -- | Instance to ensure that you cannot derive DefaultOrdered for
 -- constructors without selectors.
@@ -1271,12 +1363,12 @@ instance DefaultOrdered (M1 S ('MetaSel 'Nothing srcpk srcstr decstr) a ())
 instance DefaultOrdered (M1 S NoSelector a ()) => GToNamedRecordHeader (M1 S NoSelector a)
 #endif
   where
-    gtoNamedRecordHeader _ =
+    gtoNamedRecordHeader _ _ =
         error "You cannot derive DefaultOrdered for constructors without selectors."
 
 instance Selector s => GToNamedRecordHeader (M1 S s a)
   where
-    gtoNamedRecordHeader m
+    gtoNamedRecordHeader opts m
         | null name = error "Cannot derive DefaultOrdered for constructors without selectors"
-        | otherwise = [B8.pack (selName m)]
+        | otherwise = [B8.pack (fieldLabelModifier opts (selName m))]
       where name = selName m
