@@ -137,6 +137,7 @@ fromStrict = L.fromChunks . (:[])
 --   datatype to\/from CSV.
 newtype Options = Options
   { fieldLabelModifier :: String -> String
+    -- ^ How to convert Haskell field labels to CSV fields.
   }
 
 -- | Default conversion options.
