@@ -133,6 +133,8 @@ fromStrict = L.fromChunks . (:[])
 ------------------------------------------------------------------------
 -- Index-based conversion
 
+-- | Options to customise how to generically encode\/decode your
+--   datatype to\/from CSV.
 newtype Options = Options
   { fieldLabelModifier :: String -> String
   }
