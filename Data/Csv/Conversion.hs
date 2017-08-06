@@ -78,6 +78,7 @@ import qualified Data.ByteString.Lazy as L
 #if MIN_VERSION_bytestring(0,10,4)
 import qualified Data.ByteString.Short as SBS
 #endif
+import Data.List (intercalate)
 import Data.Hashable (Hashable)
 import qualified Data.HashMap.Lazy as HM
 import Data.Int (Int8, Int16, Int32, Int64)
@@ -139,6 +140,16 @@ newtype Options = Options
   { fieldLabelModifier :: String -> String
     -- ^ How to convert Haskell field labels to CSV fields.
   }
+
+instance Show Options where
+  show (Options fld) =
+    "Options {"
+      ++ intercalate ","
+         [ "fieldLabelModifier =~ " ++ show sampleField ++ " -> " ++ show (fld sampleField)
+         ]
+      ++ "}"
+    where
+      sampleField = "_column_A"
 
 -- | Default conversion options.
 --
