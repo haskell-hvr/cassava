@@ -106,7 +106,7 @@ import Data.Csv.Types
 -- Encoding standard Haskell types:
 --
 -- > >>> :set -XOverloadedStrings
--- > >>> import Data.Text
+-- > >>> import Data.Text (Text)
 -- > >>> encode [("John" :: Text, 27 :: Int), ("Jane", 28)]
 -- > "John,27\r\nJane,28\r\n"
 --
@@ -118,7 +118,7 @@ import Data.Csv.Types
 --
 -- Decoding standard Haskell types:
 --
--- > >>> import Data.Vector
+-- > >>> import Data.Vector (Vector)
 -- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
 -- > Right [("John",27),("Jane",28)]
 --
@@ -143,7 +143,6 @@ import Data.Csv.Types
 -- Derived:
 --
 -- > {-# LANGUAGE DeriveGeneric #-}
--- > {-# LANGUAGE OverloadedStrings #-}
 -- >
 -- > import Data.Text    (Text)
 -- > import GHC.Generics (Generic)
@@ -156,7 +155,6 @@ import Data.Csv.Types
 --
 -- Manually defined:
 --
--- > {-# LANGUAGE OverloadedStrings #-}
 -- >
 -- > import Control.Monad (mzero)
 -- >
@@ -190,7 +188,6 @@ import Data.Csv.Types
 -- Derived:
 --
 -- > {-# LANGUAGE DeriveGeneric #-}
--- > {-# LANGUAGE OverloadedStrings #-}
 -- >
 -- > import Data.Text    (Text)
 -- > import GHC.Generics (Generic)
@@ -238,7 +235,7 @@ import Data.Csv.Types
 -- parse a CSV file to a generic representation, just convert each
 -- record to a @'Vector' 'ByteString'@ value, like so:
 --
--- > >>> import Data.ByteString
+-- > >>> import Data.ByteString (ByteString)
 -- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
 -- > Right [["John","27"],["Jane","28"]]
 --
