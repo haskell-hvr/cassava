@@ -48,10 +48,10 @@ Tested-with:         GHC ==8.2.1, GHC ==8.0.2, GHC ==8.0.1, GHC ==7.10.3, GHC ==
 
 source-repository head
   type:     git
-  location: https://github.com/hvr/cassava
+  location: https://github.com/hvr/cassava.git
 
 flag bytestring--LT-0_10_4
-  description: [bytestring](https://hackage.haskell.org/haskell/package) < 0.10.4
+  description: [bytestring](https://hackage.haskell.org/haskell/package/bytestring) < 0.10.4
 
 Library
   default-language: Haskell2010
