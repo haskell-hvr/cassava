@@ -94,7 +94,7 @@ module Data.Csv
     , FromField(..)
     , ToField(..)
 
-    -- ** Generic record conversion
+    -- ** 'Generic' record conversion
     -- $genericconversion
     , genericParseRecord
     , genericToRecord
@@ -102,10 +102,17 @@ module Data.Csv
     , genericToNamedRecord
     , genericHeaderOrder
 
-    -- *** Generic type conversion options
+    -- *** 'Generic' type conversion options
     , Options
     , defaultOptions
     , fieldLabelModifier
+
+    -- *** 'Generic' type conversion class name
+    -- $genericconversionclass
+    , GFromRecord
+    , GToRecord
+    , GFromNamedRecord
+    , GToNamedRecordHeader
     ) where
 
 import Prelude hiding (lookup)
@@ -378,6 +385,10 @@ import Data.Csv.Types
 -- >
 -- > instance DefaultOrdered MyType where
 -- >   headerOrder = genericHeaderOrder myOptions
+
+-- $genericconversionclass
+--
+-- __NOTE__: Only the class /names/ are exposed in order to make it possible to write type signatures referring to these classes
 
 -- $setup
 -- >>> :set -XOverloadedStrings -XDeriveGeneric

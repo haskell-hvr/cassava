@@ -50,6 +50,12 @@ module Data.Csv.Conversion
     , defaultOptions
     , fieldLabelModifier
 
+    -- *** Generic type conversion class names
+    , GFromRecord
+    , GToRecord
+    , GFromNamedRecord
+    , GToNamedRecordHeader
+
     -- * Parser
     , Parser
     , runParser
