@@ -118,10 +118,10 @@ import Data.Csv.Types
 --
 -- Encoding standard Haskell types:
 --
--- > >>> :set -XOverloadedStrings
--- > >>> import Data.Text (Text)
--- > >>> encode [("John" :: Text, 27 :: Int), ("Jane", 28)]
--- > "John,27\r\nJane,28\r\n"
+-- >>> :set -XOverloadedStrings
+-- >>> import Data.Text (Text)
+-- >>> encode [("John" :: Text, 27 :: Int), ("Jane", 28)]
+-- "John,27\r\nJane,28\r\n"
 --
 -- Since string literals are overloaded we have to supply a type
 -- signature as the compiler couldn't deduce which string type (i.e.
@@ -131,9 +131,9 @@ import Data.Csv.Types
 --
 -- Decoding standard Haskell types:
 --
--- > >>> import Data.Vector (Vector)
--- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
--- > Right [("John",27),("Jane",28)]
+-- >>> import Data.Vector (Vector)
+-- >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Text, Int))
+-- Right [("John",27),("Jane",28)]
 --
 -- We pass 'NoHeader' as the first argument to indicate that the CSV
 -- input data isn't preceded by a header.
@@ -168,7 +168,6 @@ import Data.Csv.Types
 --
 -- Manually defined:
 --
--- >
 -- > import Control.Monad (mzero)
 -- >
 -- > data Person = Person { name :: !Text , salary :: !Int }
@@ -187,13 +186,13 @@ import Data.Csv.Types
 --
 -- Encoding:
 --
--- > >>> encode [Person ("John" :: Text) 27]
--- > "John,27\r\n"
+-- >>> encode [Person ("John" :: Text) 27]
+-- "John,27\r\n"
 --
 -- Decoding:
 --
--- > >>> decode NoHeader "John,27\r\n" :: Either String (Vector Person)
--- > Right [Person {name = "John", salary = 27}]
+-- >>> decode NoHeader "John,27\r\n" :: Either String (Vector Person)
+-- Right [Person {name = "John", salary = 27}]
 --
 
 -- $example-named-instance
@@ -231,13 +230,13 @@ import Data.Csv.Types
 --
 -- Encoding:
 --
--- > >>> encodeDefaultOrderedByName [Person ("John" :: Text) 27]
--- > "name,salary\r\nJohn,27\r\n"
+-- >>> encodeDefaultOrderedByName [Person ("John" :: Text) 27]
+-- "name,salary\r\nJohn,27\r\n"
 --
 -- Decoding:
 --
--- > >>> decodeByName "name,salary\r\nJohn,27\r\n" :: Either String (Header, Vector Person)
--- > Right (["name","salary"],[Person {name = "John", salary = 27}])
+-- >>> decodeByName "name,salary\r\nJohn,27\r\n" :: Either String (Header, Vector Person)
+-- Right (["name","salary"],[Person {name = "John", salary = 27}])
 --
 
 -- $generic-processing
@@ -248,9 +247,9 @@ import Data.Csv.Types
 -- parse a CSV file to a generic representation, just convert each
 -- record to a @'Vector' 'ByteString'@ value, like so:
 --
--- > >>> import Data.ByteString (ByteString)
--- > >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
--- > Right [["John","27"],["Jane","28"]]
+-- >>> import Data.ByteString (ByteString)
+-- >>> decode NoHeader "John,27\r\nJane,28\r\n" :: Either String (Vector (Vector ByteString))
+-- Right [["John","27"],["Jane","28"]]
 --
 -- As the example output above shows, all the fields are returned as
 -- uninterpreted 'ByteString' values.
@@ -379,3 +378,16 @@ import Data.Csv.Types
 -- >
 -- > instance DefaultOrdered MyType where
 -- >   headerOrder = genericHeaderOrder myOptions
+
+-- $setup
+-- >>> :set -XOverloadedStrings -XDeriveGeneric
+-- >>> import Data.Text (Text)
+-- >>> import Data.Vector (Vector)
+-- >>> import GHC.Generics (Generic)
+-- >>>
+-- >>> data Person = Person { name :: !Text, salary :: !Int } deriving (Generic, Show)
+-- >>> instance FromRecord Person
+-- >>> instance ToRecord Person
+-- >>> instance FromNamedRecord Person
+-- >>> instance ToNamedRecord Person
+-- >>> instance DefaultOrdered Person
