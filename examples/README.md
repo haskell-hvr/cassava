@@ -1,10 +1,7 @@
 # Building the examples
 
-To build these examples using the in-tree version of cassava, run:
+To build these examples using the in-tree version of cassava, simply use [`cabal-install`](http://hackage.haskell.org/package/cabal-install) 2.0 or later, and invoke (from within the `examples/` folder):
 
 ```bash
-$ cabal sandbox init
-$ cabal sandbox add-source ..
-$ cabal install --only-dependencies
-$ cabal build
+$ cabal new-build
 ```

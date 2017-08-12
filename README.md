@@ -1,15 +1,12 @@
-# cassava: A CSV parsing and encoding library
+# `cassava`: A CSV parsing and encoding library [![Hackage](https://img.shields.io/hackage/v/cassava.svg)](https://hackage.haskell.org/package/cassava) [![Build Status](https://travis-ci.org/hvr/cassava.svg)](https://travis-ci.org/hvr/cassava)
 
-[![Hackage](https://img.shields.io/hackage/v/cassava.svg)](https://hackage.haskell.org/package/cassava) [![Build Status](https://travis-ci.org/hvr/cassava.svg)](https://travis-ci.org/hvr/cassava)
-
-**See [package description](https://hackage.haskell.org/package/cassava#description).**
+**Please refer to the [package description](https://hackage.haskell.org/package/cassava#description) for an overview of `cassava`.**
 
 ## Usage example
 
-Here's the two second crash course in using the library. Given a CSV
-file with this content:
+Here's the two second crash course in using the library. Given a CSV file with this content:
 
-```
+```csv
 John Doe,50000
 Jane Doe,60000
 ```
@@ -34,13 +31,13 @@ main = do
 
 If you want to parse a file that includes a header, like this one
 
-```
+```csv
 name,salary
 John Doe,50000
 Jane Doe,60000
 ```
 
-use `decodeByName`:
+use [`decodeByName`](https://hackage.haskell.org/package/cassava/docs/Data-Csv.html#v:decodeByName):
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
@@ -66,6 +63,8 @@ main = do
         Right (_, v) -> V.forM_ v $ \ p ->
             putStrLn $ name p ++ " earns " ++ show (salary p) ++ " dollars"
 ```
+
+You can find more code examples in the [`examples/` folder](https://github.com/hvr/cassava/tree/master/examples) as well as smaller usage examples in the [`Data.Csv` module documentation](https://hackage.haskell.org/package/cassava/docs/Data-Csv.html).
 
 ## Project Goals for `cassava`
 

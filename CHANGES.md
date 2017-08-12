@@ -6,6 +6,7 @@
    `Options`, `defaultOptions`, `fieldLabelModifier`,
    `genericParseRecord`, `genericToRecord`, `genericToNamedRecord`,
    `genericHeaderOrder`) (#139,#140)
+ * Documentation improvements
 
 ## Version 0.5.0.0
 
