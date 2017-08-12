@@ -344,6 +344,7 @@ newtype Builder a = Builder {
       runBuilder :: Quoting -> Word8 -> Bool -> Builder.Builder
     }
 
+-- | @since 0.5.0.0
 instance Semigroup (Builder a) where
     Builder f <> Builder g =
         Builder $ \ qtng delim useCrlf ->
@@ -420,6 +421,7 @@ newtype NamedBuilder a = NamedBuilder {
       runNamedBuilder :: Header -> Quoting -> Word8 -> Bool -> Builder.Builder
     }
 
+-- | @since 0.5.0.0
 instance Semigroup (NamedBuilder a) where
     NamedBuilder f <> NamedBuilder g =
         NamedBuilder $ \ hdr qtng delim useCrlf ->

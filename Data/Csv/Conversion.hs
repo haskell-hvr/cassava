@@ -1008,10 +1008,16 @@ instance ToField SBS.ShortByteString where
 #endif
 
 #if MIN_VERSION_text_short(0,1,0)
+-- | Assumes UTF-8 encoding. Fails on invalid byte sequences.
+--
+-- @since 0.5.0.0
 instance FromField T.S.ShortText where
     parseField = maybe (fail "Invalid UTF-8 stream") pure . T.S.fromByteString
     {-# INLINE parseField #-}
 
+-- | Uses UTF-8 encoding.
+--
+-- @since 0.5.0.0
 instance ToField T.S.ShortText where
     toField = T.S.toByteString
     {-# INLINE toField #-}
@@ -1185,6 +1191,7 @@ instance Monad Parser where
     fail = Fail.fail
     {-# INLINE fail #-}
 
+-- | @since 0.5.0.0
 instance Fail.MonadFail Parser where
     fail msg = Parser $ \kf _ks -> kf msg
     {-# INLINE fail #-}
@@ -1213,6 +1220,7 @@ instance MonadPlus Parser where
                                    in unParser a kf' ks
     {-# INLINE mplus #-}
 
+-- | @since 0.5.0.0
 instance Semigroup (Parser a) where
     (<>) = mplus
     {-# INLINE (<>) #-}
