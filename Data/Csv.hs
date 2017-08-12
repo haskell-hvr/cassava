@@ -131,11 +131,12 @@ import Data.Csv.Types
 -- >>> encode [("John" :: Text, 27 :: Int), ("Jane", 28)]
 -- "John,27\r\nJane,28\r\n"
 --
--- Since string literals are overloaded we have to supply a type
+-- Since we enabled the [-XOverloadedStrings extension](https://downloads.haskell.org/~ghc/8.2.1/docs/html/users_guide/glasgow_exts.html#overloaded-string-literals),
+-- string literals are polymorphic and we have to supply a type
 -- signature as the compiler couldn't deduce which string type (i.e.
--- 'String' or 'Text') we want to use. In most cases type inference
--- will infer the type from the context and you can omit type
--- signatures.
+-- 'String', 'ShortText', or 'Text') we want to use. In most cases
+-- type inference will infer the type from the context and you can
+-- omit type signatures.
 --
 -- Decoding standard Haskell types:
 --
@@ -161,7 +162,7 @@ import Data.Csv.Types
 
 -- $example-indexed-instance
 --
--- Derived:
+-- "GHC.Generics"-derived:
 --
 -- > {-# LANGUAGE DeriveGeneric #-}
 -- >
@@ -205,7 +206,7 @@ import Data.Csv.Types
 
 -- $example-named-instance
 --
--- Derived:
+-- "GHC.Generics"-derived:
 --
 -- > {-# LANGUAGE DeriveGeneric #-}
 -- >
