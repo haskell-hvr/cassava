@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Low-level bytestring builders. Most users want to use the more
--- type-safe 'Data.Csv.Incremental' module instead.
+-- type-safe "Data.Csv.Incremental" module instead.
 module Data.Csv.Builder
     (
     -- * Encoding single records and headers
