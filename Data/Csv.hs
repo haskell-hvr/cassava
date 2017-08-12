@@ -134,7 +134,7 @@ import Data.Csv.Types
 -- Since we enabled the [-XOverloadedStrings extension](https://downloads.haskell.org/~ghc/8.2.1/docs/html/users_guide/glasgow_exts.html#overloaded-string-literals),
 -- string literals are polymorphic and we have to supply a type
 -- signature as the compiler couldn't deduce which string type (i.e.
--- 'String', 'ShortText', or 'Text') we want to use. In most cases
+-- 'String', 'Data.Text.Short.ShortText', or 'Data.Text.Text') we want to use. In most cases
 -- type inference will infer the type from the context and you can
 -- omit type signatures.
 --
