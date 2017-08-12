@@ -1,6 +1,7 @@
--- | This module implements encoding and decoding of CSV data. The
--- implementation is RFC 4180 compliant, with the following
--- extensions:
+-- | This module implements encoding and decoding
+-- of [comma-separated values (CSV)](https://en.wikipedia.org/wiki/Comma-separated_values)
+-- data. The implementation is [RFC 4180](https://tools.ietf.org/html/rfc4180)
+-- compliant, with the following extensions:
 --
 --  * Empty lines are ignored.
 --
