@@ -50,7 +50,7 @@ source-repository head
   type:     git
   location: https://github.com/hvr/cassava.git
 
-flag bytestring--LT-0_10_4
+flag bytestring-LT-0_10_4
   description: [bytestring](https://hackage.haskell.org/haskell/package/bytestring) < 0.10.4
 
 Library
@@ -105,7 +105,7 @@ Library
     vector >= 0.8 && < 0.13,
     Only >= 0.1 && < 0.1.1
 
-  if flag(bytestring--LT-0_10_4)
+  if flag(bytestring-LT-0_10_4)
     build-depends: bytestring <  0.10.4
                  , bytestring-builder >= 0.10.8 && < 0.11
   else
