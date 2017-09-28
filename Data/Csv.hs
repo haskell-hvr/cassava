@@ -374,7 +374,7 @@ import Data.Csv.Types
 -- they're not.  You can then write:
 --
 -- > myOptions :: Options
--- > myOptions = defaultOptions { fieldLabelmodifier = rmUnderscore }
+-- > myOptions = defaultOptions { fieldLabelModifier = rmUnderscore }
 -- >   where
 -- >     rmUnderscore ('_':str) = str
 -- >     rmUnderscore str       = str
