@@ -73,7 +73,7 @@ module Data.Csv.Conversion
     , header
     ) where
 
-import Control.Applicative (Alternative, (<|>), empty)
+import Control.Applicative (Alternative, (<|>), empty, Const(..))
 import Control.Monad (MonadPlus, mplus, mzero)
 import qualified Control.Monad.Fail as Fail
 import Data.Attoparsec.ByteString.Char8 (double)
@@ -84,6 +84,7 @@ import qualified Data.ByteString.Lazy as L
 #if MIN_VERSION_bytestring(0,10,4)
 import qualified Data.ByteString.Short as SBS
 #endif
+import Data.Functor.Identity
 import Data.List (intercalate)
 import Data.Hashable (Hashable)
 import qualified Data.HashMap.Lazy as HM
@@ -797,6 +798,22 @@ instance FromField a => FromField (Either Field a) where
 instance FromField () where
     parseField _ = pure ()
     {-# INLINE parseField #-}
+
+instance FromField a => FromField (Identity a) where
+    parseField = fmap Identity . parseField
+    {-# INLINE parseField #-}
+
+instance ToField a => ToField (Identity a) where
+    toField = toField . runIdentity
+    {-# INLINE toField #-}
+
+instance FromField a => FromField (Const a b) where
+    parseField = fmap getConst . parseField
+    {-# INLINE parseField #-}
+
+instance ToField a => ToField (Const a b) where
+    toField = toField . getConst
+    {-# INLINE toField #-}
 
 -- | Assumes UTF-8 encoding.
 instance FromField Char where
