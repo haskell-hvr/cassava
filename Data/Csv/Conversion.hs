@@ -799,18 +799,22 @@ instance FromField () where
     parseField _ = pure ()
     {-# INLINE parseField #-}
 
+-- | @since 0.5.2.0
 instance FromField a => FromField (Identity a) where
     parseField = fmap Identity . parseField
     {-# INLINE parseField #-}
 
+-- | @since 0.5.2.0
 instance ToField a => ToField (Identity a) where
     toField = toField . runIdentity
     {-# INLINE toField #-}
 
+-- | @since 0.5.2.0
 instance FromField a => FromField (Const a b) where
     parseField = fmap getConst . parseField
     {-# INLINE parseField #-}
 
+-- | @since 0.5.2.0
 instance ToField a => ToField (Const a b) where
     toField = toField . getConst
     {-# INLINE toField #-}
