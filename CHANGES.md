@@ -1,3 +1,7 @@
+## Version 0.5.2.0
+
+ * Add `FromField`/`ToField` instances for `Identity` and `Const` (#158)
+
 ## Version 0.5.1.0
 
  * Add `FromField`/`ToField` instance for `Natural` (#141,#142)
