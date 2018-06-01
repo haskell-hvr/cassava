@@ -257,7 +257,7 @@ decodeWith !opts hasHeader = case hasHeader of
 ------------------------------------------------------------------------
 
 -- | Efficiently deserialize CSV in an incremental fashion. The data
--- is assumed to be preceeded by a header. Returns a 'HeaderParser'
+-- is assumed to be preceded by a header. Returns a 'HeaderParser'
 -- that when done produces a 'Parser' for parsing the actual records.
 -- Equivalent to @'decodeByNameWith' 'defaultDecodeOptions'@.
 decodeByName :: FromNamedRecord a

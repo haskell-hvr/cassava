@@ -164,7 +164,7 @@ decodeWith !opts hasHeader s0 =
     go (s:ss) (Many xs k) = foldr Cons (go ss (k s)) xs
 
 -- | Efficiently deserialize CSV in a streaming fashion. The data is
--- assumed to be preceeded by a header. Returns @'Left' errMsg@ if
+-- assumed to be preceded by a header. Returns @'Left' errMsg@ if
 -- parsing the header fails. Equivalent to @'decodeByNameWith'
 -- 'defaultDecodeOptions'@.
 decodeByName :: FromNamedRecord a
