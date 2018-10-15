@@ -120,6 +120,9 @@ import Data.Traversable (traverse)
 import Data.Word (Word)
 #endif
 
+import Data.Time.Clock (UTCTime)
+import Data.Time.Format (parseTimeM, defaultTimeLocale, formatTime)
+
 ------------------------------------------------------------------------
 -- bytestring compatibility
 
@@ -1073,6 +1076,15 @@ instance FromField [Char] where
 instance ToField [Char] where
     toField = toField . T.pack
     {-# INLINE toField #-}
+
+instance FromField UTCTime where
+  parseField t =
+    parseTimeM True defaultTimeLocale "%F" (T.unpack . T.decodeUtf8 $ t)
+
+instance ToField UTCTime where
+  toField t =
+    T.encodeUtf8 $ T.pack $ formatTime defaultTimeLocale "%F" t
+
 
 parseSigned :: (Integral a, Num a) => String -> B.ByteString -> Parser a
 parseSigned typ s = case parseOnly (ws *> A8.signed A8.decimal <* ws) s of

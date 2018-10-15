@@ -104,7 +104,8 @@ Library
     transformers >= 0.2 && < 0.6,
     unordered-containers < 0.3,
     vector >= 0.8 && < 0.13,
-    Only >= 0.1 && < 0.1.1
+    Only >= 0.1 && < 0.1.1,
+    time
 
   if flag(bytestring--LT-0_10_4)
     build-depends: bytestring <  0.10.4
