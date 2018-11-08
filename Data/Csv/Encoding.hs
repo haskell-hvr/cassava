@@ -59,7 +59,6 @@ import Data.Csv.Conversion (FromNamedRecord, FromRecord, ToNamedRecord,
                             ToRecord, parseNamedRecord, parseRecord, runParser,
                             toNamedRecord, toRecord)
 import Data.Csv.Parser hiding (csv, csvWithHeader)
-import qualified Data.Csv.Conversion as Conversion
 import qualified Data.Csv.Parser as Parser
 import Data.Csv.Types hiding (toNamedRecord)
 import qualified Data.Csv.Types as Types

@@ -42,6 +42,16 @@ executable NamedBasedDecode
     vector
   default-language:    Haskell2010
 
+executable NamedBasedExplicitDecode
+  main-is: NamedBasedExplicitDecode.hs
+  build-depends:
+    base,
+    bytestring,
+    cassava,
+    vector
+  default-language:    Haskell2010
+
+
 executable NamedBasedGeneric
   main-is: NamedBasedGeneric.hs
   build-depends:
