@@ -52,6 +52,8 @@ source-repository head
 
 flag bytestring--LT-0_10_4
   description: [bytestring](https://hackage.haskell.org/haskell/package/bytestring) < 0.10.4
+  manual:  True
+  default: False
 
 Library
   default-language: Haskell2010
