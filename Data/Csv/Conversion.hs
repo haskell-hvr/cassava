@@ -1209,8 +1209,11 @@ instance Monad Parser where
     {-# INLINE (>>) #-}
     return = pure
     {-# INLINE return #-}
+#if MIN_VERSION_base(4,13,0)
+#else
     fail = Fail.fail
     {-# INLINE fail #-}
+#endif
 
 -- | @since 0.5.0.0
 instance Fail.MonadFail Parser where
