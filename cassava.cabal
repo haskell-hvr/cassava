@@ -77,6 +77,8 @@ Library
       DataKinds
       PolyKinds
 
+  hs-source-dirs: src
+
   Exposed-modules:
     Data.Csv
     Data.Csv.Builder
