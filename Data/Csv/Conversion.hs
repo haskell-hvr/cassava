@@ -66,6 +66,8 @@ module Data.Csv.Conversion
     , unsafeIndex
     , lookup
     , (.:)
+    , lookupChoice
+    , (.::)
     , namedField
     , (.=)
     , record
@@ -84,6 +86,7 @@ import qualified Data.ByteString.Lazy as L
 #if MIN_VERSION_bytestring(0,10,4)
 import qualified Data.ByteString.Short as SBS
 #endif
+import Data.Foldable (asum)
 import Data.Functor.Identity
 import Data.List (intercalate)
 import Data.Hashable (Hashable)
@@ -1156,6 +1159,16 @@ lookup m name = maybe (fail err) parseField $ HM.lookup name m
 (.:) :: FromField a => NamedRecord -> B.ByteString -> Parser a
 (.:) = lookup
 {-# INLINE (.:) #-}
+
+-- | Like 'lookup', but takes a list of possible fields.
+lookupChoice :: FromField a => NamedRecord -> [B.ByteString] -> Parser a
+lookupChoice m = asum . map (lookup m)
+{-# INLINE lookupChoice #-}
+
+-- | Alias for 'lookupChoice'.
+(.::) :: FromField a => NamedRecord -> [B.ByteString] -> Parser a
+(.::) = lookupChoice
+{-# INLINE (.::) #-}
 
 -- | Construct a pair from a name and a value.  For use with
 -- 'namedRecord'.
