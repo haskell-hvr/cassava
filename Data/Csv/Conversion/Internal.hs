@@ -13,7 +13,7 @@ import Data.Array.IArray
 import qualified Data.ByteString as B
 import Data.Char (ord)
 import Data.Int
-import Data.Monoid
+import qualified Data.Monoid as Mon
 import Data.Scientific (Scientific)
 import Data.Word
 
@@ -51,9 +51,9 @@ formatDecimal :: Integral a => a -> Builder
     :: Word64 -> Builder #-}
 {-# NOINLINE formatDecimal #-}
 formatDecimal i
-    | i < 0     = minus <>
+    | i < 0     = minus Mon.<>
                   if i <= -128
-                  then formatPositive (-(i `quot` 10)) <> digit (-(i `rem` 10))
+                  then formatPositive (-(i `quot` 10)) Mon.<> digit (-(i `rem` 10))
                   else formatPositive (-i)
     | otherwise = formatPositive i
 
@@ -64,9 +64,9 @@ formatBoundedSigned :: (Integral a, Bounded a) => a -> Builder
 {-# SPECIALIZE formatBoundedSigned :: Int32 -> Builder #-}
 {-# SPECIALIZE formatBoundedSigned :: Int64 -> Builder #-}
 formatBoundedSigned i
-    | i < 0     = minus <>
+    | i < 0     = minus Mon.<>
                   if i == minBound
-                  then formatPositive (-(i `quot` 10)) <> digit (-(i `rem` 10))
+                  then formatPositive (-(i `quot` 10)) Mon.<> digit (-(i `rem` 10))
                   else formatPositive (-i)
     | otherwise = formatPositive i
 
@@ -83,7 +83,7 @@ formatPositive :: Integral a => a -> Builder
 {-# SPECIALIZE formatPositive :: Word64 -> Builder #-}
 formatPositive = go
   where go n | n < 10    = digit n
-             | otherwise = go (n `quot` 10) <> digit (n `rem` 10)
+             | otherwise = go (n `quot` 10) Mon.<> digit (n `rem` 10)
 
 minus :: Builder
 minus = word8 45
@@ -129,7 +129,7 @@ formatRealFloat fmt x
    | isInfinite x              = if x < 0
                                  then string8 "-Infinity"
                                  else string8 "Infinity"
-   | x < 0 || isNegativeZero x = minus <> doFmt fmt (floatToDigits (-x))
+   | x < 0 || isNegativeZero x = minus Mon.<> doFmt fmt (floatToDigits (-x))
    | otherwise                 = doFmt fmt (floatToDigits x)
  where
   doFmt format (is, e) =
@@ -142,17 +142,17 @@ formatRealFloat fmt x
         let show_e' = formatDecimal (e-1) in
         case ds of
           [48]    -> string8 "0.0e0"
-          [d]     -> word8 d <> string8 ".0e" <> show_e'
-          (d:ds') -> word8 d <> char8 '.' <> word8s ds' <>
-                     char8 'e' <> show_e'
+          [d]     -> word8 d Mon.<> string8 ".0e" Mon.<> show_e'
+          (d:ds') -> word8 d Mon.<> char8 '.' Mon.<> word8s ds' Mon.<>
+                     char8 'e' Mon.<> show_e'
           []      -> error "formatRealFloat/doFmt/Exponent: []"
      Fixed
-          | e <= 0    -> string8 "0." <>
-                         byteString (B.replicate (-e) zero) <>
+          | e <= 0    -> string8 "0." Mon.<>
+                         byteString (B.replicate (-e) zero) Mon.<>
                          word8s ds
           | otherwise ->
              let
-                f 0 s    rs  = mk0 (reverse s) <> char8 '.' <> mk0 rs
+                f 0 s    rs  = mk0 (reverse s) Mon.<> char8 '.' Mon.<> mk0 rs
                 f n s    []  = f (n-1) (zero:s) []
                 f n s (r:rs) = f (n-1) (r:s) rs
              in

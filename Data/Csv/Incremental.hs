@@ -85,7 +85,7 @@ import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy as L
-import Data.Semigroup (Semigroup, (<>))
+import Data.Semigroup as Semi (Semigroup, (<>))
 import qualified Data.Vector as V
 import Data.Word (Word8)
 
@@ -345,14 +345,14 @@ newtype Builder a = Builder {
     }
 
 -- | @since 0.5.0.0
-instance Semigroup (Builder a) where
+instance Semi.Semigroup (Builder a) where
     Builder f <> Builder g =
         Builder $ \ qtng delim useCrlf ->
         f qtng delim useCrlf <> g qtng delim useCrlf
 
 instance Monoid (Builder a) where
     mempty  = Builder (\ _ _ _ -> mempty)
-    mappend = (<>)
+    mappend = (Semi.<>)
 
 ------------------------------------------------------------------------
 -- ** Index-based record conversion
@@ -429,7 +429,7 @@ instance Semigroup (NamedBuilder a) where
 
 instance Monoid (NamedBuilder a) where
     mempty = NamedBuilder (\ _ _ _ _ -> mempty)
-    mappend = (<>)
+    mappend = (Semi.<>)
 
 ------------------------------------------------------------------------
 

@@ -92,7 +92,7 @@ import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import Data.Scientific (Scientific)
-import Data.Semigroup (Semigroup, (<>))
+import Data.Semigroup as Semi (Semigroup, (<>))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
@@ -1245,14 +1245,14 @@ instance MonadPlus Parser where
     {-# INLINE mplus #-}
 
 -- | @since 0.5.0.0
-instance Semigroup (Parser a) where
+instance Semi.Semigroup (Parser a) where
     (<>) = mplus
     {-# INLINE (<>) #-}
 
 instance Monoid (Parser a) where
     mempty  = fail "mempty"
     {-# INLINE mempty #-}
-    mappend = (<>)
+    mappend = (Semi.<>)
     {-# INLINE mappend #-}
 
 apP :: Parser (a -> b) -> Parser a -> Parser b

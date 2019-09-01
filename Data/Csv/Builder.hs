@@ -16,7 +16,7 @@ module Data.Csv.Builder
     , encodeDefaultOrderedNamedRecordWith
     ) where
 
-import Data.Monoid
+import qualified Data.Monoid as Mon
 
 import Data.ByteString.Builder as Builder
 import Data.Csv.Conversion
@@ -53,7 +53,7 @@ encodeHeaderWith = encodeRecordWith
 encodeRecordWith :: ToRecord a => EncodeOptions -> a -> Builder.Builder
 encodeRecordWith opts r =
     Encoding.encodeRecord (encQuoting opts) (encDelimiter opts) (toRecord r)
-    <> Encoding.recordSep (encUseCrLf opts)
+    Mon.<> Encoding.recordSep (encUseCrLf opts)
 
 -- | Like 'encodeNamedRecord', but lets you customize how the CSV data
 -- is encoded.
@@ -61,7 +61,7 @@ encodeNamedRecordWith :: ToNamedRecord a =>
                          EncodeOptions -> Header -> a -> Builder.Builder
 encodeNamedRecordWith opts hdr nr =
     Encoding.encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts)
-    (toNamedRecord nr) <> Encoding.recordSep (encUseCrLf opts)
+    (toNamedRecord nr) Mon.<> Encoding.recordSep (encUseCrLf opts)
 
 -- | Like 'encodeDefaultOrderedNamedRecord', but lets you customize
 -- how the CSV data is encoded.
