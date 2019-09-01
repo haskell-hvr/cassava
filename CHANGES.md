@@ -2,6 +2,8 @@
 
  * Add `FromField`/`ToField` instances for `Identity` and `Const` (#158)
 
+ * Support for final phase of MFP / base-4.13
+
 ## Version 0.5.1.0
 
  * Add `FromField`/`ToField` instance for `Natural` (#141,#142)
