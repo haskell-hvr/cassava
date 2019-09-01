@@ -48,7 +48,9 @@ module Data.Csv
     , DecodeOptions(..)
     , defaultDecodeOptions
     , decodeWith
+    , decodeWithP
     , decodeByNameWith
+    , decodeByNameWithP
     , EncodeOptions(..)
     , Quoting(..)
     , defaultEncodeOptions

@@ -1,7 +1,7 @@
 ## Version 0.5.2.0
 
  * Add `FromField`/`ToField` instances for `Identity` and `Const` (#158)
-
+ * New `typeclass`-less decoding functions `decodeWithP` and `decodeByNameWithP` (#67,#167)
  * Support for final phase of MFP / base-4.13
 
 ## Version 0.5.1.0
