@@ -167,8 +167,7 @@ escapedField = do
         else return s
 
 unescapedField :: Word8 -> AL.Parser S.ByteString
-unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
-                                            c /= newline &&
+unescapedField !delim = A.takeWhile (\ c -> c /= newline &&
                                             c /= delim &&
                                             c /= cr)
 
