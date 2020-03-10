@@ -185,6 +185,7 @@ positionalTests =
            [["a", "b", "c"], ["d", "e", "f"]])
         , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
         , ("rfc4180", rfc4180Input, rfc4180Output)
+        , ("unquotedTextContainingQuotes", "a\"b\"c,def\",g\"hi\",jkl\nabc,def,ghi,jkl", [["a\"b\"c", "def\"", "g\"hi\"", "jkl"], ["abc", "def", "ghi", "jkl"]])
         ]
     decodeWithTests =
         [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
