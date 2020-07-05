@@ -79,6 +79,7 @@ import qualified Control.Monad.Fail as Fail
 import Data.Attoparsec.ByteString.Char8 (double)
 import qualified Data.Attoparsec.ByteString.Char8 as A8
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 #if MIN_VERSION_bytestring(0,10,4)
@@ -885,7 +886,7 @@ instance FromField Int where
 
 -- | Uses decimal encoding with optional sign.
 instance ToField Int where
-    toField = decimal
+    toField = viaBuilder . Builder.intDec
     {-# INLINE toField #-}
 
 -- | Accepts a signed decimal number. Ignores whitespace.
@@ -895,7 +896,7 @@ instance FromField Integer where
 
 -- | Uses decimal encoding with optional sign.
 instance ToField Integer where
-    toField = decimal
+    toField = viaBuilder . Builder.integerDec
     {-# INLINE toField #-}
 
 -- | Accepts a signed decimal number. Ignores whitespace.
@@ -905,7 +906,7 @@ instance FromField Int8 where
 
 -- | Uses decimal encoding with optional sign.
 instance ToField Int8 where
-    toField = decimal
+    toField = viaBuilder . Builder.int8Dec
     {-# INLINE toField #-}
 
 -- | Accepts a signed decimal number. Ignores whitespace.
@@ -915,7 +916,7 @@ instance FromField Int16 where
 
 -- | Uses decimal encoding with optional sign.
 instance ToField Int16 where
-    toField = decimal
+    toField = viaBuilder . Builder.int16Dec
     {-# INLINE toField #-}
 
 -- | Accepts a signed decimal number. Ignores whitespace.
@@ -925,7 +926,7 @@ instance FromField Int32 where
 
 -- | Uses decimal encoding with optional sign.
 instance ToField Int32 where
-    toField = decimal
+    toField = viaBuilder . Builder.int32Dec
     {-# INLINE toField #-}
 
 -- | Accepts a signed decimal number. Ignores whitespace.
@@ -935,7 +936,7 @@ instance FromField Int64 where
 
 -- | Uses decimal encoding with optional sign.
 instance ToField Int64 where
-    toField = decimal
+    toField = viaBuilder . Builder.int64Dec
     {-# INLINE toField #-}
 
 -- | Accepts an unsigned decimal number. Ignores whitespace.
@@ -945,7 +946,7 @@ instance FromField Word where
 
 -- | Uses decimal encoding.
 instance ToField Word where
-    toField = decimal
+    toField = viaBuilder . Builder.wordDec
     {-# INLINE toField #-}
 
 -- | Accepts an unsigned decimal number. Ignores whitespace.
@@ -969,7 +970,7 @@ instance FromField Word8 where
 
 -- | Uses decimal encoding.
 instance ToField Word8 where
-    toField = decimal
+    toField = viaBuilder . Builder.word8Dec
     {-# INLINE toField #-}
 
 -- | Accepts an unsigned decimal number. Ignores whitespace.
@@ -979,7 +980,7 @@ instance FromField Word16 where
 
 -- | Uses decimal encoding.
 instance ToField Word16 where
-    toField = decimal
+    toField = viaBuilder . Builder.word16Dec
     {-# INLINE toField #-}
 
 -- | Accepts an unsigned decimal number. Ignores whitespace.
@@ -989,7 +990,7 @@ instance FromField Word32 where
 
 -- | Uses decimal encoding.
 instance ToField Word32 where
-    toField = decimal
+    toField = viaBuilder . Builder.word32Dec
     {-# INLINE toField #-}
 
 -- | Accepts an unsigned decimal number. Ignores whitespace.
@@ -999,7 +1000,7 @@ instance FromField Word64 where
 
 -- | Uses decimal encoding.
 instance ToField Word64 where
-    toField = decimal
+    toField = viaBuilder . Builder.word64Dec
     {-# INLINE toField #-}
 
 instance FromField B.ByteString where
