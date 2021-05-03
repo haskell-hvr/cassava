@@ -14,14 +14,19 @@
 -- The functions in this module can be used to implement e.g. a
 -- resumable parser that is fed input incrementally.
 module Data.Csv.Parser
-    ( DecodeOptions(..)
+    (
+    -- * Decoding options
+      DecodeOptions(..)
     , defaultDecodeOptions
+    -- * Parsers
     , csv
     , csvWithHeader
     , header
     , record
     , name
     , field
+    , escapedField
+    , nonEscapedField
     ) where
 
 import Data.ByteString.Builder (byteString, toLazyByteString, charUtf8)
@@ -148,7 +153,7 @@ field !delim = do
     -- choice if we see a double quote.
     case mb of
         Just b | b == doubleQuote -> escapedField
-        _                         -> unescapedField delim
+        _                         -> nonEscapedField delim
 {-# INLINE field #-}
 
 escapedField :: AL.Parser S.ByteString
@@ -166,8 +171,8 @@ escapedField = do
             Left err -> fail err
         else return s
 
-unescapedField :: Word8 -> AL.Parser S.ByteString
-unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
+nonEscapedField :: Word8 -> AL.Parser S.ByteString
+nonEscapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
                                             c /= newline &&
                                             c /= delim &&
                                             c /= cr)
