@@ -1,3 +1,7 @@
+## Version 0.5.3.0
+
+ * improve error messages for `lookup` and NamedRecord parsers.
+
 ## Version 0.5.2.0
 
  * Add `FromField`/`ToField` instances for `Identity` and `Const` (#158)

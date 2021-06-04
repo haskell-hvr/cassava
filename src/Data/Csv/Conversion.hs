@@ -1148,8 +1148,11 @@ unsafeIndex v idx = parseField (V.unsafeIndex v idx)
 -- 'empty' if the field is missing or if the value cannot be converted
 -- to the desired type.
 lookup :: FromField a => NamedRecord -> B.ByteString -> Parser a
-lookup m name = maybe (fail err) parseField $ HM.lookup name m
+lookup m name = maybe (fail err) parseField' $ HM.lookup name m
   where err = "no field named " ++ show (B8.unpack name)
+        parseField' fld = case runParser (parseField fld) of
+          Left e -> fail $ "in named field " ++ show (B8.unpack name) ++ ": " ++ e
+          Right res -> pure res
 {-# INLINE lookup #-}
 
 -- | Alias for 'lookup'.
