@@ -811,7 +811,7 @@ instance ToField a => ToField (Identity a) where
 
 -- | @since 0.5.2.0
 instance FromField a => FromField (Const a b) where
-    parseField = fmap getConst . parseField
+    parseField = fmap Const . parseField
     {-# INLINE parseField #-}
 
 -- | @since 0.5.2.0

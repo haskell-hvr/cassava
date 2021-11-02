@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, DeriveGeneric, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE CPP, DataKinds, DeriveGeneric, OverloadedStrings, ScopedTypeVariables #-}
 
 #if __GLASGOW_HASKELL__ >= 801
 {-# OPTIONS_GHC -Wno-orphans -Wno-unused-top-binds #-}
@@ -10,6 +10,7 @@ module Main
     ( main
     ) where
 
+import Control.Applicative (Const)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
@@ -303,6 +304,15 @@ conversionTests =
         (roundTrip :: BL.ByteString -> Bool)
       , testProperty "Text" (roundTrip :: T.Text -> Bool)
       , testProperty "lazy Text" (roundTrip :: LT.Text -> Bool)
+
+#if __GLASGOW_HASKELL__ >= 800
+      -- Using DataKinds here to prove that our Const instance is polykinded.
+      , testProperty "Const Char" (roundTrip :: Const Char "" -> Bool)
+#else
+      -- For lower GHC versions, Const does not support PolyKinds.
+      , testProperty "Const Char" (roundTrip :: Const Char () -> Bool)
+#endif
+
       ]
     , testGroup "boundary"
       [ testProperty "Int" (boundary (undefined :: Int))
