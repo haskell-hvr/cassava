@@ -1,4 +1,7 @@
-# `cassava`: A CSV parsing and encoding library [![Hackage](https://img.shields.io/hackage/v/cassava.svg)](https://hackage.haskell.org/package/cassava) [![Build Status](https://travis-ci.org/hvr/cassava.svg)](https://travis-ci.org/hvr/cassava)
+[![Hackage](https://img.shields.io/hackage/v/cassava.svg?label=Hackage&color=informational)](https://hackage.haskell.org/package/cassava)
+[![Cabal build](https://github.com/haskell-hvr/cassava/workflows/Haskell-CI/badge.svg)](https://github.com/haskell-hvr/cassava/actions)
+
+# `cassava`: A CSV parsing and encoding library
 
 **Please refer to the [package description](https://hackage.haskell.org/package/cassava#description) for an overview of `cassava`.**
 
@@ -91,7 +94,7 @@ outweights the cost.
 
 ## Further reading
 
-The primary API documentation for `cassava` is its Haddock documentation which can be found at http://hackage.haskell.org/package/cassava/docs/Data-Csv.html 
+The primary API documentation for `cassava` is its Haddock documentation which can be found at http://hackage.haskell.org/package/cassava/docs/Data-Csv.html
 
 Below are listed additional recommended third-party blogposts and tutorials
 
