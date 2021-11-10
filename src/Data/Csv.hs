@@ -151,43 +151,43 @@ import Data.Csv.Types
 --
 -- In practice, the return type of 'decode' rarely needs to be given,
 -- as it can often be inferred from the context.
--- 
+--
 -- Demonstration of reading from a CSV file/ writing to a CSV file
 -- using the incremental API:
 --
 -- > {-#LANGUAGE DeriveGeneric#-}
 -- > {-#LANGUAGE OverloadedStrings#-}
 -- > {-#LANGUAGE BangPatterns#-}
--- > 
+-- >
 -- > import Data.ByteString (ByteString, hGetSome, empty)
 -- > import qualified Data.ByteString.Lazy as BL
 -- > import GHC.Generics
 -- > import Data.Csv.Incremental
--- > import Data.Csv (FromRecord, ToRecord)    
+-- > import Data.Csv (FromRecord, ToRecord)
 -- > import Data.Monoid ((<>), mempty)
 -- > import System.IO
 -- > import System.Exit (exitFailure)
--- > 
+-- >
 -- > data Person = Person {
 -- >       name :: ByteString,
 -- >       age :: Int
 -- >     } deriving (Show, Eq, Generic)
--- > 
+-- >
 -- > instance FromRecord Person
 -- > instance ToRecord Person
--- > 
+-- >
 -- > persons = [Person "John Doe" 19, Person "Smith" 20]
--- > 
+-- >
 -- > writeToFile :: IO ()
 -- > writeToFile = BL.writeFile "persons.csv" $ encode $ foldr (<>) mempty (map encodeRecord persons)
--- > 
+-- >
 -- > feed :: (ByteString -> Parser Person) -> Handle -> IO (Parser Person)
 -- > feed k csvFile = do
 -- >   isEof <- hIsEOF csvFile
 -- >   if isEof
 -- >   then return $ k empty
 -- >   else k `fmap` hGetSome csvFile 4096
--- > 
+-- >
 -- > readFromFile :: IO ()
 -- > readFromFile = withFile "persons.csv" ReadMode $ \csvFile -> do
 -- >                  let loop !_ (Fail _ errMsg) = putStrLn errMsg >> exitFailure
