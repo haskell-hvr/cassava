@@ -24,6 +24,9 @@ module Data.Csv
     -- *** Name-based record conversion
     -- $example-named-instance
 
+    -- ** Reading/writing CSV files
+    -- $example-file
+
     -- * Treating CSV data as opaque byte strings
     -- $generic-processing
 
@@ -151,50 +154,63 @@ import Data.Csv.Types
 --
 -- In practice, the return type of 'decode' rarely needs to be given,
 -- as it can often be inferred from the context.
+
+-- $example-file
 --
 -- Demonstration of reading from a CSV file/ writing to a CSV file
 -- using the incremental API:
 --
--- > {-#LANGUAGE DeriveGeneric#-}
--- > {-#LANGUAGE OverloadedStrings#-}
--- > {-#LANGUAGE BangPatterns#-}
+-- > {-# LANGUAGE BangPatterns      #-}
+-- > {-# LANGUAGE DeriveGeneric     #-}
+-- > {-# LANGUAGE LambdaCase        #-}
+-- > {-# LANGUAGE OverloadedStrings #-}
 -- >
--- > import Data.ByteString (ByteString, hGetSome, empty)
--- > import qualified Data.ByteString.Lazy as BL
+-- > -- from base
 -- > import GHC.Generics
--- > import Data.Csv.Incremental
--- > import Data.Csv (FromRecord, ToRecord)
--- > import Data.Monoid ((<>), mempty)
 -- > import System.IO
 -- > import System.Exit (exitFailure)
+-- > -- from bytestring
+-- > import Data.ByteString (ByteString, hGetSome, empty)
+-- > import qualified Data.ByteString.Lazy as BL
+-- > -- from cassava
+-- > import Data.Csv.Incremental
+-- > import Data.Csv (FromRecord, ToRecord)
 -- >
--- > data Person = Person {
--- >       name :: ByteString,
--- >       age :: Int
--- >     } deriving (Show, Eq, Generic)
+-- > data Person = Person
+-- >   { name :: !ByteString
+-- >   , age  :: !Int
+-- >   } deriving (Show, Eq, Generic)
 -- >
 -- > instance FromRecord Person
 -- > instance ToRecord Person
 -- >
+-- > persons :: [Person]
 -- > persons = [Person "John Doe" 19, Person "Smith" 20]
 -- >
 -- > writeToFile :: IO ()
--- > writeToFile = BL.writeFile "persons.csv" $ encode $ foldr (<>) mempty (map encodeRecord persons)
+-- > writeToFile = do
+-- >   BL.writeFile "persons.csv" $ encode $
+-- >     foldMap encodeRecord persons
 -- >
 -- > feed :: (ByteString -> Parser Person) -> Handle -> IO (Parser Person)
 -- > feed k csvFile = do
--- >   isEof <- hIsEOF csvFile
--- >   if isEof
--- >   then return $ k empty
--- >   else k `fmap` hGetSome csvFile 4096
+-- >   hIsEOF csvFile >>= \case
+-- >     True  -> return $ k empty
+-- >     False -> k <$> hGetSome csvFile 4096
 -- >
 -- > readFromFile :: IO ()
--- > readFromFile = withFile "persons.csv" ReadMode $ \csvFile -> do
--- >                  let loop !_ (Fail _ errMsg) = putStrLn errMsg >> exitFailure
--- >                      loop acc (Many rs k)   = loop (acc <> rs) =<< feed k csvFile
--- >                      loop acc (Done rs)     = print (acc <> rs)
--- >                  loop [] (decode NoHeader)
-
+-- > readFromFile = do
+-- >   withFile "persons.csv" ReadMode $ \ csvFile -> do
+-- >     let loop !_ (Fail _ errMsg) = do putStrLn errMsg; exitFailure
+-- >         loop acc (Many rs k)    = loop (acc <> rs) =<< feed k csvFile
+-- >         loop acc (Done rs)      = print (acc <> rs)
+-- >     loop [] (decode NoHeader)
+-- >
+-- > main :: IO ()
+-- > main = do
+-- >   writeToFile
+-- >   readFromFile
+-- >
 
 -- $example-instance
 --
