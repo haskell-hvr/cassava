@@ -1,6 +1,11 @@
 ## Version 0.5.3.0
 
- * improve error messages for `lookup` and NamedRecord parsers.
+ * Improve error messages for `lookup` and NamedRecord parsers (#197)
+ * Fix bug (infinite loop) in `FromField Const` instance (#185)
+ * Turn flag `bytestring--LT-0_10_4` off by default (#183)
+ * Doc: Add cassava usage example of reading/writing to file (#97)
+ * Update to latest version of dependencies (#190, #193, #199)
+ * Tested with GHC 7.4 - 9.2 (#184, #204)
 
 ## Version 0.5.2.0
 
