@@ -13,6 +13,8 @@ Extra-source-files:  *.csv
 
 flag pre-bytestring-0-10-4
   description: bytestring < 0.10.4
+  default: False
+  manual:  False
 
 Library
   default-language: Haskell2010
