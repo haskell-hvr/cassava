@@ -14,8 +14,10 @@ import Control.Applicative (Const)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
+import Data.Char (toLower)
 import qualified Data.HashMap.Strict as HM
 import Data.Int
+import qualified Data.List as L
 import Data.Scientific (Scientific)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
@@ -449,6 +451,71 @@ instance Arbitrary SampleType where
   arbitrary = SampleType <$> arbitrary <*> arbitrary <*> arbitrary
 
 ------------------------------------------------------------------------
+-- Generic ToField/FromField tests
+
+data Foo = Foo
+  deriving (Eq, Generic, Show)
+
+instance FromField Foo
+instance ToField Foo
+
+-- -- Should not compile
+--
+-- -- Newtype
+-- newtype Foo1 = Foo1 Int deriving (Eq, Generic, Show)
+-- instance FromField Foo1
+-- instance ToField Foo1
+-- newtype FooRec1 = FooRec1 { unFooRec1 :: Int } deriving (Eq, Generic, Show)
+-- instance FromField FooRec1
+-- instance ToField FooRec1
+-- newtype FooRecF1 a = FooRecF1 { unFooRecF1 :: a } deriving (Eq, Generic, Show)
+-- instance (FromField a) => FromField (FooRecF1 a)
+-- instance (ToField a) => ToField (FooRecF1 a)
+-- -- Product
+-- data Foo2 = Foo2 Char Int deriving (Eq, Generic, Show)
+-- instance FromField Foo2
+-- instance ToField Foo2
+
+data Bar = BarN1 | BarU Int | BarN2
+  deriving (Eq, Generic, Show)
+
+instance FromField Bar
+instance ToField Bar
+instance Arbitrary Bar where
+  arbitrary = frequency [(1, pure BarN1), (3, BarU <$> arbitrary), (1, pure BarN2)]
+
+data BazEnum = BazOne | BazTwo | BazThree
+  deriving (Bounded, Enum, Eq, Generic, Show)
+
+instance FromField BazEnum where
+  parseField = genericParseField bazOptions
+instance ToField BazEnum where
+  toField = genericToField bazOptions
+instance Arbitrary BazEnum where
+  arbitrary = elements [minBound..maxBound]
+
+bazOptions :: Options
+bazOptions = defaultOptions { fieldLabelModifier = go }
+  where go = maybe (error "No prefix Baz") (map toLower) . L.stripPrefix "Baz"
+
+genericFieldTests :: [TF.Test]
+genericFieldTests =
+  [ testGroup "nullary constructor"
+    [ testCase "encoding" $ toField Foo @?= "Foo"
+    , testCase "decoding" $ runParser (parseField "Foo") @?= Right Foo ]
+    , testCase "decoding failure" $ runParser (parseField "foo")
+        @?= (Left "Expected \"Foo\"" :: Either String Foo)
+  , testProperty "sum type roundtrip" (roundtripProp :: Bar -> Bool)
+  , testGroup "constructor modifier"
+    [ testCase "encoding" $ toField BazOne @?= "one"
+    , testCase "decoding" $ runParser (parseField "two") @?= Right BazTwo
+    , testProperty "roundtrip" (roundtripProp :: BazEnum -> Bool) ]
+  ]
+  where
+    roundtripProp :: (Eq a, FromField a, ToField a) => a -> Bool
+    roundtripProp x = runParser (parseField $ toField x) == Right x
+
+------------------------------------------------------------------------
 -- Test harness
 
 allTests :: [TF.Test]
@@ -458,6 +525,7 @@ allTests = [ testGroup "positional" positionalTests
            , testGroup "custom-options" customOptionsTests
            , testGroup "instances" instanceTests
            , testGroup "generic-conversions" genericConversionTests
+           , testGroup "generic-field-conversions" genericFieldTests
            ]
 
 main :: IO ()

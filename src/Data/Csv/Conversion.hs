@@ -44,6 +44,8 @@ module Data.Csv.Conversion
     , genericParseNamedRecord
     , genericToNamedRecord
     , genericHeaderOrder
+    , genericParseField
+    , genericToField
 
     -- *** Generic type conversion options
     , Options
@@ -760,6 +762,12 @@ parseBoth (k, v) = (,) <$> parseField k <*> parseField v
 class FromField a where
     parseField :: Field -> Parser a
 
+    default parseField :: (Generic a, GFromField (Rep a)) => Field -> Parser a
+    parseField = genericParseField defaultOptions
+
+genericParseField :: (Generic a, GFromField (Rep a)) => Options -> Field -> Parser a
+genericParseField opts = fmap to . gParseField opts
+
 -- | A type that can be converted to a single CSV field.
 --
 -- Example type and instance:
@@ -774,6 +782,12 @@ class FromField a where
 -- >     toField Blue  = "B"
 class ToField a where
     toField :: a -> Field
+
+    default toField :: (Generic a, GToField (Rep a)) => a -> Field
+    toField = genericToField defaultOptions
+
+genericToField :: (Generic a, GToField (Rep a)) => Options -> a -> Field
+genericToField opts = gToField opts . from
 
 -- | 'Nothing' if the 'Field' is 'B.empty', 'Just' otherwise.
 instance FromField a => FromField (Maybe a) where
@@ -1369,6 +1383,77 @@ instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B
     gtoRecord opts m@(M1 (K1 a)) = [name .= toField a]
       where
         name = T.encodeUtf8 (T.pack (fieldLabelModifier opts (selName m)))
+
+class GFromField (f :: k -> *) where
+  gParseField :: Options -> Field -> Parser (f p)
+
+-- Type with single nullary constructor
+instance (Constructor c) => GFromField (D1 meta (C1 c U1)) where
+  gParseField opts = fmap M1 . gParseField' opts
+
+-- Sum type with nullary or unary constructors
+instance (Datatype t, GFromField' c1, GFromField' c2) => GFromField (D1 t (c1 :+: c2)) where
+  gParseField opts field = fmap M1 $
+    (L1 <$> gParseField' opts field)
+      <|> (R1 <$> gParseField' opts field)
+      <|> fail errMsg
+    where
+      errMsg =
+        "Can't parse " <> datatypeName (Proxy :: Proxy t d f) <> " from " <> show field
+
+class GToField (f :: k -> *) where
+  gToField :: Options -> f p -> Field
+
+-- Type with single nullary constructor
+instance (Constructor c) => GToField (D1 meta (C1 c U1)) where
+  gToField opts = gToField' opts . unM1
+
+-- Sum type with nullary or unary constructors
+instance (GToField' c1, GToField' c2) => GToField (D1 t (c1 :+: c2)) where
+  gToField opts (M1 (L1 val)) = gToField' opts val
+  gToField opts (M1 (R1 val)) = gToField' opts val
+
+-- Helper classes for FromField/ToField
+
+class GFromField' (f :: k -> *) where
+  gParseField' :: Options -> Field -> Parser (f p)
+
+-- Nullary constructor
+instance (Constructor c) => GFromField' (C1 c U1) where
+  gParseField' opts field = do
+    if field == expected then pure val else fail $ "Expected " <> show expected
+    where
+      expected = encodeConstructor opts val
+      val :: C1 c U1 p
+      val = M1 U1
+
+-- Unary constructor
+instance (FromField a) => GFromField' (C1 c (S1 meta (K1 i a))) where
+  gParseField' _ = fmap (M1 . M1 . K1) . parseField
+
+-- Sum
+instance (GFromField' c1, GFromField' c2) => GFromField' (c1 :+: c2) where
+  gParseField' opts field =
+    fmap L1 (gParseField' opts field) <|> fmap R1 (gParseField' opts field)
+
+class GToField' (f :: k -> *) where
+  gToField' :: Options -> f p -> Field
+
+-- Nullary constructor
+instance (Constructor c) => GToField' (C1 c U1) where
+  gToField' = encodeConstructor
+
+-- Unary constructor
+instance (ToField a) => GToField' (C1 c (S1 meta (K1 i a))) where
+  gToField' _ = toField . unK1 . unM1 . unM1
+
+-- Sum
+instance (GToField' c1, GToField' c2) => GToField' (c1 :+: c2) where
+  gToField' opts (L1 val) = gToField' opts val
+  gToField' opts (R1 val) = gToField' opts val
+
+encodeConstructor :: (Constructor c) => Options -> C1 c f p -> B.ByteString
+encodeConstructor opts = T.encodeUtf8 . T.pack . fieldLabelModifier opts . conName
 
 -- We statically fail on sum types and product types without selectors
 -- (field names).
