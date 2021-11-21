@@ -1384,7 +1384,7 @@ instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B
       where
         name = T.encodeUtf8 (T.pack (fieldLabelModifier opts (selName m)))
 
-class GFromField (f :: k -> *) where
+class GFromField f where
   gParseField :: Options -> Field -> Parser (f p)
 
 -- Type with single nullary constructor
@@ -1401,7 +1401,7 @@ instance (Datatype t, GFromField' c1, GFromField' c2) => GFromField (D1 t (c1 :+
       errMsg =
         "Can't parse " <> datatypeName (Proxy :: Proxy t d f) <> " from " <> show field
 
-class GToField (f :: k -> *) where
+class GToField f where
   gToField :: Options -> f p -> Field
 
 -- Type with single nullary constructor
@@ -1415,7 +1415,7 @@ instance (GToField' c1, GToField' c2) => GToField (D1 t (c1 :+: c2)) where
 
 -- Helper classes for FromField/ToField
 
-class GFromField' (f :: k -> *) where
+class GFromField' f where
   gParseField' :: Options -> Field -> Parser (f p)
 
 -- Nullary constructor
@@ -1436,7 +1436,7 @@ instance (GFromField' c1, GFromField' c2) => GFromField' (c1 :+: c2) where
   gParseField' opts field =
     fmap L1 (gParseField' opts field) <|> fmap R1 (gParseField' opts field)
 
-class GToField' (f :: k -> *) where
+class GToField' f where
   gToField' :: Options -> f p -> Field
 
 -- Nullary constructor
