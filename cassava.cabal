@@ -28,15 +28,15 @@ very simple example of encoding CSV data:
 Please refer to the documentation in "Data.Csv" and the included [README](#readme) for more usage examples.
 
 }
-Homepage:            https://github.com/hvr/cassava
+Homepage:            https://github.com/haskell-hvr/cassava
 License:             BSD3
 License-file:        LICENSE
-Bug-reports:         https://github.com/hvr/cassava/issues
+Bug-reports:         https://github.com/haskell-hvr/cassava/issues
 Copyright:           (c) 2012 Johan Tibell
                      (c) 2012 Bryan O'Sullivan
                      (c) 2011 MailRank, Inc.
 Author:              Johan Tibell
-Maintainer:          hvr@gnu.org
+Maintainer:          https://github.com/haskell-hvr/cassava
 Category:            Text, Web, CSV
 Build-type:          Simple
 Extra-source-files:  examples/*.hs,
@@ -60,7 +60,7 @@ Tested-with:
 
 source-repository head
   type:     git
-  location: https://github.com/hvr/cassava.git
+  location: https://github.com/haskell-hvr/cassava.git
 
 flag bytestring--LT-0_10_4
   description: [bytestring](https://hackage.haskell.org/haskell/package/bytestring) < 0.10.4
