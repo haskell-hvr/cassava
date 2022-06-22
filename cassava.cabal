@@ -120,7 +120,7 @@ Library
     , text                        < 2.1
     , transformers >= 0.2      && < 0.7
     , unordered-containers        < 0.3
-    , vector       >= 0.8      && < 0.13
+    , vector       >= 0.8      && < 0.14
     , Only         >= 0.1      && < 0.1.1
 
   if flag(bytestring--LT-0_10_4)
