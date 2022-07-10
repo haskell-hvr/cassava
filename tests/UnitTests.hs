@@ -10,7 +10,7 @@ module Main
     ( main
     ) where
 
-import Control.Applicative (Const)
+import Control.Applicative (Const, pure)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
