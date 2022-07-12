@@ -10,7 +10,7 @@ module Main
     ( main
     ) where
 
-import Control.Applicative (Const, pure)
+import Control.Applicative (Const)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
@@ -37,7 +37,7 @@ import Data.Csv hiding (record)
 import qualified Data.Csv.Streaming as S
 
 #if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), pure)
 #endif
 
 ------------------------------------------------------------------------
