@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP, DataKinds, DeriveGeneric, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 #if __GLASGOW_HASKELL__ >= 801
 {-# OPTIONS_GHC -Wno-orphans -Wno-unused-top-binds #-}
@@ -516,6 +518,79 @@ genericFieldTests =
     roundtripProp x = runParser (parseField $ toField x) == Right x
 
 ------------------------------------------------------------------------
+-- Union type performance
+
+type I0  = Either Int Int
+type I1  = Either I0 I0
+type I2  = Either I1 I1
+type I3  = Either I2 I2
+type I4  = Either I3 I3
+type I5  = Either I4 I4
+type I6  = Either I5 I5
+type I7  = Either I6 I6
+type I8  = Either I7 I7
+type I9  = Either I8 I8
+type I10 = Either I9 I9
+
+instance FromField I0
+instance FromField I1
+instance FromField I2
+instance FromField I3
+instance FromField I4
+instance FromField I5
+instance FromField I6
+instance FromField I7
+instance FromField I8
+instance FromField I9
+instance FromField I10
+
+type U0  = Either Int T.Text
+type U1  = Either I0 U0
+type U2  = Either I1 U1
+type U3  = Either I2 U2
+type U4  = Either I3 U3
+type U5  = Either I4 U4
+type U6  = Either I5 U5
+type U7  = Either I6 U6
+type U8  = Either I7 U7
+type U9  = Either I8 U8
+type U10 = Either I9 U9
+
+instance FromField U0
+instance FromField U1
+instance FromField U2
+instance FromField U3
+instance FromField U4
+instance FromField U5
+instance FromField U6
+instance FromField U7
+instance FromField U8
+instance FromField U9
+instance FromField U10
+
+unionTypePerformance :: [TF.Test]
+unionTypePerformance =
+  [ testGroup "nested union"
+    [ testCase "decoding" $ runParser (parseField "Inside nested Either" :: Parser U10) @?= Right v10
+    ]
+  ]
+  where
+  v10 :: U10
+  v10 =
+    Right $
+    Right $
+    Right $
+    Right $
+    Right $
+    Right $
+    Right $
+    Right $
+    Right $
+    Right $
+    Right $ "Inside nested Either"
+
+
+------------------------------------------------------------------------
 -- Test harness
 
 allTests :: [TF.Test]
@@ -526,6 +601,7 @@ allTests = [ testGroup "positional" positionalTests
            , testGroup "instances" instanceTests
            , testGroup "generic-conversions" genericConversionTests
            , testGroup "generic-field-conversions" genericFieldTests
+           , testGroup "union-type-performance" unionTypePerformance
            ]
 
 main :: IO ()
