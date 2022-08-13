@@ -764,9 +764,11 @@ class FromField a where
 
     default parseField :: (Generic a, GFromField (Rep a)) => Field -> Parser a
     parseField = genericParseField defaultOptions
+    {-# INLINE parseField #-}
 
 genericParseField :: (Generic a, GFromField (Rep a)) => Options -> Field -> Parser a
 genericParseField opts = fmap to . gParseField opts
+{-# INLINE genericParseField #-}
 
 -- | A type that can be converted to a single CSV field.
 --
@@ -785,9 +787,11 @@ class ToField a where
 
     default toField :: (Generic a, GToField (Rep a)) => a -> Field
     toField = genericToField defaultOptions
+    {-# INLINE toField #-}
 
 genericToField :: (Generic a, GToField (Rep a)) => Options -> a -> Field
 genericToField opts = gToField opts . from
+{-# INLINE genericToField #-}
 
 -- | 'Nothing' if the 'Field' is 'B.empty', 'Just' otherwise.
 instance FromField a => FromField (Maybe a) where
@@ -1390,6 +1394,7 @@ class GFromField f where
 -- Type with single nullary constructor
 instance (Constructor c) => GFromField (D1 meta (C1 c U1)) where
   gParseField opts = fmap M1 . gParseField' opts
+  {-# INLINE gParseField #-}
 
 -- Sum type with nullary or unary constructors
 instance (Datatype t, GFromField' c1, GFromField' c2) => GFromField (D1 t (c1 :+: c2)) where
@@ -1400,6 +1405,7 @@ instance (Datatype t, GFromField' c1, GFromField' c2) => GFromField (D1 t (c1 :+
     where
       errMsg =
         "Can't parse " <> datatypeName (Proxy :: Proxy t d f) <> " from " <> show field
+  {-# INLINE gParseField #-}
 
 class GToField f where
   gToField :: Options -> f p -> Field
@@ -1407,11 +1413,13 @@ class GToField f where
 -- Type with single nullary constructor
 instance (Constructor c) => GToField (D1 meta (C1 c U1)) where
   gToField opts = gToField' opts . unM1
+  {-# INLINE gToField #-}
 
 -- Sum type with nullary or unary constructors
 instance (GToField' c1, GToField' c2) => GToField (D1 t (c1 :+: c2)) where
   gToField opts (M1 (L1 val)) = gToField' opts val
   gToField opts (M1 (R1 val)) = gToField' opts val
+  {-# INLINE gToField #-}
 
 -- Helper classes for FromField/ToField
 
@@ -1426,15 +1434,18 @@ instance (Constructor c) => GFromField' (C1 c U1) where
       expected = encodeConstructor opts val
       val :: C1 c U1 p
       val = M1 U1
+  {-# INLINE gParseField' #-}
 
 -- Unary constructor
 instance (FromField a) => GFromField' (C1 c (S1 meta (K1 i a))) where
   gParseField' _ = fmap (M1 . M1 . K1) . parseField
+  {-# INLINE gParseField' #-}
 
 -- Sum
 instance (GFromField' c1, GFromField' c2) => GFromField' (c1 :+: c2) where
   gParseField' opts field =
     fmap L1 (gParseField' opts field) <|> fmap R1 (gParseField' opts field)
+  {-# INLINE gParseField' #-}
 
 class GToField' f where
   gToField' :: Options -> f p -> Field
@@ -1442,18 +1453,22 @@ class GToField' f where
 -- Nullary constructor
 instance (Constructor c) => GToField' (C1 c U1) where
   gToField' = encodeConstructor
+  {-# INLINE gToField' #-}
 
 -- Unary constructor
 instance (ToField a) => GToField' (C1 c (S1 meta (K1 i a))) where
   gToField' _ = toField . unK1 . unM1 . unM1
+  {-# INLINE gToField' #-}
 
 -- Sum
 instance (GToField' c1, GToField' c2) => GToField' (c1 :+: c2) where
   gToField' opts (L1 val) = gToField' opts val
   gToField' opts (R1 val) = gToField' opts val
+  {-# INLINE gToField' #-}
 
 encodeConstructor :: (Constructor c) => Options -> C1 c f p -> B.ByteString
 encodeConstructor opts = T.encodeUtf8 . T.pack . fieldLabelModifier opts . conName
+{-# INLINE encodeConstructor #-}
 
 -- We statically fail on sum types and product types without selectors
 -- (field names).
