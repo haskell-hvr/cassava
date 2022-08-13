@@ -772,8 +772,9 @@ class FromField a where
 genericParseField
   :: forall a rep meta. (Generic a, GFromField rep, Rep a ~ D1 meta rep, Datatype meta)
   => Options -> Field -> Parser a
-genericParseField opts field = fmap (to . M1) (gParseField opts field)
-  <|> fail ("Can't parseField for " <> datatypeName (Proxy :: Proxy meta d f))
+genericParseField opts field = fmap (to . M1) (gParseField opts onFail field)
+  where
+    onFail _ = fail $ "Can't parseField of type " <> datatypeName (Proxy :: Proxy meta d f)
 {-# INLINE genericParseField #-}
 
 -- | A type that can be converted to a single CSV field.
@@ -1395,12 +1396,12 @@ instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B
         name = T.encodeUtf8 (T.pack (fieldLabelModifier opts (selName m)))
 
 class GFromField f where
-  gParseField :: Options -> Field -> Parser (f p)
+  gParseField :: Options -> (Field -> Parser (f p)) -> Field -> Parser (f p)
 
 -- Type with single nullary constructor
 instance (Constructor c) => GFromField (C1 c U1) where
-  gParseField opts field = do
-    if field == expected then pure val else mempty
+  gParseField opts onFail field = do
+    if field == expected then pure val else onFail field
     where
       expected = encodeConstructor opts val
       val :: C1 c U1 p
@@ -1409,13 +1410,18 @@ instance (Constructor c) => GFromField (C1 c U1) where
 
 -- Type with single unary constructor
 instance (FromField a) => GFromField (C1 c (S1 meta (K1 i a))) where
-  gParseField _ = fmap (M1 . M1 . K1) . parseField
+  gParseField _ onFail field =
+    fmap (M1 . M1 . K1) (parseField field) <|> onFail field
   {-# INLINE gParseField #-}
 
 -- Sum type
 instance (GFromField c1, GFromField c2) => GFromField (c1 :+: c2) where
-  gParseField opts field =
-    fmap L1 (gParseField opts field) <|> fmap R1 (gParseField opts field)
+  gParseField opts onFail field =
+    case runParser $ gParseField opts mempty field of
+      Left _ -> case runParser $ gParseField opts mempty field of
+        Left _ -> onFail field
+        Right res -> pure $ R1 res
+      Right res -> pure $ L1 res
   {-# INLINE gParseField #-}
 
 class GToField f where
