@@ -8,6 +8,7 @@
 .hpc/
 dist/
 dist-newstyle/
+newdist/
 cabal.sandbox.config
 .ghc.environment.*
 .stack-work
