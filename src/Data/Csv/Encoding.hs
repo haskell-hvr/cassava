@@ -315,12 +315,13 @@ encodeDefaultOrderedByNameWith opts v
         toLazyByteString (rows (encIncludeHeader opts))
     | otherwise = encodeOptionsError
   where
-    hdr = (Conversion.headerOrder (undefined :: a))
+    hdr []      = Conversion.headerOrder (undefined :: a)
+    hdr (x : _) = Conversion.headerOrder x
     rows False = records
-    rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
+    rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) (hdr v) <>
                  recordSep (encUseCrLf opts) <> records
     records = unlines (recordSep (encUseCrLf opts))
-              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts)
+              . map (encodeNamedRecord (hdr v) (encQuoting opts) (encDelimiter opts)
                      . toNamedRecord)
               $ v
 {-# INLINE encodeDefaultOrderedByNameWith #-}
