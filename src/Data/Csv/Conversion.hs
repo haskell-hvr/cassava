@@ -772,9 +772,11 @@ class FromField a where
 genericParseField
   :: forall a rep meta. (Generic a, GFromField rep, Rep a ~ D1 meta rep, Datatype meta)
   => Options -> Field -> Parser a
-genericParseField opts field = fmap (to . M1) (gParseField opts onFail field)
+genericParseField opts field = Parser $ \onFailure onSuccess ->
+  unParser (gParseField opts field) (\_ -> onFailure err) (onSuccess . to . M1)
   where
-    onFail _ = fail $ "Can't parseField of type " <> datatypeName (Proxy :: Proxy meta d f)
+    err = "Can't parseField of type " <> datatypeName (Proxy :: Proxy meta d f)
+      <> " from " <> show field
 {-# INLINE genericParseField #-}
 
 -- | A type that can be converted to a single CSV field.
@@ -1396,12 +1398,14 @@ instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B
         name = T.encodeUtf8 (T.pack (fieldLabelModifier opts (selName m)))
 
 class GFromField f where
-  gParseField :: Options -> (Field -> Parser (f p)) -> Field -> Parser (f p)
+  gParseField :: Options -> Field -> Parser (f p)
 
 -- Type with single nullary constructor
 instance (Constructor c) => GFromField (C1 c U1) where
-  gParseField opts onFail field = do
-    if field == expected then pure val else onFail field
+  gParseField opts field = Parser $ \onFailure onSuccess ->
+    if field == expected
+    then onSuccess val
+    else onFailure $ "Can't parse " <> show expected <> " from " <> show field
     where
       expected = encodeConstructor opts val
       val :: C1 c U1 p
@@ -1410,18 +1414,15 @@ instance (Constructor c) => GFromField (C1 c U1) where
 
 -- Type with single unary constructor
 instance (FromField a) => GFromField (C1 c (S1 meta (K1 i a))) where
-  gParseField _ onFail field =
-    fmap (M1 . M1 . K1) (parseField field) <|> onFail field
+  gParseField _opts = fmap (M1 . M1 . K1) . parseField
   {-# INLINE gParseField #-}
 
 -- Sum type
 instance (GFromField c1, GFromField c2) => GFromField (c1 :+: c2) where
-  gParseField opts onFail field =
-    case runParser $ gParseField opts mempty field of
-      Left _ -> case runParser $ gParseField opts mempty field of
-        Left _ -> onFail field
-        Right res -> pure $ R1 res
-      Right res -> pure $ L1 res
+  gParseField opts field = Parser $ \onFailure onSuccess ->
+    unParser (gParseField opts field)
+      (\_ -> unParser (gParseField opts field) onFailure $ onSuccess . R1)
+      (onSuccess . L1)
   {-# INLINE gParseField #-}
 
 class GToField f where

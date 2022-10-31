@@ -504,7 +504,7 @@ genericFieldTests =
     [ testCase "encoding" $ toField Foo @?= "Foo"
     , testCase "decoding" $ runParser (parseField "Foo") @?= Right Foo ]
     , testCase "decoding failure" $ runParser (parseField "foo")
-        @?= (Left "Can't parseField of type Foo" :: Either String Foo)
+        @?= (Left "Can't parseField of type Foo from \"foo\"" :: Either String Foo)
   , testProperty "sum type roundtrip" (roundtripProp :: Bar -> Bool)
   , testGroup "constructor modifier"
     [ testCase "encoding" $ toField BazOne @?= "one"
