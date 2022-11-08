@@ -211,7 +211,11 @@ data EncodeOptions = EncodeOptions
 
       -- | What kind of quoting should be applied to text fields.
     , encQuoting :: !Quoting
-    } deriving (Eq, Show)
+
+      -- | What to write into empty fields given their field name. For
+      -- backward-compatibility, this defaults to a call to `error`.
+    , encMissing :: Name -> Field
+    }
 
 -- | Encoding options for CSV files.
 defaultEncodeOptions :: EncodeOptions
@@ -220,6 +224,9 @@ defaultEncodeOptions = EncodeOptions
     , encUseCrLf       = True
     , encIncludeHeader = True
     , encQuoting       = QuoteMinimal
+    , encMissing       = \n -> moduleError "namedRecordToRecord" $
+                           "header contains name " ++ show (B8.unpack n) ++
+                           " which is not present in the named record"
     }
 
 -- | Like 'encode', but lets you customize how the CSV data is
@@ -262,9 +269,9 @@ encodeRecord qtng delim = mconcat . intersperse (word8 delim)
 
 -- | Encode a single named record, without the trailing record
 -- separator (i.e. newline), using the given field order.
-encodeNamedRecord :: Header -> Quoting -> Word8 -> NamedRecord -> Builder
-encodeNamedRecord hdr qtng delim =
-    encodeRecord qtng delim . namedRecordToRecord hdr
+encodeNamedRecord :: Header -> Quoting -> Word8 -> (Name -> Field) -> NamedRecord -> Builder
+encodeNamedRecord hdr qtng delim missing =
+    encodeRecord qtng delim . namedRecordToRecord missing hdr
 
 -- TODO: Optimize
 escape :: Quoting -> Word8 -> B.ByteString -> B.ByteString
@@ -300,7 +307,7 @@ encodeByNameWith opts hdr v
     rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
                  recordSep (encUseCrLf opts) <> records
     records = unlines (recordSep (encUseCrLf opts))
-              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts)
+              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts) (encMissing opts)
                      . toNamedRecord)
               $ v
 {-# INLINE encodeByNameWith #-}
@@ -320,18 +327,16 @@ encodeDefaultOrderedByNameWith opts v
     rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
                  recordSep (encUseCrLf opts) <> records
     records = unlines (recordSep (encUseCrLf opts))
-              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts)
+              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts) (encMissing opts)
                      . toNamedRecord)
               $ v
 {-# INLINE encodeDefaultOrderedByNameWith #-}
 
-namedRecordToRecord :: Header -> NamedRecord -> Record
-namedRecordToRecord hdr nr = V.map find hdr
+namedRecordToRecord :: (Name -> Field) -> Header -> NamedRecord -> Record
+namedRecordToRecord missing hdr nr = V.map find hdr
   where
     find n = case HM.lookup n nr of
-        Nothing -> moduleError "namedRecordToRecord" $
-                   "header contains name " ++ show (B8.unpack n) ++
-                   " which is not present in the named record"
+        Nothing -> missing n
         Just v  -> v
 
 moduleError :: String -> String -> a

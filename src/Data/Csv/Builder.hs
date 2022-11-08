@@ -60,7 +60,7 @@ encodeRecordWith opts r =
 encodeNamedRecordWith :: ToNamedRecord a =>
                          EncodeOptions -> Header -> a -> Builder.Builder
 encodeNamedRecordWith opts hdr nr =
-    Encoding.encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts)
+    Encoding.encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts) (encMissing opts)
     (toNamedRecord nr) Mon.<> Encoding.recordSep (encUseCrLf opts)
 
 -- | Like 'encodeDefaultOrderedNamedRecord', but lets you customize

@@ -1,6 +1,6 @@
 cabal-version:       1.12
 Name:                cassava
-Version:             0.5.3.0
+Version:             0.6.0.0
 Synopsis:            A CSV parsing and encoding library
 Description: {
 
