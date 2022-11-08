@@ -380,9 +380,24 @@ customDelim delim f1 f2 = delim `notElem` [cr, nl, dquote] ==>
     cr = 13
     dquote = 34
 
+customMissing :: Assertion
+customMissing = encodeByNameWith encOpts hdr nrs @?= ex
+  where
+    encOpts = defaultEncodeOptions { encMissing = id }
+    hdr = V.fromList ["abc", "def"]
+    nrs :: [NamedRecord]
+    nrs =
+      [ HM.fromList [("abc", "123")]
+      , HM.fromList [("def", "456")]
+      , HM.fromList [("abc", "234"), ("def", "567")]
+      , HM.fromList []
+      ]
+    ex = "abc,def\r\n123,def\r\nabc,456\r\n234,567\r\nabc,def\r\n"
+
 customOptionsTests :: [TF.Test]
 customOptionsTests =
     [ testProperty "customDelim" customDelim
+    , testCase "customMissing" customMissing
     ]
 
 ------------------------------------------------------------------------
