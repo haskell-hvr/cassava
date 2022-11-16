@@ -101,6 +101,8 @@ Benchmark benchmark-iut
   Type: exitcode-stdio-1.0
   Main-is: Benchmarks.hs
   other-modules: GenericFieldBench
+                 Generic.Either
+                 Generic.Prefix
                  Generic.U2
                  Generic.U4
                  Generic.U8
@@ -128,6 +130,8 @@ Benchmark benchmark-ref
   Type: exitcode-stdio-1.0
   Main-is: Benchmarks.hs
   other-modules: GenericFieldBench
+                 Generic.Either
+                 Generic.Prefix
                  Generic.U2
                  Generic.U4
                  Generic.U8
