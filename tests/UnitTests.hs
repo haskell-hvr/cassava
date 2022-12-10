@@ -459,22 +459,13 @@ data Foo = Foo
 instance FromField Foo
 instance ToField Foo
 
--- -- Should not compile
---
--- -- Newtype
--- newtype Foo1 = Foo1 Int deriving (Eq, Generic, Show)
--- instance FromField Foo1
--- instance ToField Foo1
--- newtype FooRec1 = FooRec1 { unFooRec1 :: Int } deriving (Eq, Generic, Show)
--- instance FromField FooRec1
--- instance ToField FooRec1
--- newtype FooRecF1 a = FooRecF1 { unFooRecF1 :: a } deriving (Eq, Generic, Show)
--- instance (FromField a) => FromField (FooRecF1 a)
--- instance (ToField a) => ToField (FooRecF1 a)
--- -- Product
--- data Foo2 = Foo2 Char Int deriving (Eq, Generic, Show)
--- instance FromField Foo2
--- instance ToField Foo2
+data Foo1 = Foo1 Int
+  deriving (Eq, Generic, Show)
+
+instance FromField Foo1
+instance ToField Foo1
+instance Arbitrary Foo1 where
+  arbitrary = Foo1 <$> arbitrary
 
 data Bar = BarN1 | BarU Int | BarN2
   deriving (Eq, Generic, Show)
@@ -502,9 +493,11 @@ genericFieldTests :: [TF.Test]
 genericFieldTests =
   [ testGroup "nullary constructor"
     [ testCase "encoding" $ toField Foo @?= "Foo"
-    , testCase "decoding" $ runParser (parseField "Foo") @?= Right Foo ]
+    , testCase "decoding" $ runParser (parseField "Foo") @?= Right Foo
     , testCase "decoding failure" $ runParser (parseField "foo")
         @?= (Left "Can't parseField of type Foo from \"foo\"" :: Either String Foo)
+    ]
+  , testProperty "unary constructor roundtrip" (roundtripProp :: Foo1 -> Bool)
   , testProperty "sum type roundtrip" (roundtripProp :: Bar -> Bool)
   , testGroup "constructor modifier"
     [ testCase "encoding" $ toField BazOne @?= "one"

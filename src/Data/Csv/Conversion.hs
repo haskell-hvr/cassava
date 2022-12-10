@@ -111,6 +111,7 @@ import Data.Word (Word8, Word16, Word32, Word64)
 import Data.Void
 import GHC.Float (double2Float)
 import GHC.Generics
+import GHC.TypeLits
 import Numeric.Natural
 import Prelude hiding (lookup, takeWhile)
 
@@ -1440,6 +1441,10 @@ instance (GFromField c1, GFromField c2) => GFromField (c1 :+: c2) where
       (onSuccess . L1)
   {-# INLINE gParseField #-}
 
+instance (TypeError ('Text "You cannot derive FromField for product types")) =>
+  GFromField (C1 c (c1 :*: c2)) where
+    gParseField _ _ = error "unreachable: gParseField for product types"
+
 class GToField f where
   gToField :: Options -> f p -> Field
 
@@ -1462,6 +1467,10 @@ instance (GToField c1, GToField c2) => GToField (c1 :+: c2) where
   gToField opts (L1 val) = gToField opts val
   gToField opts (R1 val) = gToField opts val
   {-# INLINE gToField #-}
+
+instance (TypeError ('Text "You cannot derive ToField for product types")) =>
+  GToField (C1 c (c1 :*: c2)) where
+    gToField _ = error "unreachable: gToField for product types"
 
 encodeConstructor :: (Constructor c) => Options -> C1 c f p -> B.ByteString
 encodeConstructor opts = T.encodeUtf8 . T.pack . fieldLabelModifier opts . conName
