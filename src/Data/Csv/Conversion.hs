@@ -108,6 +108,7 @@ import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word8, Word16, Word32, Word64)
+import Data.Void
 import GHC.Float (double2Float)
 import GHC.Generics
 import Numeric.Natural
@@ -1100,6 +1101,16 @@ instance FromField [Char] where
 instance ToField [Char] where
     toField = toField . T.pack
     {-# INLINE toField #-}
+
+-- | Useless /per se/, but useful in cases like @Maybe Void@
+-- (a logical proof that only @Nothing@ can occur)
+instance FromField Void where
+  parseField _ = error "parseField: Void term can't exist"
+
+-- | Useless /per se/, but useful in cases like @Maybe Void@
+-- (a logical proof that only @Nothing@ can occur)
+instance ToField Void where
+  toField = absurd
 
 parseSigned :: (Integral a, Num a) => String -> B.ByteString -> Parser a
 parseSigned typ s = case parseOnly (ws *> A8.signed A8.decimal <* ws) s of
