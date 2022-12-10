@@ -110,10 +110,10 @@ import qualified Data.Vector.Unboxed as U
 import Data.Word (Word8, Word16, Word32, Word64)
 #if MIN_VERSION_base(4,8,0)
 import Data.Void
+import GHC.TypeLits
 #endif
 import GHC.Float (double2Float)
 import GHC.Generics
-import GHC.TypeLits
 import Numeric.Natural
 import Prelude hiding (lookup, takeWhile)
 
