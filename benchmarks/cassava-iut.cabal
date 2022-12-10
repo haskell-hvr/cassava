@@ -123,20 +123,13 @@ Benchmark benchmark-iut
 
   ghc-options: -Wall -O2
 
+  cpp-options: -DGENERIC_FIELD_BENCH
 
 Benchmark benchmark-ref
   default-language: Haskell2010
 
   Type: exitcode-stdio-1.0
   Main-is: Benchmarks.hs
-  other-modules: GenericFieldBench
-                 Generic.Either
-                 Generic.Prefix
-                 Generic.U2
-                 Generic.U4
-                 Generic.U8
-                 Generic.U16
-                 Generic.U32
 
   -- dependencies with version constraints inherited via lib:cassava-iut
   build-depends: base
