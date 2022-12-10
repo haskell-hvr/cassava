@@ -108,7 +108,9 @@ import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word8, Word16, Word32, Word64)
+#if MIN_VERSION_base(4,8,0)
 import Data.Void
+#endif
 import GHC.Float (double2Float)
 import GHC.Generics
 import GHC.TypeLits
@@ -1103,6 +1105,7 @@ instance ToField [Char] where
     toField = toField . T.pack
     {-# INLINE toField #-}
 
+#if MIN_VERSION_base(4,8,0)
 -- | Useless /per se/, but useful in cases like @Maybe Void@
 -- (a logical proof that only @Nothing@ can occur)
 instance FromField Void where
@@ -1112,6 +1115,7 @@ instance FromField Void where
 -- (a logical proof that only @Nothing@ can occur)
 instance ToField Void where
   toField = absurd
+#endif
 
 parseSigned :: (Integral a, Num a) => String -> B.ByteString -> Parser a
 parseSigned typ s = case parseOnly (ws *> A8.signed A8.decimal <* ws) s of
@@ -1412,9 +1416,15 @@ instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B
 class GFromField f where
   gParseField :: Options -> Field -> Parser (f p)
 
+class GToField f where
+  gToField :: Options -> f p -> Field
+
 -- Type without constructors
 instance GFromField V1 where
   gParseField _ = error "gFromField: type without constructors"
+
+instance GToField V1 where
+  gToField _ = error "gToField: type without constructors"
 
 -- Type with single nullary constructor
 instance (Constructor c) => GFromField (C1 c U1) where
@@ -1428,10 +1438,18 @@ instance (Constructor c) => GFromField (C1 c U1) where
       val = M1 U1
   {-# INLINE gParseField #-}
 
+instance (Constructor c) => GToField (C1 c U1) where
+  gToField = encodeConstructor
+  {-# INLINE gToField #-}
+
 -- Type with single unary constructor
 instance (FromField a) => GFromField (C1 c (S1 meta (K1 i a))) where
   gParseField _opts = fmap (M1 . M1 . K1) . parseField
   {-# INLINE gParseField #-}
+
+instance (ToField a) => GToField (C1 c (S1 meta (K1 i a))) where
+  gToField _ = toField . unK1 . unM1 . unM1
+  {-# INLINE gToField #-}
 
 -- Sum type
 instance (GFromField c1, GFromField c2) => GFromField (c1 :+: c2) where
@@ -1441,36 +1459,21 @@ instance (GFromField c1, GFromField c2) => GFromField (c1 :+: c2) where
       (onSuccess . L1)
   {-# INLINE gParseField #-}
 
-instance (TypeError ('Text "You cannot derive FromField for product types")) =>
-  GFromField (C1 c (c1 :*: c2)) where
-    gParseField _ _ = error "unreachable: gParseField for product types"
-
-class GToField f where
-  gToField :: Options -> f p -> Field
-
--- Type without constructors
-instance GToField V1 where
-  gToField _ = error "gToField: type without constructors"
-
--- Type with single nullary constructor
-instance (Constructor c) => GToField (C1 c U1) where
-  gToField = encodeConstructor
-  {-# INLINE gToField #-}
-
---- Type with single unary constructor
-instance (ToField a) => GToField (C1 c (S1 meta (K1 i a))) where
-  gToField _ = toField . unK1 . unM1 . unM1
-  {-# INLINE gToField #-}
-
--- Sum type
 instance (GToField c1, GToField c2) => GToField (c1 :+: c2) where
   gToField opts (L1 val) = gToField opts val
   gToField opts (R1 val) = gToField opts val
   {-# INLINE gToField #-}
 
+-- Statically fail for product types
+#if MIN_VERSION_base(4,9,0)
+instance (TypeError ('Text "You cannot derive FromField for product types")) =>
+  GFromField (C1 c (c1 :*: c2)) where
+    gParseField _ _ = error "unreachable: gParseField for product types"
+
 instance (TypeError ('Text "You cannot derive ToField for product types")) =>
   GToField (C1 c (c1 :*: c2)) where
     gToField _ = error "unreachable: gToField for product types"
+#endif
 
 encodeConstructor :: (Constructor c) => Options -> C1 c f p -> B.ByteString
 encodeConstructor opts = T.encodeUtf8 . T.pack . fieldLabelModifier opts . conName
