@@ -1411,6 +1411,10 @@ instance (ToField a, Selector s) => GToRecord (M1 S s (K1 i a)) (B.ByteString, B
 class GFromField f where
   gParseField :: Options -> Field -> Parser (f p)
 
+-- Type without constructors
+instance GFromField V1 where
+  gParseField _ = error "gFromField: type without constructors"
+
 -- Type with single nullary constructor
 instance (Constructor c) => GFromField (C1 c U1) where
   gParseField opts field = Parser $ \onFailure onSuccess ->
@@ -1438,6 +1442,10 @@ instance (GFromField c1, GFromField c2) => GFromField (c1 :+: c2) where
 
 class GToField f where
   gToField :: Options -> f p -> Field
+
+-- Type without constructors
+instance GToField V1 where
+  gToField _ = error "gToField: type without constructors"
 
 -- Type with single nullary constructor
 instance (Constructor c) => GToField (C1 c U1) where
