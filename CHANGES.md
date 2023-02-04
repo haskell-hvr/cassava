@@ -1,3 +1,8 @@
+## Version 0.5.3.0 revision 1
+
+ * Allow `base-4.18`
+ * Tested with GHC 7.4 - 9.6.1 alpha
+
 ## Version 0.5.3.0
 
  * Improve error messages for `lookup` and NamedRecord parsers (#197)
