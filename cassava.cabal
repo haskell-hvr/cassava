@@ -136,7 +136,7 @@ Test-suite unit-tests
   Main-is: UnitTests.hs
   -- dependencies with version constraints inherited via lib:cassava
   Build-depends: attoparsec
-               , base
+               , base                   >= 4.11 && < 5
                , bytestring
                , cassava
                , hashable
@@ -158,12 +158,10 @@ Test-suite unit-tests
     -Wall
     -- https://ghc.haskell.org/trac/ghc/wiki/Migration/8.0#Recommendationsforforward-compatibility
     -Wcompat
+    -Wcpp-undef
     -Wnoncanonical-monad-instances
 
   if impl(ghc >= 8.8)
     ghc-options: -Wno-star-is-type
   else
     ghc-options: -Wnoncanonical-monadfail-instances
-
-  if impl(ghc >= 8.2)
-    ghc-options: -Wcpp-undef

@@ -17,6 +17,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
+import Data.List (isPrefixOf)
 import Data.Word
 import Numeric.Natural
 import GHC.Generics (Generic)
@@ -47,6 +48,14 @@ assertResult input expected res = case res of
     Left err -> assertFailure $
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
                 "parse error: " ++ err
+
+decodeFailsWith :: BL.ByteString -> String -> Assertion
+decodeFailsWith input expected = case decode NoHeader input of
+    Right r  -> assertFailure $ "input: " ++ show (BL8.unpack input) ++ "\n" ++
+                "retuned: " ++ show (r :: (V.Vector (V.Vector B.ByteString))) ++ "\n" ++
+                "whereas should have failed with " <> expected
+    Left err -> assertBool ("got " <> err <> "\ninstead of " <> expected)
+                $ ("parse error ("++expected++")") `isPrefixOf` err
 
 encodesAs :: [[B.ByteString]] -> BL.ByteString -> Assertion
 encodesAs input expected =
@@ -158,6 +167,11 @@ positionalTests =
       [ testGroup "decode" $ map streamingDecodeTest decodeTests
       , testGroup "decodeWith" $ map streamingDecodeWithTest decodeWithTests
       ]
+    , testGroup "failing"
+      [ testCase "escapedMalformed0" $
+          "baz,\"" `decodeFailsWith` "Failed reading: trailing double quote"
+      ]
+
     ]
   where
     rfc4180Input = BL8.pack $
@@ -178,6 +192,10 @@ positionalTests =
            [["a", "b", "c"], ["d", "e", "f"]])
         , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
         , ("rfc4180", rfc4180Input, rfc4180Output)
+        , ("escapedDoubleQuotes"
+          , "\"x,y\",z\nbaz,\"bar\nfoo,\""
+          , [["x,y", "z"], ["baz", "bar\nfoo,"]]
+          )
         ]
     decodeWithTests =
         [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])

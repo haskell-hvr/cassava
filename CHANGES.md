@@ -1,7 +1,9 @@
 ## Version 0.5.3.2
 
+ * Proper exception on hanging doublequote ([PR #222](https://github.com/haskell-hvr/cassava/pull/222)).
  * Allow latest `hashable`.
- * Tested with GHC 8.0 - 9.10.1.
+ * Build tested with GHC 8.0 - 9.10.1.
+ * Functionality tested with GHC 8.4 - 9.10.1.
 
 ## Version 0.5.3.1
 
