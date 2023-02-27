@@ -218,7 +218,7 @@ positionalTests =
       testCase "escapedMalformed1" $
         "\"x,\"y" `decodeFailsWith` "endOfInput",
       testCase "escapedMalformed0" $
-        "baz,\"" `decodeFailsWith` "endOfInput"
+        "baz,\"" `decodeFailsWith` "Failed reading: trailing double quote"
       ]
 
 nameBasedTests :: [TF.Test]
