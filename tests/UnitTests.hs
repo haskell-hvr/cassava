@@ -21,6 +21,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
+import Data.List (isPrefixOf)
 import Data.Word
 import Numeric.Natural
 import GHC.Generics (Generic)
@@ -55,6 +56,14 @@ assertResult input expected res = case res of
     Left err -> assertFailure $
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
                 "parse error: " ++ err
+
+decodeFailsWith :: BL.ByteString -> String -> Assertion
+decodeFailsWith input expected = case decode NoHeader input of
+    Right r  -> assertFailure $ "input: " ++ show (BL8.unpack input) ++ "\n" ++
+                "retuned: " ++ show (r :: (V.Vector (V.Vector B.ByteString))) ++ "\n" ++
+                "whereas should have failed with " <> expected
+    Left err -> assertBool ("got " <> err <> "\ninstead of " <> expected)
+                $ ("parse error ("++expected++")") `isPrefixOf` err
 
 encodesAs :: [[B.ByteString]] -> BL.ByteString -> Assertion
 encodesAs input expected =
@@ -166,6 +175,7 @@ positionalTests =
       [ testGroup "decode" $ map streamingDecodeTest decodeTests
       , testGroup "decodeWith" $ map streamingDecodeWithTest decodeWithTests
       ]
+    , testGroup "escaped" escapedTests
     ]
   where
     rfc4180Input = BL8.pack $
@@ -209,6 +219,15 @@ positionalTests =
     defEncNoneEnq = defaultEncodeOptions { encQuoting = QuoteNone }
     defEncAllEnq  = defaultEncodeOptions { encQuoting = QuoteAll  }
     defDec = defaultDecodeOptions
+
+    escapedTests = [
+      testCase "escaped" $
+        "\"x,y\",z\nbaz,\"bar\nfoo,\"" `decodesAs` [["x,y", "z"], ["baz", "bar\nfoo,"]],
+      testCase "escapedMalformed1" $
+        "\"x,\"y" `decodeFailsWith` "endOfInput",
+      testCase "escapedMalformed0" $
+        "baz,\"" `decodeFailsWith` "endOfInput"
+      ]
 
 nameBasedTests :: [TF.Test]
 nameBasedTests =
