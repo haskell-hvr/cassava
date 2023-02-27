@@ -154,17 +154,20 @@ field !delim = do
 escapedField :: AL.Parser S.ByteString
 escapedField = do
     _ <- dquote
-    -- The scan state is 'True' if the previous character was a double
-    -- quote.  We need to drop a trailing double quote left by scan.
-    s <- S.init <$> (A.scan False $ \s c -> if c == doubleQuote
-                                            then Just (not s)
-                                            else if s then Nothing
-                                                 else Just False)
-    if doubleQuote `S.elem` s
-        then case Z.parse unescape s of
-            Right r  -> return r
-            Left err -> fail err
-        else return s
+    -- The scan state is 'True' if the previous character was a double quote.
+    s' <- A.scan False $ \s c -> if c == doubleQuote
+                                 then Just (not s)
+                                 else if s then Nothing
+                                      else Just False
+    -- We need to drop a trailing double quote left by scan.
+    if S.null s'
+      then fail "trailing double quote"
+      else let s = S.init s'
+           in if doubleQuote `S.elem` s
+              then case Z.parse unescape s of
+                     Right r  -> return r
+                     Left err -> fail err
+              else return s
 
 unescapedField :: Word8 -> AL.Parser S.ByteString
 unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
