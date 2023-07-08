@@ -44,9 +44,9 @@ Extra-source-files:  examples/*.hs,
                      CHANGES.md,
                      README.md
 Tested-with:
-  GHC == 9.6.0
-  GHC == 9.4.4
-  GHC == 9.2.5
+  GHC == 9.6.2
+  GHC == 9.4.5
+  GHC == 9.2.8
   GHC == 9.0.2
   GHC == 8.10.7
   GHC == 8.8.4
