@@ -1,3 +1,8 @@
+## Version 0.5.3.0 revision 2
+
+ * Allow `bytestring-0.12`
+ * Tested with GHC 7.4 - 9.6.2
+
 ## Version 0.5.3.0 revision 1
 
  * Allow `base-4.18`
