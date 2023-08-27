@@ -1,7 +1,7 @@
 cabal-version:       1.12
 Name:                cassava
 Version:             0.5.3.0
-x-revision:          3
+x-revision:          4
 Synopsis:            A CSV parsing and encoding library
 Description: {
 
@@ -44,8 +44,9 @@ Extra-source-files:  examples/*.hs,
                      CHANGES.md,
                      README.md
 Tested-with:
+  GHC == 9.8.0
   GHC == 9.6.2
-  GHC == 9.4.5
+  GHC == 9.4.7
   GHC == 9.2.8
   GHC == 9.0.2
   GHC == 8.10.7
@@ -119,7 +120,7 @@ Library
     , deepseq      >= 1.1      && < 1.6
     , hashable                    < 1.5
     , scientific   >= 0.3.4.7  && < 0.4
-    , text                        < 2.1
+    , text                        < 2.2
     , transformers >= 0.2      && < 0.7
     , unordered-containers        < 0.3
     , vector       >= 0.8      && < 0.14
