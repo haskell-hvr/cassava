@@ -21,6 +21,11 @@ import qualified Data.Vector as V
 import Data.Csv
 import qualified Data.Csv.Streaming as Streaming
 
+-- This should be eventually replaced with 'cassava' version check
+#ifdef GENERIC_FIELD_BENCH
+import GenericFieldBench
+#endif
+
 #if !MIN_VERSION_bytestring(0,10,0)
 instance NFData (B.ByteString) where
     rnf !s = ()
@@ -135,6 +140,9 @@ main = do
         , bgroup "comparison"
           [ bench "lazy-csv" $ nf LazyCsv.parseCSV csvData
           ]
+#ifdef GENERIC_FIELD_BENCH
+        , genericFieldBench
+#endif
         ]
   where
     decodePresidents :: BL.ByteString -> Either String (Vector President)

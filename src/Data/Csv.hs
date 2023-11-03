@@ -100,13 +100,15 @@ module Data.Csv
     , FromField(..)
     , ToField(..)
 
-    -- ** 'Generic' record conversion
+    -- ** 'Generic' type conversion
     -- $genericconversion
     , genericParseRecord
     , genericToRecord
     , genericParseNamedRecord
     , genericToNamedRecord
     , genericHeaderOrder
+    , genericParseField
+    , genericToField
 
     -- *** 'Generic' type conversion options
     , Options
