@@ -216,7 +216,7 @@ positionalTests =
       testCase "escaped" $
         "\"x,y\",z\nbaz,\"bar\nfoo,\"" `decodesAs` [["x,y", "z"], ["baz", "bar\nfoo,"]],
       testCase "escapedMalformed1" $
-        "\"x,\"y" `decodeFailsWith` "endOfInput",
+        "\"x,\"y" `decodeFailsWith` "Failed reading: satisfy",
       testCase "escapedMalformed0" $
         "baz,\"" `decodeFailsWith` "Failed reading: trailing double quote"
       ]
