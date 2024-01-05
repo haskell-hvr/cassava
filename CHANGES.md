@@ -1,3 +1,8 @@
+## Unreleased
+
+ * Remove support for GHC 7.
+ * Remove cabal flag `bytestring--LT-0_10_4` and support for `bytestring < 0.10.4`.
+
 ## Version 0.5.3.0 revision 2
 
  * Allow `bytestring-0.12`

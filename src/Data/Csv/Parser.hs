@@ -38,11 +38,6 @@ import Data.Word (Word8)
 import Data.Csv.Types
 import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, newline, doubleQuote, toStrict)
 
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((<$>), (*>), (<*), pure)
-import Data.Monoid (mappend, mempty)
-#endif
-
 -- | Options that controls how data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
 -- data.

@@ -42,15 +42,6 @@ import qualified Data.Csv.Incremental as I
 import Data.Csv.Parser
 import Data.Csv.Types
 
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((<$>), (<*>), pure)
-import Data.Traversable (Traversable(..))
-#endif
-
-#if !MIN_VERSION_bytestring(0,10,0)
-import qualified Data.ByteString.Lazy.Internal as BL  -- for constructors
-#endif
-
 -- $example
 --
 -- A short usage example:
@@ -98,9 +89,7 @@ data Records a
 -- | Skips records that failed to convert.
 instance Foldable Records where
     foldr = foldrRecords
-#if MIN_VERSION_base(4,6,0)
     foldl' = foldlRecords'
-#endif
 
 foldrRecords :: (a -> b -> b) -> b -> Records a -> b
 foldrRecords f = go
@@ -110,7 +99,6 @@ foldrRecords f = go
     go z _ = z
 {-# INLINE foldrRecords #-}
 
-#if MIN_VERSION_base(4,6,0)
 foldlRecords' :: (a -> b -> a) -> a -> Records b -> a
 foldlRecords' f = go
   where
@@ -118,7 +106,6 @@ foldlRecords' f = go
     go z (Cons (Left _) rs) = go z rs
     go z _ = z
 {-# INLINE foldlRecords' #-}
-#endif
 
 instance Traversable Records where
     traverse _ (Nil merr rest) = pure $ Nil merr rest
@@ -129,15 +116,7 @@ instance Traversable Records where
 
 instance NFData a => NFData (Records a) where
     rnf (Cons r rs) = rnf r `seq` rnf rs
-#if MIN_VERSION_bytestring(0,10,0)
     rnf (Nil errMsg rest) = rnf errMsg `seq` rnf rest
-#else
-    rnf (Nil errMsg rest) = rnf errMsg `seq` rnfLazyByteString rest
-
-rnfLazyByteString :: BL.ByteString -> ()
-rnfLazyByteString BL.Empty       = ()
-rnfLazyByteString (BL.Chunk _ b) = rnfLazyByteString b
-#endif
 
 -- | Efficiently deserialize CSV records in a streaming fashion.
 -- Equivalent to @'decodeWith' 'defaultDecodeOptions'@.

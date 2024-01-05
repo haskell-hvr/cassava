@@ -1,14 +1,5 @@
 branches: master
 
-constraint-set text-2.1
-  ghc: >=8.2
-  constraints: text ^>=2.1
-  tests: True
-  run-tests: True
-
-raw-project
-  allow-newer: text
-
 constraint-set containers-0.7
   ghc: >=8.2
   constraints: containers ^>=0.7

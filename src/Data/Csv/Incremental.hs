@@ -100,11 +100,6 @@ import Data.Csv.Parser
 import Data.Csv.Types
 import Data.Csv.Util (endOfLine)
 
-#if !MIN_VERSION_base(4,8,0)
-import Data.Monoid (Monoid(mappend, mempty))
-import Control.Applicative ((<*))
-#endif
-
 -- $feed-header
 --
 -- These functions are sometimes convenient when working with
