@@ -1,10 +1,10 @@
 branches: master
 
-constraint-set containers-0.7
-  ghc: >=8.2
-  constraints: containers ^>=0.7
-  tests: True
-  run-tests: True
+-- constraint-set containers-0.7
+--   ghc: >=8.2
+--   constraints: containers ^>=0.7
+--   tests: True
+--   run-tests: True
 
-raw-project
-  allow-newer: containers
+-- raw-project
+--   allow-newer: containers
