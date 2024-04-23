@@ -68,7 +68,6 @@ Library
     BangPatterns
     CPP
     DataKinds
-    DataKinds
     DefaultSignatures
     DeriveFunctor
     FlexibleContexts
@@ -76,7 +75,6 @@ Library
     KindSignatures
     MultiParamTypeClasses
     OverloadedStrings
-    PolyKinds
     PolyKinds
     Rank2Types
     ScopedTypeVariables
