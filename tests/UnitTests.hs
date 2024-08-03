@@ -167,7 +167,11 @@ positionalTests =
       [ testGroup "decode" $ map streamingDecodeTest decodeTests
       , testGroup "decodeWith" $ map streamingDecodeWithTest decodeWithTests
       ]
-    , testGroup "escaped" escapedTests
+    , testGroup "failing"
+      [ testCase "escapedMalformed0" $
+          "baz,\"" `decodeFailsWith` "Failed reading: trailing double quote"
+      ]
+
     ]
   where
     rfc4180Input = BL8.pack $
@@ -188,6 +192,10 @@ positionalTests =
            [["a", "b", "c"], ["d", "e", "f"]])
         , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
         , ("rfc4180", rfc4180Input, rfc4180Output)
+        , ("escapedDoubleQuotes"
+          , "\"x,y\",z\nbaz,\"bar\nfoo,\""
+          , [["x,y", "z"], ["baz", "bar\nfoo,"]]
+          )
         ]
     decodeWithTests =
         [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
@@ -211,15 +219,6 @@ positionalTests =
     defEncNoneEnq = defaultEncodeOptions { encQuoting = QuoteNone }
     defEncAllEnq  = defaultEncodeOptions { encQuoting = QuoteAll  }
     defDec = defaultDecodeOptions
-
-    escapedTests = [
-      testCase "escaped" $
-        "\"x,y\",z\nbaz,\"bar\nfoo,\"" `decodesAs` [["x,y", "z"], ["baz", "bar\nfoo,"]],
-      testCase "escapedMalformed1" $
-        "\"x,\"y" `decodeFailsWith` "Failed reading: satisfy",
-      testCase "escapedMalformed0" $
-        "baz,\"" `decodeFailsWith` "Failed reading: trailing double quote"
-      ]
 
 nameBasedTests :: [TF.Test]
 nameBasedTests =
