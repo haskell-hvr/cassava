@@ -43,9 +43,9 @@ Extra-source-files:  examples/*.hs,
                      CHANGES.md,
                      README.md
 Tested-with:
-  GHC == 9.10.0
+  GHC == 9.10.1
   GHC == 9.8.2
-  GHC == 9.6.5
+  GHC == 9.6.6
   GHC == 9.4.8
   GHC == 9.2.8
   GHC == 9.0.2
@@ -104,7 +104,7 @@ Library
     , bytestring   >= 0.10.4   && < 0.13
     , containers   >= 0.4.2    && < 0.8
     , deepseq      >= 1.1      && < 1.6
-    , hashable                    < 1.5
+    , hashable                    < 2
     , scientific   >= 0.3.4.7  && < 0.4
     , text                        < 2.2
     , text-short   == 0.1.*

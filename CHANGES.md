@@ -1,3 +1,8 @@
+## Version 0.5.3.2
+
+ * Allow latest `hashable`.
+ * Tested with GHC 8.0 - 9.10.1.
+
 ## Version 0.5.3.1
 
  * Remove support for GHC 7.
