@@ -21,11 +21,13 @@ module Data.Csv.Streaming
     , HasHeader(..)
     , decode
     , decodeWith
+    , decodeWithP
 
     -- ** Name-based record conversion
     -- $namebased
     , decodeByName
     , decodeByNameWith
+    , decodeByNameWithP
     ) where
 
 import Control.DeepSeq (NFData(rnf))
@@ -36,8 +38,9 @@ import Data.Foldable (Foldable(..))
 import Prelude hiding (foldr)
 
 import Data.Csv.Conversion
+import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Incremental hiding (decode, decodeByName, decodeByNameWith,
-                                    decodeWith)
+                                    decodeByNameWithP, decodeWith, decodeWithP)
 import qualified Data.Csv.Incremental as I
 import Data.Csv.Parser
 import Data.Csv.Types
@@ -134,8 +137,19 @@ decodeWith :: FromRecord a
                              -- skipped
            -> BL.ByteString  -- ^ CSV data
            -> Records a
-decodeWith !opts hasHeader s0 =
-    go (BL.toChunks s0) (I.decodeWith opts hasHeader)
+decodeWith = decodeWithP parseRecord
+
+-- | Like 'decodeWith', but lets you specify a parser function.
+--
+-- @since 0.5.4.0
+decodeWithP :: (Record -> Conversion.Parser a)
+           -> DecodeOptions  -- ^ Decoding options
+           -> HasHeader      -- ^ Data contains header that should be
+                             -- skipped
+           -> BL.ByteString  -- ^ CSV data
+           -> Records a
+decodeWithP _parseRecord !opts hasHeader s0 =
+    go (BL.toChunks s0) (I.decodeWithP _parseRecord opts hasHeader)
   where
     go ss (Done xs)       = foldr Cons (Nil Nothing (BL.fromChunks ss)) xs
     go ss (Fail rest err) = Nil (Just err) (BL.fromChunks (rest:ss))
@@ -159,7 +173,18 @@ decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> BL.ByteString  -- ^ CSV data
                  -> Either String (Header, Records a)
-decodeByNameWith !opts s0 = go (BL.toChunks s0) (I.decodeByNameWith opts)
+decodeByNameWith = decodeByNameWithP parseNamedRecord
+
+-- | Like 'decodeByNameWith', but lets you specify a parser function.
+--
+-- @since 0.5.4.0
+decodeByNameWithP :: (NamedRecord -> Conversion.Parser a)
+                  -- ^ Custom parser function
+                 -> DecodeOptions  -- ^ Decoding options
+                 -> BL.ByteString  -- ^ CSV data
+                 -> Either String (Header, Records a)
+decodeByNameWithP _parseNamedRecord !opts s0 =
+  go (BL.toChunks s0) (I.decodeByNameWithP _parseNamedRecord opts)
   where
     go ss (DoneH hdr p)    = Right (hdr, go2 ss p)
     go ss (FailH rest err) = Left $ err ++ " at " ++

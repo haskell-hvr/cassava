@@ -1,3 +1,7 @@
+## Version 0.5.4
+
+ * Add `decodeWithP` and `decodeByNameWithP` to `Streaming` interface.
+
 ## Version 0.5.3.2
 
  * Proper exception on hanging doublequote ([PR #222](https://github.com/haskell-hvr/cassava/pull/222)).
