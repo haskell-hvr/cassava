@@ -1,6 +1,8 @@
-## Version 0.5.4
+## Version 0.5.4.0
 
- * Add `decodeWithP` and `decodeByNameWithP` to `Streaming` interface.
+ * Add `decodeWithP` and `decodeByNameWithP` to `Streaming` interface ([PR #237](https://github.com/haskell-hvr/cassava/pull/237)).
+ * Build tested with GHC 8.0 - 9.12.2.
+ * Functionality tested with GHC 8.4 - 9.12.2.
 
 ## Version 0.5.3.2
 
