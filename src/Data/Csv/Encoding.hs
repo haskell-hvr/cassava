@@ -40,6 +40,7 @@ module Data.Csv.Encoding
     ) where
 
 import Data.ByteString.Builder
+
 import Control.Applicative as AP (Applicative(..), (<|>))
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.Attoparsec.ByteString.Lazy as AL
@@ -47,6 +48,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as BL8
+import qualified Data.ByteString.Builder.Prim as P
 import qualified Data.HashMap.Strict as HM
 import Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -62,10 +64,7 @@ import Data.Csv.Parser hiding (csv, csvWithHeader)
 import qualified Data.Csv.Parser as Parser
 import Data.Csv.Types hiding (toNamedRecord)
 import qualified Data.Csv.Types as Types
-import Data.Csv.Util (blankLine, endOfLine, toStrict)
-
-
--- TODO: 'encode' isn't as efficient as it could be.
+import Data.Csv.Util (blankLine, endOfLine)
 
 ------------------------------------------------------------------------
 -- * Encoding and decoding
@@ -256,8 +255,14 @@ encodeOptionsError = error $ "Data.Csv: " ++
 -- | Encode a single record, without the trailing record separator
 -- (i.e. newline).
 encodeRecord :: Quoting -> Word8 -> Record -> Builder
-encodeRecord qtng delim = mconcat . intersperse (word8 delim)
-                     . map byteString . map (escape qtng delim) . V.toList
+encodeRecord qtng delim =
+    V.ifoldl' step mempty
+  . V.map (escape qtng delim)
+  where
+    d = word8 delim
+    step acc i b
+      | i == 0    = acc <> b
+      | otherwise = acc <> d <> b
 {-# INLINE encodeRecord #-}
 
 -- | Encode a single named record, without the trailing record
@@ -266,26 +271,32 @@ encodeNamedRecord :: Header -> Quoting -> Word8 -> NamedRecord -> Builder
 encodeNamedRecord hdr qtng delim =
     encodeRecord qtng delim . namedRecordToRecord hdr
 
--- TODO: Optimize
-escape :: Quoting -> Word8 -> B.ByteString -> B.ByteString
+escape :: Quoting -> Word8 -> B.ByteString -> Builder
 escape !qtng !delim !s
-    | (qtng == QuoteMinimal &&
-        B.any (\ b -> b == dquote || b == delim || b == nl || b == cr) s
-      ) || qtng == QuoteAll
-         = toStrict . toLazyByteString $
-            word8 dquote
-            <> B.foldl
-                (\ acc b -> acc <> if b == dquote
-                    then byteString "\"\""
-                    else word8 b)
-                mempty
-                s
-            <> word8 dquote
-    | otherwise = s
+    | qtng == QuoteAll = buildQuoted
+    | qtng == QuoteMinimal && needsQuoting = buildQuoted
+    | otherwise = byteString s
   where
+    dquote, nl, cr :: Word8
     dquote = 34
     nl     = 10
     cr     = 13
+
+    needsQuoting = B.any (\b -> b == dquote || b == delim || b == nl || b == cr) s
+
+    doubleQuote :: P.BoundedPrim Word8
+    doubleQuote =
+        P.liftFixedToBounded $ const (dquote, dquote) P.>$< (P.word8 P.>*< P.word8)
+
+    escaper :: P.BoundedPrim Word8
+    escaper = P.condB (== dquote)
+        doubleQuote
+        (P.liftFixedToBounded P.word8)
+
+    buildQuoted =
+        word8 dquote <>
+        P.primMapByteStringBounded escaper s <>
+        word8 dquote
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
@@ -345,14 +356,6 @@ recordSep True  = string8 "\r\n"
 unlines :: Builder -> [Builder] -> Builder
 unlines _ [] = mempty
 unlines sep (b:bs) = b <> sep <> unlines sep bs
-
-intersperse :: Builder -> [Builder] -> [Builder]
-intersperse _   []      = []
-intersperse sep (x:xs)  = x : prependToAll sep xs
-
-prependToAll :: Builder -> [Builder] -> [Builder]
-prependToAll _   []     = []
-prependToAll sep (x:xs) = sep <> x : prependToAll sep xs
 
 decodeWithP' :: AL.Parser a -> L.ByteString -> Either String a
 decodeWithP' p s =

@@ -115,7 +115,7 @@ main = do
               ]
             ]
           , bgroup "encode"
-            [ bench "presidents/with conversion" $ whnf encode presidents
+            [ bench "presidents/with conversion" $ nf (BL.length . encode) presidents
             ]
           ]
         , bgroup "named"
@@ -124,7 +124,7 @@ main = do
             , bench "presidents/with conversion" $ whnf decodePresidentsN csvDataN
             ]
           , bgroup "encode"
-            [ bench "presidents/with conversion" $ whnf (encodeByName hdr) presidentsN
+            [ bench "presidents/with conversion" $ nf (BL.length . (encodeByName hdr)) presidentsN
             ]
           ]
         , bgroup "comparison"
