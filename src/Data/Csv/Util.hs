@@ -48,7 +48,7 @@ liftM2' f a b = do
 -- return followed by a newline character @\"\\r\\n\"@, or a single
 -- carriage return @\'\\r\'@.
 endOfLine :: Parser ()
-endOfLine = (A.word8 newline Data.Functor.$> ()) <|> (string "\r\n" $> ()) <|> (A.word8 cr $> ())
+endOfLine = (A.word8 newline $> ()) <|> (string "\r\n" $> ()) <|> (A.word8 cr $> ())
 {-# INLINE endOfLine #-}
 
 doubleQuote, newline, cr, comma :: Word8
