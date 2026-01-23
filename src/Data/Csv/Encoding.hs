@@ -236,7 +236,7 @@ encodeWith opts
 
 -- | Check if the delimiter is valid.
 validDelim :: Word8 -> Bool
-validDelim delim = not (delim == cr || delim == newline || delim == doubleQuote)
+validDelim delim = delim /= cr && delim /= newline && delim /= doubleQuote
 
 -- | Raises an exception indicating that the provided delimiter isn't
 -- valid. See 'validDelim'.
