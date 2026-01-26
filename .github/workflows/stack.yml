@@ -54,12 +54,12 @@ jobs:
           - os: windows-latest
             plan:
               ghc: '9.12'
-              resolver: 'nightly'
+              resolver: 'nightly-2025-12-30'
 
           - os: macos-latest
             plan:
               ghc: '9.12'
-              resolver: 'nightly'
+              resolver: 'nightly-2025-12-30'
 
     runs-on: ${{ matrix.os }}
     env:
