@@ -8,10 +8,12 @@ module Data.Csv.Util
     , doubleQuote
     , newline
     , cr
+    , comma
     , toStrict
     ) where
 
 import Control.Applicative ((<|>))
+import Data.Functor ( ($>) )
 import Data.Word (Word8)
 import Data.Attoparsec.ByteString.Char8 (string)
 import qualified Data.Attoparsec.ByteString as A
@@ -31,15 +33,14 @@ infixl 4 <$!>
 
 -- | Is this an empty record (i.e. a blank line)?
 blankLine :: V.Vector B.ByteString -> Bool
-blankLine v = V.length v == 1 && (B.null (V.head v))
+blankLine v = V.length v == 1 && B.null (V.head v)
 
 -- | A version of 'liftM2' that is strict in the result of its first
 -- action.
 liftM2' :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
 liftM2' f a b = do
     !x <- a
-    y <- b
-    return (f x y)
+    f x <$> b
 {-# INLINE liftM2' #-}
 
 
@@ -47,10 +48,11 @@ liftM2' f a b = do
 -- return followed by a newline character @\"\\r\\n\"@, or a single
 -- carriage return @\'\\r\'@.
 endOfLine :: Parser ()
-endOfLine = (A.word8 newline *> return ()) <|> (string "\r\n" *> return ()) <|> (A.word8 cr *> return ())
+endOfLine = (A.word8 newline $> ()) <|> (string "\r\n" $> ()) <|> (A.word8 cr $> ())
 {-# INLINE endOfLine #-}
 
-doubleQuote, newline, cr :: Word8
+doubleQuote, newline, cr, comma :: Word8
 doubleQuote = 34
 newline = 10
 cr = 13
+comma = 44

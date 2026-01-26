@@ -36,7 +36,7 @@ import qualified Data.Vector as V
 import Data.Word (Word8)
 
 import Data.Csv.Types
-import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, newline, doubleQuote, toStrict)
+import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, comma, newline, doubleQuote, toStrict)
 
 -- | Options that controls how data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
@@ -57,7 +57,7 @@ data DecodeOptions = DecodeOptions
 -- | Decoding options for parsing CSV files.
 defaultDecodeOptions :: DecodeOptions
 defaultDecodeOptions = DecodeOptions
-    { decDelimiter = 44  -- comma
+    { decDelimiter = comma
     }
 
 -- | Parse a CSV file that does not include a header.
@@ -179,8 +179,8 @@ unescape = (toStrict . toLazyByteString) <$!> go mempty where
     h <- Z.takeWhile (/= doubleQuote)
     let rest = do
           start <- Z.take 2
-          if (S.unsafeHead start == doubleQuote &&
-              S.unsafeIndex start 1 == doubleQuote)
+          if S.unsafeHead start == doubleQuote &&
+              S.unsafeIndex start 1 == doubleQuote
               then go (acc `mappend` byteString h `mappend` charUtf8 '"')
               else fail "invalid CSV escape sequence"
     done <- Z.atEnd
