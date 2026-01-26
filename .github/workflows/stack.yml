@@ -23,7 +23,7 @@ jobs:
         os: [ubuntu-latest]
         plan:
           - ghc: '9.12'
-            resolver: 'nightly'
+            resolver: 'nightly-2025-12-30'
           - ghc: '9.10'
             resolver: 'lts'
           - ghc: '9.8.4'
