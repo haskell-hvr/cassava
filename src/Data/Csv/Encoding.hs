@@ -252,14 +252,13 @@ encodeOptionsError = error $ "Data.Csv: " ++
 -- | Encode a single record, without the trailing record separator
 -- (i.e. newline).
 encodeRecord :: Quoting -> Word8 -> Record -> Builder
-encodeRecord qtng delim =
-    V.ifoldl' step mempty
-  . V.map (escape qtng delim)
+encodeRecord qtng delim rec' =
+  case V.uncons rec' of
+    Nothing      -> mempty
+    Just (x, xs) -> escape qtng delim x <>
+                    V.foldl' (\acc b -> acc <> d <> escape qtng delim b) mempty xs
   where
     d = word8 delim
-    step acc i b
-      | i == 0    = acc <> b
-      | otherwise = acc <> d <> b
 {-# INLINE encodeRecord #-}
 
 -- | Encode a single named record, without the trailing record
