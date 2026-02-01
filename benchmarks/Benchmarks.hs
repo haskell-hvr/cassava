@@ -100,6 +100,8 @@ main = do
     !csvData <- fromStrict `fmap` B.readFile "./presidents.csv"
     !csvDataN <- fromStrict `fmap` B.readFile
                  "./presidents_with_header.csv"
+    !wide <- fromStrict `fmap` B.readFile "./random_r5000_c500_s42.csv"
+    !long <- fromStrict `fmap` B.readFile "./random_r1000000_c10_s42.csv"
     let (Right !presidents) = V.toList <$> decodePresidents csvData
         (Right (!hdr, !presidentsNV)) = decodePresidentsN csvDataN
         !presidentsN = V.toList presidentsNV
@@ -129,6 +131,12 @@ main = do
           ]
         , bgroup "comparison"
           [ bench "lazy-csv" $ nf LazyCsv.parseCSV csvData
+          ]
+        , bgroup "wide"
+          [ bench "wide-csv/read/no-conversion" $ nf (\d -> fmap (\v -> V.length v * V.length (V.head v)) (idDecode d)) wide
+          ]
+        , bgroup "long"
+          [ bench "long-csv/read/no-conversion" $ nf (\d -> fmap (\v -> V.length v * V.length (V.head v)) (idDecode d)) long
           ]
         ]
   where
