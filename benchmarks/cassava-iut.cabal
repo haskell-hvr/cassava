@@ -130,7 +130,7 @@ Benchmark benchmark-ref
                , text
                , vector
 
-  build-depends: criterion >= 1.2 && < 1.6
+  build-depends: criterion >= 1.2 && < 1.7
                , lazy-csv == 0.5.*
                , cassava >= 0.4 && < 0.6
 

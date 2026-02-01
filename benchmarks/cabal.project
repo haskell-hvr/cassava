@@ -1,2 +1,3 @@
 packages: .
 benchmarks: True
+allow-newer: deepseq, base, criterion
