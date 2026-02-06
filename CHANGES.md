@@ -1,3 +1,7 @@
+## Version 0.5.5.0
+
+ * `Data.Csv.Incremental`: Fixed the `type role`s of `Builder` and `NamedBuilder`; they're now `nominal` in their parameters.
+
 ## Version 0.5.4.1
 
 _Andreas Abel, 2025-09-02_
