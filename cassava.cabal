@@ -1,6 +1,6 @@
 cabal-version:       1.18
 Name:                cassava
-Version:             0.5.4.1
+Version:             0.5.5.0
 
 Synopsis:            A CSV parsing and encoding library
 Description: {
@@ -76,6 +76,7 @@ Library
     FlexibleContexts
     FlexibleInstances
     KindSignatures
+    RoleAnnotations
     MultiParamTypeClasses
     OverloadedStrings
     PolyKinds
