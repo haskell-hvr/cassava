@@ -97,7 +97,7 @@ import Data.Csv.Conversion hiding (Parser, header, namedRecord, record,
                                    toNamedRecord)
 import qualified Data.Csv.Conversion as Conversion
 import qualified Data.Csv.Encoding as Encoding
-import Data.Csv.Encoding (EncodeOptions(..), Quoting(..), recordSep)
+import Data.Csv.Encoding (EncodeOptions(..), Quoting(..), MissingFieldPolicy(..), recordSep)
 import Data.Csv.Parser
 import Data.Csv.Types
 import Data.Csv.Util (endOfLine)
@@ -399,7 +399,7 @@ encodeByNameWith opts hdr b =
     Builder.toLazyByteString $
     encHdr <>
     runNamedBuilder b hdr (encQuoting opts) (encDelimiter opts)
-    (encUseCrLf opts)
+    (encMissingFieldPolicy opts) (encUseCrLf opts)
   where
     encHdr
       | encIncludeHeader opts =
@@ -416,7 +416,7 @@ encodeDefaultOrderedByNameWith opts b =
     Builder.toLazyByteString $
     encHdr <>
     runNamedBuilder b hdr (encQuoting opts)
-    (encDelimiter opts) (encUseCrLf opts)
+    (encDelimiter opts) (encMissingFieldPolicy opts) (encUseCrLf opts)
   where
     hdr = Conversion.headerOrder (undefined :: a)
 
@@ -428,8 +428,8 @@ encodeDefaultOrderedByNameWith opts b =
 
 -- | Encode a single named record.
 encodeNamedRecord :: ToNamedRecord a => a -> NamedBuilder a
-encodeNamedRecord nr = NamedBuilder $ \ hdr qtng delim useCrLf ->
-    Encoding.encodeNamedRecord hdr qtng delim
+encodeNamedRecord nr = NamedBuilder $ \ hdr qtng delim missingFieldPolicy useCrLf ->
+    Encoding.encodeNamedRecord hdr qtng delim missingFieldPolicy
     (Conversion.toNamedRecord nr) <> recordSep useCrLf
 
 -- | A builder for building the CSV data incrementally. Just like the
@@ -439,14 +439,14 @@ encodeNamedRecord nr = NamedBuilder $ \ hdr qtng delim useCrLf ->
 -- incremental.
 type role NamedBuilder  nominal
 newtype   NamedBuilder (a :: Type) = NamedBuilder {
-      runNamedBuilder :: Header -> Quoting -> Word8 -> Bool -> Builder.Builder
+      runNamedBuilder :: Header -> Quoting -> Word8 -> MissingFieldPolicy -> Bool -> Builder.Builder
     }
 
 -- | @since 0.5.0.0
 instance Semigroup (NamedBuilder a) where
     NamedBuilder f <> NamedBuilder g =
-        NamedBuilder $ \ hdr qtng delim useCrlf ->
-        f hdr qtng delim useCrlf <> g hdr qtng delim useCrlf
+        NamedBuilder $ \ hdr qtng delim missing useCrlf ->
+        f hdr qtng delim missing useCrlf <> g hdr qtng delim missing useCrlf
 
 instance Monoid (NamedBuilder a) where
     mempty = NamedBuilder (\ _ _ _ _ -> mempty)

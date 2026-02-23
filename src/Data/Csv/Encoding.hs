@@ -16,6 +16,8 @@ module Data.Csv.Encoding
     , decode
     , decodeByName
     , Quoting(..)
+    , MissingFieldPolicy(..)
+    , defaultMissingFieldPolicy
     , encode
     , encodeByName
     , encodeDefaultOrderedByName
@@ -48,8 +50,10 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as BL8
+import Data.Foldable (asum)
 import qualified Data.ByteString.Builder.Prim as P
 import qualified Data.HashMap.Strict as HM
+import Data.Maybe (fromMaybe)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Data.Word (Word8)
@@ -182,6 +186,23 @@ data Quoting
     | QuoteAll         -- ^ Always quote.
     deriving (Eq, Show)
 
+-- | How to encode missing fields.
+data MissingFieldPolicy = MissingFieldPolicy
+    { -- | Specify a default field value for each column.
+      mfpDefaultByColumn :: NamedRecord
+
+      -- | Specify a default field value to use for columns unspecified in
+      -- 'mfpDefaultByColumn'. If 'Nothing', this situation results in an
+      -- exception.
+    , mfpOtherwise :: Maybe Field
+    } deriving (Eq, Show)
+
+defaultMissingFieldPolicy :: MissingFieldPolicy
+defaultMissingFieldPolicy = MissingFieldPolicy
+    { mfpDefaultByColumn = HM.empty
+    , mfpOtherwise = Nothing
+    }
+
 -- | Options that controls how data is encoded. These options can be
 -- used to e.g. encode data in a tab-separated format instead of in a
 -- comma-separated format.
@@ -211,15 +232,19 @@ data EncodeOptions = EncodeOptions
 
       -- | What kind of quoting should be applied to text fields.
     , encQuoting :: !Quoting
+
+      -- | How to encode missing fields.
+    , encMissingFieldPolicy :: MissingFieldPolicy
     } deriving (Eq, Show)
 
 -- | Encoding options for CSV files.
 defaultEncodeOptions :: EncodeOptions
 defaultEncodeOptions = EncodeOptions
-    { encDelimiter     = comma
-    , encUseCrLf       = True
-    , encIncludeHeader = True
-    , encQuoting       = QuoteMinimal
+    { encDelimiter          = comma
+    , encUseCrLf            = True
+    , encIncludeHeader      = True
+    , encQuoting            = QuoteMinimal
+    , encMissingFieldPolicy = defaultMissingFieldPolicy
     }
 
 -- | Like 'encode', but lets you customize how the CSV data is
@@ -263,9 +288,9 @@ encodeRecord qtng delim rec' =
 
 -- | Encode a single named record, without the trailing record
 -- separator (i.e. newline), using the given field order.
-encodeNamedRecord :: Header -> Quoting -> Word8 -> NamedRecord -> Builder
-encodeNamedRecord hdr qtng delim =
-    encodeRecord qtng delim . namedRecordToRecord hdr
+encodeNamedRecord :: Header -> Quoting -> Word8 -> MissingFieldPolicy -> NamedRecord -> Builder
+encodeNamedRecord hdr qtng delim missingFieldPolicy =
+    encodeRecord qtng delim . namedRecordToRecord missingFieldPolicy hdr
 
 escape :: Quoting -> Word8 -> B.ByteString -> Builder
 escape !qtng !delim !s
@@ -302,7 +327,7 @@ encodeByNameWith opts hdr v
     rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
                  recordSep (encUseCrLf opts) <> records
     records = unlines (recordSep (encUseCrLf opts))
-              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts)
+              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts) (encMissingFieldPolicy opts)
                      . toNamedRecord)
               $ v
 {-# INLINE encodeByNameWith #-}
@@ -322,19 +347,23 @@ encodeDefaultOrderedByNameWith opts v
     rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
                  recordSep (encUseCrLf opts) <> records
     records = unlines (recordSep (encUseCrLf opts))
-              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts)
+              . map (encodeNamedRecord hdr (encQuoting opts) (encDelimiter opts) (encMissingFieldPolicy opts)
                      . toNamedRecord)
               $ v
 {-# INLINE encodeDefaultOrderedByNameWith #-}
 
-namedRecordToRecord :: Header -> NamedRecord -> Record
-namedRecordToRecord hdr nr = V.map find hdr
+namedRecordToRecord :: MissingFieldPolicy -> Header -> NamedRecord -> Record
+namedRecordToRecord missingFieldPolicy hdr nr = V.map find hdr
   where
-    find n = case HM.lookup n nr of
-        Nothing -> moduleError "namedRecordToRecord" $
-                   "header contains name " ++ show (B8.unpack n) ++
-                   " which is not present in the named record"
-        Just v  -> v
+    find n = fromMaybe (fallbackError n) $ asum
+        [ HM.lookup n nr
+        , HM.lookup n $ mfpDefaultByColumn missingFieldPolicy
+        , mfpOtherwise missingFieldPolicy
+        ]
+
+    fallbackError n = moduleError "namedRecordToRecord" $
+                                  "header contains name " ++ show (B8.unpack n) ++
+                                  " which is not present in the named record"
 
 moduleError :: String -> String -> a
 moduleError func msg = error $ "Data.Csv.Encoding." ++ func ++ ": " ++ msg
