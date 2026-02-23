@@ -56,7 +56,8 @@ module Data.Csv
     , decodeByNameWithP
     , EncodeOptions(..)
     , Quoting(..)
-    , MissingPolicy(..)
+    , MissingFieldPolicy(..)
+    , defaultMissingFieldPolicy
     , defaultEncodeOptions
     , encodeWith
     , encodeByNameWith

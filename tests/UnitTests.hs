@@ -384,13 +384,13 @@ customMissing :: Assertion
 customMissing = encodeByNameWith encOpts hdr nrs @?= ex
   where
     encOpts = defaultEncodeOptions
-        { encMissing = Just MissingPolicy
-            { defaults = HM.fromList
+        { encMissingFieldPolicy = defaultMissingFieldPolicy
+            { mfpDefaultByColumn = HM.fromList
                 [ ("abc", "abc default")
                 , ("def", "def default")
                 , ("jkl", "ghi default")
                 ]
-            , fallback = "fallback"
+            , mfpOtherwise = Just "fallback"
             }
         }
     hdr = V.fromList ["abc", "def", "ghi"]
