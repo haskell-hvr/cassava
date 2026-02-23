@@ -95,7 +95,7 @@ import Data.Csv.Conversion hiding (Parser, header, namedRecord, record,
                                    toNamedRecord)
 import qualified Data.Csv.Conversion as Conversion
 import qualified Data.Csv.Encoding as Encoding
-import Data.Csv.Encoding (EncodeOptions(..), Quoting(..), recordSep)
+import Data.Csv.Encoding (EncodeOptions(..), Quoting(..), MissingPolicy(..), recordSep)
 import Data.Csv.Parser
 import Data.Csv.Types
 import Data.Csv.Util (endOfLine)
@@ -430,8 +430,8 @@ encodeDefaultOrderedByNameWith opts b =
 
 -- | Encode a single named record.
 encodeNamedRecord :: ToNamedRecord a => a -> NamedBuilder a
-encodeNamedRecord nr = NamedBuilder $ \ hdr qtng delim missing useCrLf ->
-    Encoding.encodeNamedRecord hdr qtng delim missing
+encodeNamedRecord nr = NamedBuilder $ \ hdr qtng delim mMissingPolicy useCrLf ->
+    Encoding.encodeNamedRecord hdr qtng delim mMissingPolicy
     (Conversion.toNamedRecord nr) <> recordSep useCrLf
 
 -- | A builder for building the CSV data incrementally. Just like the
@@ -440,7 +440,7 @@ encodeNamedRecord nr = NamedBuilder $ \ hdr qtng delim missing useCrLf ->
 -- a left-associative, `foldl'` style makes the building not be
 -- incremental.
 newtype NamedBuilder a = NamedBuilder {
-      runNamedBuilder :: Header -> Quoting -> Word8 -> (Name -> Field) -> Bool -> Builder.Builder
+      runNamedBuilder :: Header -> Quoting -> Word8 -> Maybe MissingPolicy -> Bool -> Builder.Builder
     }
 
 -- | @since 0.5.0.0

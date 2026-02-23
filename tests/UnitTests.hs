@@ -383,16 +383,26 @@ customDelim delim f1 f2 = delim `notElem` [cr, nl, dquote] ==>
 customMissing :: Assertion
 customMissing = encodeByNameWith encOpts hdr nrs @?= ex
   where
-    encOpts = defaultEncodeOptions { encMissing = id }
-    hdr = V.fromList ["abc", "def"]
+    encOpts = defaultEncodeOptions
+        { encMissing = Just MissingPolicy
+            { defaults = HM.fromList
+                [ ("abc", "abc default")
+                , ("def", "def default")
+                , ("jkl", "ghi default")
+                ]
+            , fallback = "fallback"
+            }
+        }
+    hdr = V.fromList ["abc", "def", "ghi"]
     nrs :: [NamedRecord]
     nrs =
       [ HM.fromList [("abc", "123")]
       , HM.fromList [("def", "456")]
       , HM.fromList [("abc", "234"), ("def", "567")]
+      , HM.fromList [("abc", "234"), ("def", "567"), ("ghi", "890")]
       , HM.fromList []
       ]
-    ex = "abc,def\r\n123,def\r\nabc,456\r\n234,567\r\nabc,def\r\n"
+    ex = "abc,def,ghi\r\n123,def default,fallback\r\nabc default,456,fallback\r\n234,567,fallback\r\n234,567,890\r\nabc default,def default,fallback\r\n"
 
 customOptionsTests :: [TF.Test]
 customOptionsTests =
