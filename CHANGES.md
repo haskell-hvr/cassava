@@ -1,6 +1,10 @@
 ## Version 0.5.5.0
 
+_Michael Chavinda, 2026-02-22_
+
  * `Data.Csv.Incremental`: Fixed the `type role`s of `Builder` and `NamedBuilder`; they're now `nominal` in their parameters.
+ * `Faster encoding`: Reduce intermediate allocations in encoding logic.
+ * `Default values for encoding missing fields`: Provides a way to either specify per-column defaults or a general fallback value.
 
 ## Version 0.5.4.1
 
