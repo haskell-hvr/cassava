@@ -2,6 +2,8 @@ module Data.Csv.Conversion.Internal
     ( decimal
     , scientific
     , realFloat
+    , viaBuilder
+    , formatBoundedSigned
     ) where
 
 import Data.ByteString.Builder (Builder, toLazyByteString, word8, char8,
@@ -12,7 +14,6 @@ import Data.Array.Base (unsafeAt)
 import Data.Array.IArray
 import qualified Data.ByteString as B
 import Data.Char (ord)
-import Data.Int
 import qualified Data.Monoid as Mon
 import Data.Scientific (Scientific)
 import Data.Word
@@ -29,26 +30,6 @@ decimal = toStrict . toLazyByteString . formatDecimal
 -- TODO: Add an optimized version for Integer.
 
 formatDecimal :: Integral a => a -> Builder
-{-# RULES "formatDecimal/Int" formatDecimal = formatBoundedSigned
-    :: Int -> Builder #-}
-{-# RULES "formatDecimal/Int8" formatDecimal = formatBoundedSigned
-    :: Int8 -> Builder #-}
-{-# RULES "formatDecimal/Int16" formatDecimal = formatBoundedSigned
-    :: Int16 -> Builder #-}
-{-# RULES "formatDecimal/Int32" formatDecimal = formatBoundedSigned
-    :: Int32 -> Builder #-}
-{-# RULES "formatDecimal/Int64" formatDecimal = formatBoundedSigned
-    :: Int64 -> Builder #-}
-{-# RULES "formatDecimal/Word" formatDecimal = formatPositive
-    :: Word -> Builder #-}
-{-# RULES "formatDecimal/Word8" formatDecimal = formatPositive
-    :: Word8 -> Builder #-}
-{-# RULES "formatDecimal/Word16" formatDecimal = formatPositive
-    :: Word16 -> Builder #-}
-{-# RULES "formatDecimal/Word32" formatDecimal = formatPositive
-    :: Word32 -> Builder #-}
-{-# RULES "formatDecimal/Word64" formatDecimal = formatPositive
-    :: Word64 -> Builder #-}
 {-# NOINLINE formatDecimal #-}
 formatDecimal i
     | i < 0     = minus Mon.<>
@@ -58,11 +39,6 @@ formatDecimal i
     | otherwise = formatPositive i
 
 formatBoundedSigned :: (Integral a, Bounded a) => a -> Builder
-{-# SPECIALIZE formatBoundedSigned :: Int -> Builder #-}
-{-# SPECIALIZE formatBoundedSigned :: Int8 -> Builder #-}
-{-# SPECIALIZE formatBoundedSigned :: Int16 -> Builder #-}
-{-# SPECIALIZE formatBoundedSigned :: Int32 -> Builder #-}
-{-# SPECIALIZE formatBoundedSigned :: Int64 -> Builder #-}
 formatBoundedSigned i
     | i < 0     = minus Mon.<>
                   if i == minBound
@@ -71,16 +47,6 @@ formatBoundedSigned i
     | otherwise = formatPositive i
 
 formatPositive :: Integral a => a -> Builder
-{-# SPECIALIZE formatPositive :: Int -> Builder #-}
-{-# SPECIALIZE formatPositive :: Int8 -> Builder #-}
-{-# SPECIALIZE formatPositive :: Int16 -> Builder #-}
-{-# SPECIALIZE formatPositive :: Int32 -> Builder #-}
-{-# SPECIALIZE formatPositive :: Int64 -> Builder #-}
-{-# SPECIALIZE formatPositive :: Word -> Builder #-}
-{-# SPECIALIZE formatPositive :: Word8 -> Builder #-}
-{-# SPECIALIZE formatPositive :: Word16 -> Builder #-}
-{-# SPECIALIZE formatPositive :: Word32 -> Builder #-}
-{-# SPECIALIZE formatPositive :: Word64 -> Builder #-}
 formatPositive = go
   where go n | n < 10    = digit n
              | otherwise = go (n `quot` 10) Mon.<> digit (n `rem` 10)
@@ -297,3 +263,8 @@ i2d i = fromIntegral (ord '0' + i)
 -- | Word8 list rendering
 word8s :: [Word8] -> Builder
 word8s = BP.primMapListFixed BP.word8
+
+-- | Helper function that build strict bytestring via a provided builder.
+viaBuilder :: Builder -> B.ByteString
+viaBuilder = toStrict . toLazyByteString
+{-# INLINE viaBuilder #-}
