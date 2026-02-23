@@ -36,12 +36,7 @@ import qualified Data.Vector as V
 import Data.Word (Word8)
 
 import Data.Csv.Types
-import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, newline, doubleQuote, toStrict)
-
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((<$>), (*>), (<*), pure)
-import Data.Monoid (mappend, mempty)
-#endif
+import Data.Csv.Util ((<$!>), blankLine, endOfLine, liftM2', cr, comma, newline, doubleQuote, toStrict)
 
 -- | Options that controls how data is decoded. These options can be
 -- used to e.g. decode tab-separated data instead of comma-separated
@@ -62,7 +57,7 @@ data DecodeOptions = DecodeOptions
 -- | Decoding options for parsing CSV files.
 defaultDecodeOptions :: DecodeOptions
 defaultDecodeOptions = DecodeOptions
-    { decDelimiter = 44  -- comma
+    { decDelimiter = comma
     }
 
 -- | Parse a CSV file that does not include a header.
@@ -154,17 +149,20 @@ field !delim = do
 escapedField :: AL.Parser S.ByteString
 escapedField = do
     _ <- dquote
-    -- The scan state is 'True' if the previous character was a double
-    -- quote.  We need to drop a trailing double quote left by scan.
-    s <- S.init <$> (A.scan False $ \s c -> if c == doubleQuote
-                                            then Just (not s)
-                                            else if s then Nothing
-                                                 else Just False)
-    if doubleQuote `S.elem` s
-        then case Z.parse unescape s of
-            Right r  -> return r
-            Left err -> fail err
-        else return s
+    -- The scan state is 'True' if the previous character was a double quote.
+    s' <- A.scan False $ \s c -> if c == doubleQuote
+                                 then Just (not s)
+                                 else if s then Nothing
+                                      else Just False
+    -- We need to drop a trailing double quote left by scan.
+    if S.null s'
+      then fail "trailing double quote"
+      else let s = S.init s'
+           in if doubleQuote `S.elem` s
+              then case Z.parse unescape s of
+                     Right r  -> return r
+                     Left err -> fail err
+              else return s
 
 unescapedField :: Word8 -> AL.Parser S.ByteString
 unescapedField !delim = A.takeWhile (\ c -> c /= doubleQuote &&
@@ -181,8 +179,8 @@ unescape = (toStrict . toLazyByteString) <$!> go mempty where
     h <- Z.takeWhile (/= doubleQuote)
     let rest = do
           start <- Z.take 2
-          if (S.unsafeHead start == doubleQuote &&
-              S.unsafeIndex start 1 == doubleQuote)
+          if S.unsafeHead start == doubleQuote &&
+              S.unsafeIndex start 1 == doubleQuote
               then go (acc `mappend` byteString h `mappend` charUtf8 '"')
               else fail "invalid CSV escape sequence"
     done <- Z.atEnd

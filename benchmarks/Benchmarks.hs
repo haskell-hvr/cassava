@@ -21,11 +21,6 @@ import qualified Data.Vector as V
 import Data.Csv
 import qualified Data.Csv.Streaming as Streaming
 
-#if !MIN_VERSION_bytestring(0,10,0)
-instance NFData (B.ByteString) where
-    rnf !s = ()
-#endif
-
 data President = President
                  { presidency     :: !Int
                  , president      :: !Text
@@ -100,13 +95,29 @@ instance NFData LazyCsv.CSVError where
     rnf (LazyCsv.DuplicateHeader _ _ s)    = rnf s
     rnf LazyCsv.NoData                     = ()
 
+instance NFData (Int, Int, B.ByteString, Double, Int, B.ByteString, Double, B.ByteString, Double, Int) where
+  rnf (a,b,c,d,e,f,g,h,i,j) = rnf a `seq`
+                              rnf b `seq`
+                              rnf c `seq`
+                              rnf d `seq`
+                              rnf e `seq`
+                              rnf f `seq`
+                              rnf g `seq`
+                              rnf h `seq`
+                              rnf i `seq`
+                              rnf j
+
 main :: IO ()
 main = do
     !csvData <- fromStrict `fmap` B.readFile "./presidents.csv"
     !csvDataN <- fromStrict `fmap` B.readFile
                  "./presidents_with_header.csv"
-    let (Right !presidents) = V.toList <$> decodePresidents csvData
-        (Right (!hdr, !presidentsNV)) = decodePresidentsN csvDataN
+    !wide <- fromStrict `fmap` B.readFile "./random_r5000_c500_s42.csv"
+    !long <- fromStrict `fmap` B.readFile "./random_r1000000_c10_s42.csv"
+
+    -- warm up run before running the benchmark.
+    let !presidents = either error id (V.toList <$> decodePresidents csvData)
+        (!hdr, !presidentsNV) = either error id (decodePresidentsN csvDataN)
         !presidentsN = V.toList presidentsNV
     evaluate (rnf [presidents, presidentsN])
     defaultMain [
@@ -120,7 +131,7 @@ main = do
               ]
             ]
           , bgroup "encode"
-            [ bench "presidents/with conversion" $ whnf encode presidents
+            [ bench "presidents/with conversion" $ nf (BL.length . encode) presidents
             ]
           ]
         , bgroup "named"
@@ -129,11 +140,19 @@ main = do
             , bench "presidents/with conversion" $ whnf decodePresidentsN csvDataN
             ]
           , bgroup "encode"
-            [ bench "presidents/with conversion" $ whnf (encodeByName hdr) presidentsN
+            [ bench "presidents/with conversion" $ nf (BL.length . (encodeByName hdr)) presidentsN
             ]
           ]
         , bgroup "comparison"
           [ bench "lazy-csv" $ nf LazyCsv.parseCSV csvData
+          ]
+        , bgroup "wide"
+          [ bench "read/no-conversion" $ nf (either error (V.foldl' (const touchIdRow) ()) . idDecode) wide
+          ]
+        , bgroup "long"
+          [ bench "read/no-conversion" $ nf (either error (V.foldl' (const touchIdRow) ()) . idDecode) long
+          , bench "read/with-conversion" $ nf (either error (V.foldl' (const touchRow) ()) . decodeLong) long
+          , bench "read/with-conversion/streaming" $ nf decodeLongS long
           ]
         ]
   where
@@ -149,8 +168,25 @@ main = do
     idDecode :: BL.ByteString -> Either String (Vector (Vector B.ByteString))
     idDecode = decode NoHeader
 
+    decodeLong :: BL.ByteString -> Either String (Vector (Int, Int, B.ByteString, Double, Int, B.ByteString, Double, B.ByteString, Double, Int))
+    decodeLong = decode HasHeader
+
+    decodeLongS :: BL.ByteString -> Streaming.Records (Int, Int, B.ByteString, Double, Int, B.ByteString, Double, B.ByteString, Double, Int)
+    decodeLongS = Streaming.decode HasHeader
+
     idDecodeN :: BL.ByteString -> Either String (Header, Vector (BSHashMap B.ByteString))
     idDecodeN = decodeByName
 
     idDecodeS :: BL.ByteString -> Streaming.Records (Vector B.ByteString)
     idDecodeS = Streaming.decode NoHeader
+
+    touchIdRow :: Vector B.ByteString -> ()
+    touchIdRow = V.foldl' (const touchBS) ()
+
+    touchBS :: B.ByteString -> ()
+    touchBS = B.foldl' (\() w -> w `seq` ()) ()
+
+    touchRow :: (Int, Int, B.ByteString, Double, Int, B.ByteString, Double, B.ByteString, Double, Int) -> ()
+    touchRow (a,b,c,d,e,f,g,h,i,j) =
+      a `seq` b `seq` d `seq` e `seq` g `seq` i `seq` j `seq`
+      touchBS c `seq` touchBS f `seq` touchBS h

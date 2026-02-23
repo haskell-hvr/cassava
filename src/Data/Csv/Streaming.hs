@@ -21,11 +21,13 @@ module Data.Csv.Streaming
     , HasHeader(..)
     , decode
     , decodeWith
+    , decodeWithP
 
     -- ** Name-based record conversion
     -- $namebased
     , decodeByName
     , decodeByNameWith
+    , decodeByNameWithP
     ) where
 
 import Control.DeepSeq (NFData(rnf))
@@ -36,20 +38,12 @@ import Data.Foldable (Foldable(..))
 import Prelude hiding (foldr)
 
 import Data.Csv.Conversion
+import qualified Data.Csv.Conversion as Conversion
 import Data.Csv.Incremental hiding (decode, decodeByName, decodeByNameWith,
-                                    decodeWith)
+                                    decodeByNameWithP, decodeWith, decodeWithP)
 import qualified Data.Csv.Incremental as I
 import Data.Csv.Parser
 import Data.Csv.Types
-
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((<$>), (<*>), pure)
-import Data.Traversable (Traversable(..))
-#endif
-
-#if !MIN_VERSION_bytestring(0,10,0)
-import qualified Data.ByteString.Lazy.Internal as BL  -- for constructors
-#endif
 
 -- $example
 --
@@ -98,9 +92,7 @@ data Records a
 -- | Skips records that failed to convert.
 instance Foldable Records where
     foldr = foldrRecords
-#if MIN_VERSION_base(4,6,0)
     foldl' = foldlRecords'
-#endif
 
 foldrRecords :: (a -> b -> b) -> b -> Records a -> b
 foldrRecords f = go
@@ -110,7 +102,6 @@ foldrRecords f = go
     go z _ = z
 {-# INLINE foldrRecords #-}
 
-#if MIN_VERSION_base(4,6,0)
 foldlRecords' :: (a -> b -> a) -> a -> Records b -> a
 foldlRecords' f = go
   where
@@ -118,7 +109,6 @@ foldlRecords' f = go
     go z (Cons (Left _) rs) = go z rs
     go z _ = z
 {-# INLINE foldlRecords' #-}
-#endif
 
 instance Traversable Records where
     traverse _ (Nil merr rest) = pure $ Nil merr rest
@@ -129,15 +119,7 @@ instance Traversable Records where
 
 instance NFData a => NFData (Records a) where
     rnf (Cons r rs) = rnf r `seq` rnf rs
-#if MIN_VERSION_bytestring(0,10,0)
     rnf (Nil errMsg rest) = rnf errMsg `seq` rnf rest
-#else
-    rnf (Nil errMsg rest) = rnf errMsg `seq` rnfLazyByteString rest
-
-rnfLazyByteString :: BL.ByteString -> ()
-rnfLazyByteString BL.Empty       = ()
-rnfLazyByteString (BL.Chunk _ b) = rnfLazyByteString b
-#endif
 
 -- | Efficiently deserialize CSV records in a streaming fashion.
 -- Equivalent to @'decodeWith' 'defaultDecodeOptions'@.
@@ -155,8 +137,19 @@ decodeWith :: FromRecord a
                              -- skipped
            -> BL.ByteString  -- ^ CSV data
            -> Records a
-decodeWith !opts hasHeader s0 =
-    go (BL.toChunks s0) (I.decodeWith opts hasHeader)
+decodeWith = decodeWithP parseRecord
+
+-- | Like 'decodeWith', but lets you specify a parser function.
+--
+-- @since 0.5.4.0
+decodeWithP :: (Record -> Conversion.Parser a)
+           -> DecodeOptions  -- ^ Decoding options
+           -> HasHeader      -- ^ Data contains header that should be
+                             -- skipped
+           -> BL.ByteString  -- ^ CSV data
+           -> Records a
+decodeWithP _parseRecord !opts hasHeader s0 =
+    go (BL.toChunks s0) (I.decodeWithP _parseRecord opts hasHeader)
   where
     go ss (Done xs)       = foldr Cons (Nil Nothing (BL.fromChunks ss)) xs
     go ss (Fail rest err) = Nil (Just err) (BL.fromChunks (rest:ss))
@@ -180,7 +173,18 @@ decodeByNameWith :: FromNamedRecord a
                  => DecodeOptions  -- ^ Decoding options
                  -> BL.ByteString  -- ^ CSV data
                  -> Either String (Header, Records a)
-decodeByNameWith !opts s0 = go (BL.toChunks s0) (I.decodeByNameWith opts)
+decodeByNameWith = decodeByNameWithP parseNamedRecord
+
+-- | Like 'decodeByNameWith', but lets you specify a parser function.
+--
+-- @since 0.5.4.0
+decodeByNameWithP :: (NamedRecord -> Conversion.Parser a)
+                  -- ^ Custom parser function
+                 -> DecodeOptions  -- ^ Decoding options
+                 -> BL.ByteString  -- ^ CSV data
+                 -> Either String (Header, Records a)
+decodeByNameWithP _parseNamedRecord !opts s0 =
+  go (BL.toChunks s0) (I.decodeByNameWithP _parseNamedRecord opts)
   where
     go ss (DoneH hdr p)    = Right (hdr, go2 ss p)
     go ss (FailH rest err) = Left $ err ++ " at " ++

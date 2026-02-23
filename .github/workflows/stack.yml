@@ -1,0 +1,129 @@
+# Adapted from github.com:debug-ito/staversion/.github/workflows/haskell.yml
+
+name: Stack build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  stack:
+    name: ${{ matrix.os }} Stack ${{ matrix.plan.resolver }} / ${{ matrix.plan.ghc }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        plan:
+          - ghc: '9.12'
+            resolver: 'nightly-2025-12-30'
+          - ghc: '9.10'
+            resolver: 'lts'
+          - ghc: '9.8.4'
+            resolver: 'lts-23.28'
+          - ghc: '9.6.7'
+            resolver: 'lts-22.44'
+          - ghc: '9.4.8'
+            resolver: 'lts-21.25'
+          - ghc: '9.2.8'
+            resolver: 'lts-20.26'
+          - ghc: '9.0.2'
+            resolver: 'lts-19.33'
+          - ghc: '8.10.7'
+            resolver: 'lts-18.28'
+          # Older LTSs do not have QuickCheck >= 2.14
+          # - ghc: '8.8.4'
+          #   resolver: 'lts-16.31'
+          # - ghc: '8.6.5'
+          #   resolver: 'lts-14.27'
+          # - ghc: '8.4.4'
+          #   resolver: 'lts-12.26'
+          # - ghc: '8.2.2'
+          #   resolver: 'lts-11.22'
+          # - ghc: '8.0.2'
+          #   resolver: 'lts-9.21'
+
+        include:
+          - os: windows-latest
+            plan:
+              ghc: '9.12'
+              resolver: 'nightly-2025-12-30'
+
+          - os: macos-latest
+            plan:
+              ghc: '9.12'
+              resolver: 'nightly-2025-12-30'
+
+    runs-on: ${{ matrix.os }}
+    env:
+      STACK: stack --no-terminal --resolver ${{ matrix.plan.resolver }} --system-ghc --no-install-ghc
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - uses: haskell-actions/setup@v2
+      id: setup
+      with:
+        ghc-version: ${{ matrix.plan.ghc }}
+        enable-stack: true
+        cabal-update: false
+
+    # - name: Configure
+    #   run: $STACK init
+
+    # - name: Install GHC via stack
+    #   run: $STACK ghc -- --version
+
+    # - name: Haskell versions
+    #   run: |
+    #     STACK_VERSION=$(${STACK} --numeric-version)
+    #     echo "STACK_VERSION=${STACK_VERSION}" >> "${GITHUB_ENV}"
+    #     GHC_VERSION=$(${STACK} ghc -- --numeric-version)
+    #     echo "GHC_VERSION=${GHC_VERSION}" >> "${GITHUB_ENV}"
+
+      ## This causes troubles on Windows (spaces in env variable)?
+      # STACK_ROOT=$(${STACK} path --stack-root)
+      # echo "STACK_ROOT=${STACK_ROOT}" >> "${GITHUB_ENV}"
+
+    ## Caching ~/.stack without --system-ghc is probably not a good idea:
+    ## - too fat
+    ## - should be sensibly restored before installing GHC via stack,
+    ##   but then we don't know the GHC version; so at least 'lts' and 'nightly' would be brittle
+    ##
+    # - uses: actions/cache@v3
+    #   with:
+    #     path: ${{ env.STACK_ROOT }}
+    #     key: ${{ runner.os }}-stack-${{ env.STACK_VERSION }}-ghc-${{ env.GHC_VERSION }}-resolver-${{ matrix.plan.resolver }}
+
+    - name: Cache dependencies (restore)
+      uses: actions/cache/restore@v4
+      id: cache
+      with:
+        path: ${{ steps.setup.outputs.stack-root }}
+        # Use a unique primary key (always save new cache); works if caches aren't to big or too many...
+        key:          ${{ runner.os }}-stack-${{ steps.setup.outputs.stack-version }}-ghc-${{ steps.setup.outputs.ghc-version }}-commit-${{ github.sha }}
+        restore-keys: ${{ runner.os }}-stack-${{ steps.setup.outputs.stack-version }}-ghc-${{ steps.setup.outputs.ghc-version }}-
+
+    - name: Install dependencies
+      run: $STACK test --only-dependencies
+
+    - name: Build
+      run: $STACK build --haddock --no-haddock-deps
+
+    - name: Test
+      run: $STACK -j 1 test --haddock --no-haddock-deps
+
+    - name: Cache dependencies (save)
+      uses: actions/cache/save@v4
+      if: always() && steps.cache.outputs.cache-hit != 'true'
+      # # Will fail if we already have a cache with this key (in this case, cache-hit is true).
+      with:
+        path: ${{ steps.setup.outputs.stack-root }}
+        key:  ${{ steps.cache.outputs.cache-primary-key }}

@@ -1,10 +1,6 @@
 {-# LANGUAGE CPP, DataKinds, DeriveGeneric, OverloadedStrings, ScopedTypeVariables #-}
 
-#if __GLASGOW_HASKELL__ >= 801
 {-# OPTIONS_GHC -Wno-orphans -Wno-unused-top-binds #-}
-#else
-{-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-binds #-}
-#endif
 
 module Main
     ( main
@@ -21,6 +17,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
+import Data.List (isPrefixOf)
 import Data.Word
 import Numeric.Natural
 import GHC.Generics (Generic)
@@ -33,10 +30,6 @@ import Test.Framework.Providers.QuickCheck2 as TF
 
 import Data.Csv hiding (record)
 import qualified Data.Csv.Streaming as S
-
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((<$>), (<*>))
-#endif
 
 ------------------------------------------------------------------------
 -- Parse tests
@@ -55,6 +48,14 @@ assertResult input expected res = case res of
     Left err -> assertFailure $
                 "      input: " ++ show (BL8.unpack input) ++ "\n" ++
                 "parse error: " ++ err
+
+decodeFailsWith :: BL.ByteString -> String -> Assertion
+decodeFailsWith input expected = case decode NoHeader input of
+    Right r  -> assertFailure $ "input: " ++ show (BL8.unpack input) ++ "\n" ++
+                "retuned: " ++ show (r :: (V.Vector (V.Vector B.ByteString))) ++ "\n" ++
+                "whereas should have failed with " <> expected
+    Left err -> assertBool ("got " <> err <> "\ninstead of " <> expected)
+                $ ("parse error ("++expected++")") `isPrefixOf` err
 
 encodesAs :: [[B.ByteString]] -> BL.ByteString -> Assertion
 encodesAs input expected =
@@ -166,6 +167,11 @@ positionalTests =
       [ testGroup "decode" $ map streamingDecodeTest decodeTests
       , testGroup "decodeWith" $ map streamingDecodeWithTest decodeWithTests
       ]
+    , testGroup "failing"
+      [ testCase "escapedMalformed0" $
+          "baz,\"" `decodeFailsWith` "Failed reading: trailing double quote"
+      ]
+
     ]
   where
     rfc4180Input = BL8.pack $
@@ -186,6 +192,10 @@ positionalTests =
            [["a", "b", "c"], ["d", "e", "f"]])
         , ("leadingSpace", " a,  b,   c\n",  [[" a", "  b", "   c"]])
         , ("rfc4180", rfc4180Input, rfc4180Output)
+        , ("escapedDoubleQuotes"
+          , "\"x,y\",z\nbaz,\"bar\nfoo,\""
+          , [["x,y", "z"], ["baz", "bar\nfoo,"]]
+          )
         ]
     decodeWithTests =
         [ ("tab-delim", defDec { decDelimiter = 9 }, "1\t2", [["1", "2"]])
@@ -304,15 +314,8 @@ conversionTests =
         (roundTrip :: BL.ByteString -> Bool)
       , testProperty "Text" (roundTrip :: T.Text -> Bool)
       , testProperty "lazy Text" (roundTrip :: LT.Text -> Bool)
-
-#if __GLASGOW_HASKELL__ >= 800
       -- Using DataKinds here to prove that our Const instance is polykinded.
       , testProperty "Const Char" (roundTrip :: Const Char "" -> Bool)
-#else
-      -- For lower GHC versions, Const does not support PolyKinds.
-      , testProperty "Const Char" (roundTrip :: Const Char () -> Bool)
-#endif
-
       ]
     , testGroup "boundary"
       [ testProperty "Int" (boundary (undefined :: Int))

@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns, CPP, DeriveFunctor, ScopedTypeVariables #-}
+{-# LANGUAGE RoleAnnotations, KindSignatures #-}
 
 -- | This module allows for incremental decoding and encoding of CSV
 -- data. This is useful if you e.g. want to interleave I\/O with
@@ -81,6 +82,7 @@ module Data.Csv.Incremental
     , NamedBuilder
     ) where
 
+import Data.Kind (Type)
 import Control.Applicative ((<|>))
 import qualified Data.Attoparsec.ByteString as A
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
@@ -99,11 +101,6 @@ import Data.Csv.Encoding (EncodeOptions(..), Quoting(..), MissingFieldPolicy(..)
 import Data.Csv.Parser
 import Data.Csv.Types
 import Data.Csv.Util (endOfLine)
-
-#if !MIN_VERSION_base(4,8,0)
-import Data.Monoid (Monoid(mappend, mempty))
-import Control.Applicative ((<*))
-#endif
 
 -- $feed-header
 --
@@ -362,7 +359,8 @@ encodeRecord r = Builder $ \ qtng delim useCrLf ->
 -- right-associative, 'foldr' style. Using '<>' to compose builders in
 -- a left-associative, `foldl'` style makes the building not be
 -- incremental.
-newtype Builder a = Builder {
+type role Builder  nominal
+newtype   Builder (a :: Type) = Builder {
       runBuilder :: Quoting -> Word8 -> Bool -> Builder.Builder
     }
 
@@ -439,7 +437,8 @@ encodeNamedRecord nr = NamedBuilder $ \ hdr qtng delim missingFieldPolicy useCrL
 -- right-associative, 'foldr' style. Using '<>' to compose builders in
 -- a left-associative, `foldl'` style makes the building not be
 -- incremental.
-newtype NamedBuilder a = NamedBuilder {
+type role NamedBuilder  nominal
+newtype   NamedBuilder (a :: Type) = NamedBuilder {
       runNamedBuilder :: Header -> Quoting -> Word8 -> MissingFieldPolicy -> Bool -> Builder.Builder
     }
 

@@ -42,7 +42,8 @@ module Data.Csv.Encoding
     ) where
 
 import Data.ByteString.Builder
-import Control.Applicative as AP (Applicative(..), (<|>))
+
+import Control.Applicative as AP ((<|>))
 import Data.Attoparsec.ByteString.Char8 (endOfInput)
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import qualified Data.ByteString as B
@@ -50,6 +51,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as BL8
 import Data.Foldable (asum)
+import qualified Data.ByteString.Builder.Prim as P
 import qualified Data.HashMap.Strict as HM
 import Data.Maybe (fromMaybe)
 import Data.Vector (Vector)
@@ -66,10 +68,8 @@ import Data.Csv.Parser hiding (csv, csvWithHeader)
 import qualified Data.Csv.Parser as Parser
 import Data.Csv.Types hiding (toNamedRecord)
 import qualified Data.Csv.Types as Types
-import Data.Csv.Util (blankLine, endOfLine, toStrict)
-
-
--- TODO: 'encode' isn't as efficient as it could be.
+import Data.Csv.Util (blankLine, endOfLine, doubleQuote, cr, newline, comma)
+import Data.Functor (($>))
 
 ------------------------------------------------------------------------
 -- * Encoding and decoding
@@ -240,7 +240,7 @@ data EncodeOptions = EncodeOptions
 -- | Encoding options for CSV files.
 defaultEncodeOptions :: EncodeOptions
 defaultEncodeOptions = EncodeOptions
-    { encDelimiter          = 44  -- comma
+    { encDelimiter          = comma
     , encUseCrLf            = True
     , encIncludeHeader      = True
     , encQuoting            = QuoteMinimal
@@ -261,11 +261,7 @@ encodeWith opts
 
 -- | Check if the delimiter is valid.
 validDelim :: Word8 -> Bool
-validDelim delim = delim `notElem` [cr, nl, dquote]
-  where
-    nl = 10
-    cr = 13
-    dquote = 34
+validDelim delim = delim /= cr && delim /= newline && delim /= doubleQuote
 
 -- | Raises an exception indicating that the provided delimiter isn't
 -- valid. See 'validDelim'.
@@ -281,8 +277,13 @@ encodeOptionsError = error $ "Data.Csv: " ++
 -- | Encode a single record, without the trailing record separator
 -- (i.e. newline).
 encodeRecord :: Quoting -> Word8 -> Record -> Builder
-encodeRecord qtng delim = mconcat . intersperse (word8 delim)
-                     . map byteString . map (escape qtng delim) . V.toList
+encodeRecord qtng delim rec' =
+  case V.uncons rec' of
+    Nothing      -> mempty
+    Just (x, xs) -> escape qtng delim x <>
+                    V.foldl' (\acc b -> acc <> d <> escape qtng delim b) mempty xs
+  where
+    d = word8 delim
 {-# INLINE encodeRecord #-}
 
 -- | Encode a single named record, without the trailing record
@@ -291,26 +292,27 @@ encodeNamedRecord :: Header -> Quoting -> Word8 -> MissingFieldPolicy -> NamedRe
 encodeNamedRecord hdr qtng delim missingFieldPolicy =
     encodeRecord qtng delim . namedRecordToRecord missingFieldPolicy hdr
 
--- TODO: Optimize
-escape :: Quoting -> Word8 -> B.ByteString -> B.ByteString
+escape :: Quoting -> Word8 -> B.ByteString -> Builder
 escape !qtng !delim !s
-    | (qtng == QuoteMinimal &&
-        B.any (\ b -> b == dquote || b == delim || b == nl || b == cr) s
-      ) || qtng == QuoteAll
-         = toStrict . toLazyByteString $
-            word8 dquote
-            <> B.foldl
-                (\ acc b -> acc <> if b == dquote
-                    then byteString "\"\""
-                    else word8 b)
-                mempty
-                s
-            <> word8 dquote
-    | otherwise = s
+    | qtng == QuoteAll = buildQuoted
+    | qtng == QuoteMinimal && needsQuoting = buildQuoted
+    | otherwise = byteString s
   where
-    dquote = 34
-    nl     = 10
-    cr     = 13
+    needsQuoting = B.any (\b -> b == doubleQuote || b == delim || b == newline || b == cr) s
+
+    dquote :: P.BoundedPrim Word8
+    dquote =
+        P.liftFixedToBounded $ const (doubleQuote, doubleQuote) P.>$< (P.word8 P.>*< P.word8)
+
+    escaper :: P.BoundedPrim Word8
+    escaper = P.condB (== doubleQuote)
+        dquote
+        (P.liftFixedToBounded P.word8)
+
+    buildQuoted =
+        word8 doubleQuote <>
+        P.primMapByteStringBounded escaper s <>
+        word8 doubleQuote
 
 -- | Like 'encodeByName', but lets you customize how the CSV data is
 -- encoded.
@@ -340,7 +342,7 @@ encodeDefaultOrderedByNameWith opts v
         toLazyByteString (rows (encIncludeHeader opts))
     | otherwise = encodeOptionsError
   where
-    hdr = (Conversion.headerOrder (undefined :: a))
+    hdr = Conversion.headerOrder (undefined :: a)
     rows False = records
     rows True  = encodeRecord (encQuoting opts) (encDelimiter opts) hdr <>
                  recordSep (encUseCrLf opts) <> records
@@ -375,14 +377,6 @@ unlines :: Builder -> [Builder] -> Builder
 unlines _ [] = mempty
 unlines sep (b:bs) = b <> sep <> unlines sep bs
 
-intersperse :: Builder -> [Builder] -> [Builder]
-intersperse _   []      = []
-intersperse sep (x:xs)  = x : prependToAll sep xs
-
-prependToAll :: Builder -> [Builder] -> [Builder]
-prependToAll _   []     = []
-prependToAll sep (x:xs) = sep <> x : prependToAll sep xs
-
 decodeWithP' :: AL.Parser a -> L.ByteString -> Either String a
 decodeWithP' p s =
     case AL.parse p s of
@@ -391,7 +385,7 @@ decodeWithP' p s =
         where
           errMsg = "parse error (" ++ msg ++ ") at " ++
                    (if BL8.length left > 100
-                    then (take 100 $ BL8.unpack left) ++ " (truncated)"
+                    then take 100 (BL8.unpack left) ++ " (truncated)"
                     else show (BL8.unpack left))
 {-# INLINE decodeWithP' #-}
 
@@ -415,11 +409,11 @@ csv _parseRecord !opts = do
     records = do
         !r <- record (decDelimiter opts)
         if blankLine r
-            then (endOfInput *> pure []) <|> (endOfLine *> records)
+            then (endOfInput $> []) <|> (endOfLine *> records)
             else case runParser (_parseRecord r) of
                 Left msg  -> fail $ "conversion error: " ++ msg
                 Right val -> do
-                    !vals <- (endOfInput *> AP.pure []) <|> (endOfLine *> records)
+                    !vals <- (endOfInput $> []) <|> (endOfLine *> records)
                     return (val : vals)
 {-# INLINE csv #-}
 
@@ -435,11 +429,11 @@ csvWithHeader _parseNamedRecord !opts = do
     records hdr = do
         !r <- record (decDelimiter opts)
         if blankLine r
-            then (endOfInput *> pure []) <|> (endOfLine *> records hdr)
+            then (endOfInput $> []) <|> (endOfLine *> records hdr)
             else case runParser (convert hdr r) of
                 Left msg  -> fail $ "conversion error: " ++ msg
                 Right val -> do
-                    !vals <- (endOfInput *> pure []) <|> (endOfLine *> records hdr)
+                    !vals <- (endOfInput $> []) <|> (endOfLine *> records hdr)
                     return (val : vals)
 
     convert hdr = _parseNamedRecord . Types.toNamedRecord hdr

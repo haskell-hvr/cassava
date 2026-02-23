@@ -12,19 +12,8 @@
     TypeOperators,
     UndecidableInstances
     #-}
-
-#if __GLASGOW_HASKELL__ >= 800
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
-#endif
-
-#if !MIN_VERSION_bytestring(0,10,4)
-# define MIN_VERSION_text_short(a,b,c) 0
-#endif
-
-#if !defined(MIN_VERSION_text_short)
-# error **INVARIANT BROKEN** Detected invalid combination of `text-short` and `bytestring` versions. Please verify the `pre-bytestring-0.10-4` flag-logic in the .cabal file wasn't elided.
-#endif
 
 module Data.Csv.Conversion
     (
@@ -81,9 +70,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A8
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
-#if MIN_VERSION_bytestring(0,10,4)
 import qualified Data.ByteString.Short as SBS
-#endif
 import Data.Functor.Identity
 import Data.List (intercalate)
 import Data.Hashable (Hashable)
@@ -97,9 +84,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
-#if MIN_VERSION_text_short(0,1,0)
 import qualified Data.Text.Short as T.S
-#endif
 import Data.Tuple.Only (Only(..))
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
@@ -113,25 +98,13 @@ import Prelude hiding (lookup, takeWhile)
 import Data.Csv.Conversion.Internal
 import Data.Csv.Types
 
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative (Applicative, (<$>), (<*>), (<*), (*>), pure)
-import Data.Monoid (Monoid, mappend, mempty)
-import Data.Traversable (traverse)
-import Data.Word (Word)
-#endif
-
 ------------------------------------------------------------------------
 -- bytestring compatibility
 
 toStrict   :: L.ByteString -> B.ByteString
 fromStrict :: B.ByteString -> L.ByteString
-#if MIN_VERSION_bytestring(0,10,0)
 toStrict   = L.toStrict
 fromStrict = L.fromStrict
-#else
-toStrict   = B.concat . L.toChunks
-fromStrict = L.fromChunks . (:[])
-#endif
 {-# INLINE toStrict #-}
 {-# INLINE fromStrict #-}
 
@@ -1018,7 +991,6 @@ instance ToField L.ByteString where
     toField = toStrict
     {-# INLINE toField #-}
 
-#if MIN_VERSION_bytestring(0,10,4)
 instance FromField SBS.ShortByteString where
     parseField = pure . SBS.toShort
     {-# INLINE parseField #-}
@@ -1026,9 +998,7 @@ instance FromField SBS.ShortByteString where
 instance ToField SBS.ShortByteString where
     toField = SBS.fromShort
     {-# INLINE toField #-}
-#endif
 
-#if MIN_VERSION_text_short(0,1,0)
 -- | Assumes UTF-8 encoding. Fails on invalid byte sequences.
 --
 -- @since 0.5.0.0
@@ -1042,7 +1012,6 @@ instance FromField T.S.ShortText where
 instance ToField T.S.ShortText where
     toField = T.S.toByteString
     {-# INLINE toField #-}
-#endif
 
 -- | Assumes UTF-8 encoding. Fails on invalid byte sequences.
 instance FromField T.Text where
@@ -1397,12 +1366,8 @@ instance GToNamedRecordHeader a => GToNamedRecordHeader (M1 C c a)
 
 -- | Instance to ensure that you cannot derive DefaultOrdered for
 -- constructors without selectors.
-#if MIN_VERSION_base(4,9,0)
 instance DefaultOrdered (M1 S ('MetaSel 'Nothing srcpk srcstr decstr) a ())
          => GToNamedRecordHeader (M1 S ('MetaSel 'Nothing srcpk srcstr decstr) a)
-#else
-instance DefaultOrdered (M1 S NoSelector a ()) => GToNamedRecordHeader (M1 S NoSelector a)
-#endif
   where
     gtoNamedRecordHeader _ _ =
         error "You cannot derive DefaultOrdered for constructors without selectors."
