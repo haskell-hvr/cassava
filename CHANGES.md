@@ -1,10 +1,18 @@
-## Version 0.5.5.0
+## Version 0.6.0.0
 
 _Michael Chavinda, 2026-02-22_
 
  * `Data.Csv.Incremental`: Fixed the `type role`s of `Builder` and `NamedBuilder`; they're now `nominal` in their parameters.
  * `Faster encoding`: Reduce intermediate allocations in encoding logic.
  * `Default values for encoding missing fields`: Provides a way to either specify per-column defaults or a general fallback value.
+
+## Version 0.5.5.0
+
+_Michael Chavinda, 2026-02-22_
+
+* Deprecated for [violating semantic versioning](https://github.com/haskell-hvr/cassava/issues/248).
+
+_Andreas Abel, 2025-09-02_
 
 ## Version 0.5.4.1
 
